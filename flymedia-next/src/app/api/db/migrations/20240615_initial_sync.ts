@@ -1,23 +1,37 @@
-import { sequelize } from '../../../../lib/db';
+import { ensureDatabaseExists, sequelize } from '@/lib/db';
+import '@/models'; // Registers models and sets up associations
 
 /**
  * This migration ensures the database schema is synchronized with the current Sequelize models.
  * It uses `sequelize.sync({ alter: true })` which will create missing tables and apply any
- * column changes without dropping data. This is suitable for development environments where
- * a full schema migration is desired after model updates.
+ * column changes without dropping data.
  */
 export async function up() {
-  // Apply any pending alterations to match model definitions
+  console.log('Verifying/creating database...');
+  await ensureDatabaseExists();
+  
+  console.log('Synchronizing database tables...');
   await sequelize.sync({ force: false, alter: true });
+  console.log('✅ All tables synchronized successfully!');
 }
 
-
-up();
 /**
  * Reverting this migration is non‑trivial because `sequelize.sync({ alter: true })`
- * cannot automatically drop columns or tables that were added. In production you would
- * generate specific down scripts for each change. For simplicity we leave this empty.
+ * cannot automatically drop columns or tables that were added.
  */
 export async function down() {
-  // No automatic rollback; implement manual steps if needed.
+  console.log('No rollback defined for auto-sync migration.');
+}
+
+// Self-run when executed directly via ts-node / node
+if (require.main === module) {
+  up()
+    .then(() => {
+      console.log('Migration execution complete.');
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('Migration failed:', err);
+      process.exit(1);
+    });
 }
