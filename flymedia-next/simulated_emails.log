@@ -1,0 +1,245 @@
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/15/2026, 12:08:53 PM
+========================================================================
+Store: F-Ordering Main Branch
+Order Number: ORD-ONL-00002
+Order Type: TAKEAWAY
+Timestamp: 6/15/2026, 12:08:53 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: atul
+Phone: 7508516471
+Email: atul@yopmail.com
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Triple Patty] @ $24.99 each = $24.99
+    + Add-ons: Crispy Bacon Strips (+$2.50), Extra Cheddar Cheese (+$1.50)
+
+Subtotal: $24.99
+Tax: $2.06
+Total Amount: $27.05
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $27.05
+Transaction Reference: ONL-TX-1781505533907
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: atul@yopmail.com
+- Sent to Restaurant Admin Email: admin@fordering.com
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/15/2026, 12:09:00 PM
+========================================================================
+Store: F-Ordering Main Branch
+Order Number: ORD-ONL-00003
+Order Type: TAKEAWAY
+Timestamp: 6/15/2026, 12:09:00 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Mitran Customer
+Phone: 555-0987
+Email: mitran@customer.com
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Double Patty] @ $18.49 each = $18.49
+
+Subtotal: $18.49
+Tax: $1.53
+Total Amount: $20.02
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $20.02
+Transaction Reference: ONL-TX-1781505540053
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: mitran@customer.com
+- Sent to Restaurant Admin Email: admin@fordering.com
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/15/2026, 12:17:59 PM
+========================================================================
+Store: F-Ordering Main Branch
+Order Number: ORD-ONL-00004
+Order Type: TAKEAWAY
+Timestamp: 6/15/2026, 12:17:59 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Nodemailer Guest
+Phone: 555-9876
+Email: nodemailer.guest@gmail.com
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Double Patty] @ $18.49 each = $18.49
+
+Subtotal: $18.49
+Tax: $1.53
+Total Amount: $20.02
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $20.02
+Transaction Reference: ONL-TX-1781506079588
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: nodemailer.guest@gmail.com
+- Sent to Restaurant Admin Email: admin@fordering.com
+- Ethereal Preview URL: https://ethereal.email/message/ai-gIEe-jEewkdkYai-gI0aRd.PI4vIxAAAAAdK8WYcSJr.ibW6Jg6bIHxQ
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/15/2026, 12:23:21 PM
+========================================================================
+Store: F-Ordering Main Branch
+Order Number: ORD-ONL-00005
+Order Type: TAKEAWAY
+Timestamp: 6/15/2026, 12:23:21 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: jai
+Phone: 7087308979
+Email: jai@yopmail.com
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Double Patty] @ $18.49 each = $18.49
+
+Subtotal: $18.49
+Tax: $1.53
+Total Amount: $20.02
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $20.02
+Transaction Reference: ONL-TX-1781506401687
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: jai@yopmail.com
+- Sent to Restaurant Admin Email: admin@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/15/2026, 12:23:24 PM
+========================================================================
+Store: F-Ordering Main Branch
+Order Number: ORD-ONL-00006
+Order Type: TAKEAWAY
+Timestamp: 6/15/2026, 12:23:24 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: jai
+Phone: 7087308979
+Email: jai@yopmail.com
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Double Patty] @ $18.49 each = $18.49
+
+Subtotal: $18.49
+Tax: $1.53
+Total Amount: $20.02
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $20.02
+Transaction Reference: ONL-TX-1781506404353
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: jai@yopmail.com
+- Sent to Restaurant Admin Email: admin@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/15/2026, 12:27:42 PM
+========================================================================
+Store: F-Ordering Main Branch
+Order Number: ORD-ONL-00007
+Order Type: TAKEAWAY
+Timestamp: 6/15/2026, 12:27:42 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: jai
+Phone: 767434355
+Email: paramjeet.flymediatech@gmail.com
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Woodfired Margherita Pizza @ $13.99 each = $13.99
+
+Subtotal: $13.99
+Tax: $1.15
+Total Amount: $15.14
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $15.14
+Transaction Reference: ONL-TX-1781506662103
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: admin@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/15/2026, 12:29:37 PM
+========================================================================
+Store: F-Ordering Main Branch
+Order Number: ORD-ONL-00008
+Order Type: DELIVERY
+Timestamp: 6/15/2026, 12:29:37 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Mitran Delivery Guest
+Phone: 555-8888
+Email: mitran@delivery.com
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Double Patty] @ $20.99 each = $20.99
+    + Add-ons: Crispy Bacon Strips (+$2.50)
+
+Subtotal: $20.99
+Tax: $1.73
+Total Amount: $22.72
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $22.72
+Transaction Reference: ONL-TX-1781506777128
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: mitran@delivery.com
+- Sent to Restaurant Admin Email: admin@fordering.com
+
+========================================================================
+
+
