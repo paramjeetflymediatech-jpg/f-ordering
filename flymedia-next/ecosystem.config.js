@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'antigravity-pos-platform',
+      name: 'f-ordering',
       script: 'node_modules/.bin/ts-node',
       args: 'src/server.ts',
       instances: 1,
@@ -14,14 +14,14 @@ module.exports = {
         PORT: 3000,
       },
       env_production: {
-        NODE_ENV: 'production',
-        PORT: 3000,
-        DB_HOST: '127.0.0.1',
-        DB_USER: 'root',
-        DB_PASSWORD: 'your_production_password',
-        DB_NAME: 'flymedia_db',
-        REDIS_URL: 'redis://127.0.0.1:6379',
-        NEXTAUTH_SECRET: 'your_production_nextauth_secret_key',
+        NODE_ENV: process.env.NODE_ENV,
+        PORT: process.env.PORT,
+        DB_HOST: process.env.DB_HOST,
+        DB_USER: process.env.DB_USER,
+        DB_PASSWORD: process.env.DB_PASSWORD,
+        DB_NAME: process.env.DB_NAME,
+        REDIS_URL: process.env.REDIS_URL,
+        NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
       },
     },
   ],
