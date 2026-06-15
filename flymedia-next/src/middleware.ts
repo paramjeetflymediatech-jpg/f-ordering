@@ -20,7 +20,7 @@ export function middleware(request: NextRequest) {
   }
 
   // Identify root hosts that should not be parsed for subdomains
-  const rootHosts = ['localhost:3000', 'twirll.com', 'www.twirll.com'];
+  const rootHosts = [process.env.NEXT_PUBLIC_APP_URL, process.env.NEXT_PUBLIC_APP_URL_WITH_WWW!];
   const isRootHost = rootHosts.includes(hostname.toLowerCase());
 
   if (!isRootHost) {

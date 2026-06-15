@@ -673,13 +673,13 @@ export default function SuperAdminPage() {
                           </td>
                           <td className="px-6 py-4 font-mono text-xs text-orange-400">
                             <a
-                              href={`http://${org.slug}.localhost:3000/order-online/menu`}
+                              href={`http://${org.slug}.${process.env.NEXT_PUBLIC_APP_URL}/order-online/menu`}
                               target="_blank"
                               rel="noreferrer"
                               className="hover:underline flex items-center gap-1.5"
                             >
                               <Globe className="h-3.5 w-3.5" />
-                              {org.slug}.localhost:3000
+                              {org.slug}.{process.env.NEXT_PUBLIC_APP_URL}
                             </a>
                           </td>
                           <td className="px-6 py-4">
