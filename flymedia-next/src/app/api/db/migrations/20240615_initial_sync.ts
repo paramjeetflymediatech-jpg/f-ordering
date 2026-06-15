@@ -1,5 +1,5 @@
-import { ensureDatabaseExists, sequelize } from '../../../../lib/db';
-import '../../../../models'; // Registers models and sets up associations
+import { ensureDatabaseExists, sequelize } from '@/lib/db';
+import '@/models'; // Registers models and sets up associations
 
 /**
  * This migration ensures the database schema is synchronized with the current Sequelize models.
