@@ -59,16 +59,30 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async redirect({ url, baseUrl }) {
-      // Force relative redirects so the client redirects relative to whatever domain they are browsing on
+      // If it's already a relative path, use it directly
       if (url.startsWith('/')) {
         return url;
       }
       try {
         const parsedUrl = new URL(url);
         const parsedBase = new URL(baseUrl);
-        if (parsedUrl.host === parsedBase.host) {
+        
+        // If the redirect is to the same domain (or a subdomain), allow it
+        const getBaseDomain = (host: string) => {
+          const parts = host.split('.');
+          if (parts.length > 2) {
+            return parts.slice(-2).join('.');
+          }
+          return host;
+        };
+
+        if (parsedUrl.host === parsedBase.host || getBaseDomain(parsedUrl.hostname) === getBaseDomain(parsedBase.hostname)) {
           return url;
         }
+
+        // If there is a mismatch (e.g., server baseUrl is localhost:3000 but user is on live domain),
+        // convert the absolute URL into a relative path so the browser stays on the live domain.
+        return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
       } catch (e) {
         // Safe fallback
       }
