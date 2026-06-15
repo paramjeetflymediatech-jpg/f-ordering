@@ -12,6 +12,7 @@ module.exports = {
       env: {
         NODE_ENV: 'development',
         PORT: 3000,
+        NEXTAUTH_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
       },
       env_production: {
         NODE_ENV: process.env.NODE_ENV,
@@ -21,7 +22,8 @@ module.exports = {
         DB_PASSWORD: process.env.DB_PASSWORD,
         DB_NAME: process.env.DB_NAME,
         REDIS_URL: process.env.REDIS_URL,
-        NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
+        NEXTAUTH_SECRET: process.env.NEXT_PUBLIC_APP_URL,
+        NEXTAUTH_URL: process.env.NEXT_PUBLIC_APP_URL,
       },
     },
   ],
