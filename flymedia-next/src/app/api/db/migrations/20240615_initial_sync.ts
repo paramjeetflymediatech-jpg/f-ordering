@@ -11,6 +11,8 @@ export async function up() {
   await sequelize.sync({ force: false, alter: true });
 }
 
+
+up();
 /**
  * Reverting this migration is non‑trivial because `sequelize.sync({ alter: true })`
  * cannot automatically drop columns or tables that were added. In production you would
