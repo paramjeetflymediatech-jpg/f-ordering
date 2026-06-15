@@ -58,6 +58,22 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Force relative redirects so the client redirects relative to whatever domain they are browsing on
+      if (url.startsWith('/')) {
+        return url;
+      }
+      try {
+        const parsedUrl = new URL(url);
+        const parsedBase = new URL(baseUrl);
+        if (parsedUrl.host === parsedBase.host) {
+          return url;
+        }
+      } catch (e) {
+        // Safe fallback
+      }
+      return '/login';
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
