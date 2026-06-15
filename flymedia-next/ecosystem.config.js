@@ -2,8 +2,8 @@ module.exports = {
   apps: [
     {
       name: 'f-ordering',
-      script: 'node_modules/.bin/ts-node',
-      args: 'src/server.ts',
+      script: 'npx',
+      args: 'tsx src/server.ts',
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,
