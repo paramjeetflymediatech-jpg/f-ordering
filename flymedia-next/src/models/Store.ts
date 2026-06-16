@@ -9,6 +9,16 @@ export class Store extends Model {
   declare phone: string;
   declare tax_rate: number;
   declare business_hours: any;
+  declare email: string | null;
+  declare website: string | null;
+  declare currency: string | null;
+  declare category: string | null;
+  declare zip_code: string | null;
+  declare country: string | null;
+  declare state: string | null;
+  declare city: string | null;
+  declare description: string | null;
+  declare banner: string | null;
 }
 
 Store.init(
@@ -41,6 +51,48 @@ Store.init(
     },
     business_hours: {
       type: DataTypes.JSON,
+      allowNull: true,
+    },
+    email: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    website: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    currency: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: 'AUD',
+    },
+    category: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: 'Restaurant',
+    },
+    zip_code: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    country: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    state: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    city: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    description: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    banner: {
+      type: DataTypes.STRING,
       allowNull: true,
     },
   },

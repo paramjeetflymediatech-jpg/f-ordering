@@ -17,6 +17,8 @@ import {
   Coupon,
   Service,
   Package,
+  Order,
+  Payment,
 } from '../../../../models';
 
 export async function POST() {
@@ -91,9 +93,18 @@ export async function POST() {
 
       defaultStore = await Store.create({
         organization_id: defaultOrg.id,
-        name: 'F-Ordering Main Branch',
-        address: '100 Silicon Valley Way, Suite A, San Jose, CA',
-        phone: '+1 555-0199',
+        name: 'The Grand Pavillion Warner Bay',
+        category: 'Restaurant',
+        address: '456 The Esplanade, warners Bay',
+        zip_code: '2282',
+        state: 'NSW',
+        city: 'Sydney',
+        country: 'Australia',
+        phone: '+61 249480092',
+        email: 'contact@tgwbh.com.au',
+        currency: 'AUD',
+        website: 'https://tgwbh.com.au',
+        description: 'A fine dining pavilion serving authentic culinary experiences.',
         tax_rate: 8.25,
         business_hours: {
           monday: { open: '08:00', close: '22:00' },
@@ -254,7 +265,24 @@ export async function POST() {
 
       console.log('Seeded default super admin user: admin@fordering.com / password123');
       console.log('Seeded default owner user: owner@fordering.com / password123');
-      console.log('Seeded default cashier user: cashier@fordering.com / password123');
+    } else {
+      const firstStore = await Store.findOne();
+      if (firstStore && !firstStore.email) {
+        await firstStore.update({
+          name: 'The Grand Pavillion Warner Bay',
+          category: 'Restaurant',
+          address: '456 The Esplanade, warners Bay',
+          zip_code: '2282',
+          state: 'NSW',
+          city: 'Sydney',
+          country: 'Australia',
+          phone: '+61 249480092',
+          email: 'contact@tgwbh.com.au',
+          currency: 'AUD',
+          website: 'https://tgwbh.com.au',
+          description: 'A fine dining pavilion serving authentic culinary experiences.',
+        });
+      }
     }
 
     // 6. Seed Default Services & Packages if empty
@@ -321,6 +349,283 @@ export async function POST() {
         },
       ]);
       console.log('Seeded default services and packages successfully!');
+    }
+
+    // Seed Customers, Orders, and Payments matching Warrick Jordan and other details from screens
+    const firstOrg = await Organization.findOne();
+    const firstStore = await Store.findOne();
+    if (firstOrg && firstStore) {
+      const customerCount = await Customer.count();
+      if (customerCount === 0) {
+        console.log('Seeding initial customers, orders and payments...');
+        
+        const c1 = await Customer.create({
+          organization_id: firstOrg.id,
+          name: 'Mr Warrick Jordan',
+          first_name: 'Mr Warrick Jordan',
+          last_name: '-',
+          email: 'warrickjordan@gmail.com',
+          phone: '0451633197',
+          loyalty_points: 120,
+          company_name: '-',
+          date_of_birth: '-',
+          address: '-',
+          city: '-',
+          state: '-',
+          country: '-',
+          zip_code: '-',
+        });
+
+        const c2 = await Customer.create({
+          organization_id: firstOrg.id,
+          name: 'terry mulcahy',
+          first_name: 'terry mulcahy',
+          last_name: '-',
+          email: '-',
+          phone: '0499634548',
+          loyalty_points: 450,
+          company_name: '-',
+          date_of_birth: '-',
+          address: 'unit 2, Cardiff executive apartments, cardiff',
+          city: 'Cardiff',
+          state: 'NSW',
+          country: 'Australia',
+          zip_code: '2305',
+        });
+
+        const c3 = await Customer.create({
+          organization_id: firstOrg.id,
+          name: 'Liam Simmons',
+          first_name: 'Liam Simmons',
+          last_name: '-',
+          email: 'lsimmons95@gmail.com',
+          phone: '0410330367',
+          loyalty_points: 45,
+          company_name: '-',
+          date_of_birth: '-',
+          address: '-',
+          city: '-',
+          state: '-',
+          country: '-',
+          zip_code: '-',
+        });
+
+        const c4 = await Customer.create({
+          organization_id: firstOrg.id,
+          name: 'Joshua Cameron',
+          first_name: 'Joshua Cameron',
+          last_name: '-',
+          email: 'joshuacameron92@gmail.com',
+          phone: '402442845',
+          loyalty_points: 520,
+          company_name: '-',
+          date_of_birth: '-',
+          address: '23 Morse St',
+          city: 'Speers Point',
+          state: 'NSW',
+          country: 'Australia',
+          zip_code: '2284',
+        });
+
+        const c5 = await Customer.create({
+          organization_id: firstOrg.id,
+          name: 'Arun',
+          first_name: 'Arun',
+          last_name: '-',
+          email: 'haiarun07@gmail.com',
+          phone: '0493252238',
+          loyalty_points: 210,
+          company_name: '-',
+          date_of_birth: '-',
+          address: '-',
+          city: '-',
+          state: '-',
+          country: '-',
+          zip_code: '-',
+        });
+
+        const c6 = await Customer.create({
+          organization_id: firstOrg.id,
+          name: 'Charlise',
+          first_name: 'Charlise',
+          last_name: '-',
+          email: 'cheeshi28@gmail.com',
+          phone: '422772969',
+          loyalty_points: 15,
+          company_name: '-',
+          date_of_birth: '-',
+          address: '-',
+          city: '-',
+          state: '-',
+          country: '-',
+          zip_code: '-',
+        });
+
+        const c7 = await Customer.create({
+          organization_id: firstOrg.id,
+          name: 'Nick',
+          first_name: 'Nick',
+          last_name: '-',
+          email: 'nickridley_@outlook.com',
+          phone: '0431217465',
+          loyalty_points: 10,
+          company_name: '-',
+          date_of_birth: '-',
+          address: '-',
+          city: '-',
+          state: '-',
+          country: '-',
+          zip_code: '-',
+        });
+
+        // Seed Orders for each to calculate totals
+        // Mr Warrick Jordan: 5 orders, total 239.80 (all paid)
+        for (let i = 1; i <= 5; i++) {
+          const ord = await Order.create({
+            organization_id: firstOrg.id,
+            store_id: firstStore.id,
+            customer_id: c1.id,
+            order_number: `ORD-WJ-00${i}`,
+            order_type: 'dine_in',
+            status: 'completed',
+            total_amount: 47.96,
+            tax_amount: 3.96,
+          });
+          await Payment.create({
+            order_id: ord.id,
+            amount: 47.96,
+            payment_method: 'card',
+            transaction_status: 'success',
+            transaction_reference: `TX-WJ-PAY-${i}`,
+          });
+        }
+
+        // Terry Mulcahy: 20 orders, total 1576.90. (19 paid of $79.27, 1 unpaid of $70.70)
+        for (let i = 1; i <= 19; i++) {
+          const ord = await Order.create({
+            organization_id: firstOrg.id,
+            store_id: firstStore.id,
+            customer_id: c2.id,
+            order_number: `ORD-TM-0${i < 10 ? '0' + i : i}`,
+            order_type: 'dine_in',
+            status: 'completed',
+            total_amount: 79.27,
+            tax_amount: 6.54,
+          });
+          await Payment.create({
+            order_id: ord.id,
+            amount: 79.27,
+            payment_method: 'cash',
+            transaction_status: 'success',
+            transaction_reference: `TX-TM-PAY-${i}`,
+          });
+        }
+        await Order.create({
+          organization_id: firstOrg.id,
+          store_id: firstStore.id,
+          customer_id: c2.id,
+          order_number: `ORD-TM-020`,
+          order_type: 'dine_in',
+          status: 'pending',
+          total_amount: 70.70,
+          tax_amount: 5.83,
+        });
+
+        // Liam Simmons: 2 orders, total 157.00
+        for (let i = 1; i <= 2; i++) {
+          const ord = await Order.create({
+            organization_id: firstOrg.id,
+            store_id: firstStore.id,
+            customer_id: c3.id,
+            order_number: `ORD-LS-00${i}`,
+            order_type: 'dine_in',
+            status: 'completed',
+            total_amount: 78.50,
+            tax_amount: 6.48,
+          });
+          await Payment.create({
+            order_id: ord.id,
+            amount: 78.50,
+            payment_method: 'upi',
+            transaction_status: 'success',
+            transaction_reference: `TX-LS-PAY-${i}`,
+          });
+        }
+
+        // Joshua Cameron: 27 orders, total 1667.70
+        for (let i = 1; i <= 27; i++) {
+          const ord = await Order.create({
+            organization_id: firstOrg.id,
+            store_id: firstStore.id,
+            customer_id: c4.id,
+            order_number: `ORD-JC-0${i < 10 ? '0' + i : i}`,
+            order_type: 'dine_in',
+            status: 'completed',
+            total_amount: 61.77,
+            tax_amount: 5.10,
+          });
+          await Payment.create({
+            order_id: ord.id,
+            amount: 61.77,
+            payment_method: 'card',
+            transaction_status: 'success',
+            transaction_reference: `TX-JC-PAY-${i}`,
+          });
+        }
+
+        // Arun: 14 orders, total 1159.33
+        for (let i = 1; i <= 14; i++) {
+          const ord = await Order.create({
+            organization_id: firstOrg.id,
+            store_id: firstStore.id,
+            customer_id: c5.id,
+            order_number: `ORD-AR-0${i < 10 ? '0' + i : i}`,
+            order_type: 'dine_in',
+            status: 'completed',
+            total_amount: 82.81,
+            tax_amount: 6.83,
+          });
+          await Payment.create({
+            order_id: ord.id,
+            amount: 82.81,
+            payment_method: 'cash',
+            transaction_status: 'success',
+            transaction_reference: `TX-AR-PAY-${i}`,
+          });
+        }
+
+        // Charlise: 1 order, total 62.80
+        const ordC = await Order.create({
+          organization_id: firstOrg.id,
+          store_id: firstStore.id,
+          customer_id: c6.id,
+          order_number: `ORD-CH-001`,
+          order_type: 'dine_in',
+          status: 'completed',
+          total_amount: 62.80,
+          tax_amount: 5.18,
+        });
+        await Payment.create({
+          order_id: ordC.id,
+          amount: 62.80,
+          payment_method: 'card',
+          transaction_status: 'success',
+          transaction_reference: `TX-CH-PAY-1`,
+        });
+
+        // Nick: 1 order, total 41.30 (unpaid)
+        await Order.create({
+          organization_id: firstOrg.id,
+          store_id: firstStore.id,
+          customer_id: c7.id,
+          order_number: `ORD-NK-001`,
+          order_type: 'dine_in',
+          status: 'pending',
+          total_amount: 41.30,
+          tax_amount: 3.41,
+        });
+        console.log('Seeded default customers, orders, and payments successfully!');
+      }
     }
 
     return NextResponse.json({
