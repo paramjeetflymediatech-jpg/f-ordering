@@ -39,6 +39,7 @@ interface POSState {
   selectedTable: { id: string; table_number: string } | null;
   heldOrders: HeldOrder[];
   splitCount: number;
+  activeHeldOrderId: string | null;
   
   // Cart Actions
   addToCart: (item: Omit<CartItem, 'id'>) => void;
@@ -52,6 +53,7 @@ interface POSState {
   setOrderType: (type: 'dine_in' | 'takeaway' | 'delivery') => void;
   selectTable: (table: { id: string; table_number: string } | null) => void;
   setSplitCount: (count: number) => void;
+  setActiveHeldOrderId: (id: string | null) => void;
 
   // Hold / Resume Actions
   holdOrder: (notes?: string) => void;
@@ -76,6 +78,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
   selectedTable: null,
   heldOrders: [],
   splitCount: 1,
+  activeHeldOrderId: null,
 
   addToCart: (newItem) => {
     // Generate a unique id based on item selection, variant, and addons
@@ -117,6 +120,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
       discountAmount: 0,
       selectedTable: null,
       splitCount: 1,
+      activeHeldOrderId: null,
     });
   },
 
@@ -138,6 +142,10 @@ export const usePOSStore = create<POSState>((set, get) => ({
 
   setSplitCount: (count) => {
     set({ splitCount: Math.max(1, count) });
+  },
+
+  setActiveHeldOrderId: (id) => {
+    set({ activeHeldOrderId: id });
   },
 
   holdOrder: (notes) => {
@@ -162,6 +170,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
       discountAmount: 0,
       selectedTable: null,
       splitCount: 1,
+      activeHeldOrderId: null,
     });
   },
 
@@ -176,6 +185,7 @@ export const usePOSStore = create<POSState>((set, get) => ({
       orderType: target.orderType,
       selectedTable: target.selectedTable,
       heldOrders: get().heldOrders.filter(o => o.id !== id),
+      activeHeldOrderId: id.startsWith('hold-') ? null : id, // If it's a dynamic DB order ID (UUID), save it
     });
   },
 

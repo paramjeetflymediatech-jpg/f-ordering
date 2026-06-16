@@ -22,7 +22,7 @@ module.exports = {
         DB_PASSWORD: process.env.DB_PASSWORD,
         DB_NAME: process.env.DB_NAME,
         REDIS_URL: process.env.REDIS_URL,
-        NEXTAUTH_SECRET: process.env.NEXT_PUBLIC_APP_URL,
+        NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
         NEXTAUTH_URL: process.env.NEXT_PUBLIC_APP_URL,
       },
     },

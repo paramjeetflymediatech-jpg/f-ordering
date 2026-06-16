@@ -11,10 +11,11 @@ import {
   Tag,
   MonitorPlay,
   LogOut,
-  Menu,
+  Menu as MenuIcon,
   X,
-  Sparkles,
   Building,
+  Table,
+  History,
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -32,10 +33,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (status === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-[#080b11]">
         <div className="text-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-t-2 border-orange-500 mx-auto"></div>
-          <p className="mt-4 text-slate-400 font-semibold">Loading Portal...</p>
+          <div className="h-10 w-10 animate-spin rounded-full border-t-2 border-[#f59e0b] mx-auto"></div>
+          <p className="mt-4 text-slate-400 font-semibold tracking-wider">Loading Portal...</p>
         </div>
       </div>
     );
@@ -45,7 +46,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems = [
     { name: 'Overview', href: '/dashboard', icon: TrendingUp },
+    { name: 'Order History', href: '/dashboard/orders', icon: History },
     { name: 'Menu Manager', href: '/dashboard/menu', icon: Utensils },
+    { name: 'Table Manager', href: '/dashboard/tables', icon: Table },
     { name: 'Offers & Coupons', href: '/dashboard/offers', icon: Tag },
     { name: 'Customer Database', href: '/dashboard/customers', icon: Users },
   ];
@@ -55,62 +58,79 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100">
+    <div className="flex min-h-screen bg-[#080b11] text-slate-100 font-sans">
       
       {/* 1. SIDEBAR (DESKTOP) */}
-      <aside className="hidden md:flex w-64 flex-col bg-slate-900 border-r border-slate-800 shrink-0">
-        <div className="h-16 flex items-center gap-3 px-6 border-b border-slate-800 bg-slate-900">
-          <TrendingUp className="h-6 w-6 text-orange-500" />
-          <span className="text-lg font-bold text-white tracking-wider">
-            F-Ordering <span className="text-orange-500">HQ</span>
-          </span>
+      <aside className="hidden md:flex w-64 flex-col bg-[#0c101b] border-r border-[#1e293b]/60 shrink-0 justify-between">
+        
+        <div>
+          {/* Logo block */}
+          <div className="h-16 flex items-center gap-3 px-6 border-b border-[#1e293b]/60 bg-[#0c101b] cursor-pointer">
+            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#ea580c] shadow-md shadow-[#f59e0b]/10">
+              <span className="text-sm font-black text-white italic">T</span>
+              <span className="absolute -bottom-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+            </div>
+            <span className="text-base font-black tracking-wider text-white">
+              F-Ordering <span className="text-[#f59e0b]">HQ</span>
+            </span>
+          </div>
+
+          {/* User Block info */}
+          <div className="p-4 border-b border-[#1e293b]/60 bg-slate-950/20 flex items-center gap-3">
+            <div className="h-9 w-9 overflow-hidden rounded-full border border-slate-700 bg-slate-800 shrink-0">
+              <img
+                src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100"
+                alt="Profile Avatar"
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Active Staff</p>
+              <p className="text-xs font-bold text-white truncate leading-tight mt-0.5">{session?.user?.name || 'Sarah Connor'}</p>
+              <p className="text-[9px] text-[#f59e0b] font-semibold uppercase mt-0.5 truncate">
+                {(session?.user as any)?.roles?.[0] || 'Administrator'}
+              </p>
+            </div>
+          </div>
+
+          {/* Navigation Links list */}
+          <nav className="p-4 space-y-1.5">
+            {navItems.map((item) => {
+              const isActive = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition duration-150 ${
+                    isActive
+                      ? 'bg-[#1a2336] text-[#f59e0b] border-l-2 border-[#f59e0b] shadow-md shadow-[#f59e0b]/5'
+                      : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+                  }`}
+                >
+                  <Icon className="h-4.5 w-4.5" />
+                  {item.name}
+                </Link>
+              );
+            })}
+
+            {/* Launch POS screen trigger */}
+            <Link
+              href="/pos"
+              target="_blank"
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-900/50 hover:text-white transition duration-150"
+            >
+              <MonitorPlay className="h-4.5 w-4.5 text-emerald-400" />
+              Launch POS Screen
+            </Link>
+          </nav>
         </div>
 
-        {/* User Block */}
-        <div className="p-4 border-b border-slate-800 bg-slate-950/20">
-          <p className="text-xs text-slate-500 font-bold uppercase tracking-wider">Active Staff</p>
-          <p className="text-sm font-semibold text-white mt-1 truncate">{session?.user?.name}</p>
-          <p className="text-[10px] text-orange-400 font-medium uppercase mt-0.5">
-            {(session?.user as any)?.roles?.[0] || 'Administrator'}
-          </p>
-        </div>
-
-        {/* Nav list */}
-        <nav className="flex-1 p-4 space-y-1.5">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition ${
-                  isActive
-                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/10'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <Icon className="h-4 w-4" />
-                {item.name}
-              </Link>
-            );
-          })}
-
-          <Link
-            href="/pos"
-            target="_blank"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition"
-          >
-            <MonitorPlay className="h-4 w-4 text-emerald-400" />
-            Launch POS
-          </Link>
-        </nav>
-
-        {/* Footer logout */}
-        <div className="p-4 border-t border-slate-800">
+        {/* Footer Logout action */}
+        <div className="p-4 border-t border-[#1e293b]/60">
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/30 border border-red-900/20 py-2.5 text-xs font-bold text-red-400 hover:bg-red-900/30 transition"
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400 hover:bg-red-950/45 transition duration-150"
           >
             <LogOut className="h-4 w-4" />
             Log Out
@@ -118,34 +138,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </aside>
 
-      {/* MOBILE HEADER BAR */}
+      {/* MOBILE CONTAINER WRAPPER */}
       <div className="flex flex-col flex-1 min-h-screen">
-        <header className="flex h-16 items-center justify-between border-b border-slate-800 bg-slate-900 px-6 md:hidden shrink-0">
+        
+        {/* MOBILE HEADER BAR */}
+        <header className="flex h-16 items-center justify-between border-b border-[#1e293b]/60 bg-[#0c101b] px-6 md:hidden shrink-0">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-orange-500" />
-            <span className="text-base font-bold text-white">F-Ordering HQ</span>
+            <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#ea580c] shadow-sm">
+              <span className="text-xs font-black text-white italic">T</span>
+            </div>
+            <span className="text-sm font-black text-white tracking-wider">
+              F-Ordering <span className="text-[#f59e0b]">HQ</span>
+            </span>
           </div>
+          
           <button
             onClick={() => setMobileOpen(true)}
-            className="rounded-lg border border-slate-800 bg-slate-950 p-2 text-slate-300 hover:bg-slate-850"
+            className="rounded-lg border border-[#1e293b] bg-slate-950 p-2 text-slate-300 hover:bg-slate-900 transition"
           >
-            <Menu className="h-5 w-5" />
+            <MenuIcon className="h-4.5 w-4.5" />
           </button>
         </header>
 
-        {/* MAIN ROUTE CONTENT */}
-        <main className="flex-1 overflow-y-auto">
+        {/* MAIN BODY PAGES OUTLET */}
+        <main className="flex-1 overflow-y-auto bg-[#080b11]">
           {children}
         </main>
       </div>
 
-      {/* MOBILE DRAWER */}
+      {/* MOBILE DRAWER OVERLAY */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between">
+          <div className="w-64 bg-[#0c101b] border-r border-[#1e293b]/60 flex flex-col justify-between">
             <div>
-              <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800 bg-slate-900">
-                <span className="text-base font-bold text-white">F-Ordering HQ</span>
+              <div className="h-16 flex items-center justify-between px-6 border-b border-[#1e293b]/60 bg-[#0c101b]">
+                <span className="text-sm font-black text-white tracking-wider">F-Ordering HQ</span>
                 <button
                   onClick={() => setMobileOpen(false)}
                   className="p-1 text-slate-400 hover:text-white"
@@ -163,13 +190,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       key={item.name}
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition ${
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
                         isActive
-                          ? 'bg-orange-500 text-white'
-                          : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                          ? 'bg-[#1a2336] text-[#f59e0b] border-l-2 border-[#f59e0b]'
+                          : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
                       }`}
                     >
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4.5 w-4.5" />
                       {item.name}
                     </Link>
                   );
@@ -177,18 +204,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Link
                   href="/pos"
                   target="_blank"
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-900/50 hover:text-white transition"
                 >
-                  <MonitorPlay className="h-4 w-4 text-emerald-400" />
-                  Launch POS
+                  <MonitorPlay className="h-4.5 w-4.5 text-emerald-400" />
+                  Launch POS Screen
                 </Link>
               </nav>
             </div>
 
-            <div className="p-4 border-t border-slate-800">
+            <div className="p-4 border-t border-[#1e293b]/60">
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/30 py-2.5 text-xs font-bold text-red-400"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400"
               >
                 <LogOut className="h-4 w-4" />
                 Log Out

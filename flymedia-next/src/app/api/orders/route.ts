@@ -1,7 +1,50 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth';
-import { sequelize, Order, OrderItem, Payment, RestaurantTable } from '../../../models';
+import { sequelize, Order, OrderItem, Payment, RestaurantTable, MenuItem } from '../../../models';
+
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !(session.user as any).organization_id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { store_id } = session.user as any;
+
+    const heldOrders = await Order.findAll({
+      where: {
+        store_id,
+        status: 'on_hold',
+      },
+      include: [
+        {
+          model: OrderItem,
+          as: 'items',
+          include: [
+            {
+              model: MenuItem,
+              attributes: ['name', 'price'],
+            }
+          ]
+        },
+        {
+          model: RestaurantTable,
+          attributes: ['table_number'],
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    return NextResponse.json({ success: true, heldOrders });
+  } catch (error: any) {
+    console.error('Fetch Held Orders Error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to fetch held orders.', error: error.message },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
@@ -22,6 +65,9 @@ export async function POST(request: Request) {
       discountRate = 0,
       discountAmount = 0,
       taxRate = 8.25,
+      status = 'completed',
+      heldOrderId,
+      notes,
     } = body;
 
     if (!items || items.length === 0) {
@@ -40,27 +86,55 @@ export async function POST(request: Request) {
     const tax = (taxableAmount * taxRate) / 100;
     const total = taxableAmount + tax;
 
-    // 2. Generate Order Number
-    const orderCount = await Order.count({ where: { store_id } });
-    const orderNumber = `ORD-${String(orderCount + 1).padStart(5, '0')}`;
+    let order;
 
-    // 3. Create Order
-    const order = await Order.create(
-      {
-        organization_id,
-        store_id,
-        table_id: tableId || null,
-        cashier_id,
-        order_number: orderNumber,
-        order_type: orderType,
-        status: orderType === 'dine_in' ? 'preparing' : 'ready', // Immediately prep for kitchen/pickup
-        subtotal,
-        tax_amount: tax,
-        discount_amount: totalDiscount,
-        total_amount: total,
-      },
-      { transaction }
-    );
+    if (heldOrderId) {
+      // Complete an existing held order
+      order = await Order.findOne({ where: { id: heldOrderId, store_id } });
+      if (!order) {
+        return NextResponse.json({ error: 'Held order not found' }, { status: 404 });
+      }
+
+      // Update Order details
+      await order.update(
+        {
+          table_id: tableId || null,
+          cashier_id,
+          order_type: orderType,
+          status: orderType === 'dine_in' ? 'preparing' : 'ready',
+          subtotal,
+          tax_amount: tax,
+          discount_amount: totalDiscount,
+          total_amount: total,
+        },
+        { transaction }
+      );
+
+      // Clear old order items
+      await OrderItem.destroy({ where: { order_id: order.id }, transaction });
+    } else {
+      // 2. Generate Order Number
+      const orderCount = await Order.count({ where: { store_id } });
+      const orderNumber = `ORD-${String(orderCount + 1).padStart(5, '0')}`;
+
+      // 3. Create Order
+      order = await Order.create(
+        {
+          organization_id,
+          store_id,
+          table_id: tableId || null,
+          cashier_id,
+          order_number: orderNumber,
+          order_type: orderType,
+          status: status === 'on_hold' ? 'on_hold' : (orderType === 'dine_in' ? 'preparing' : 'ready'),
+          subtotal,
+          tax_amount: tax,
+          discount_amount: totalDiscount,
+          total_amount: total,
+        },
+        { transaction }
+      );
+    }
 
     // 4. Create Order Items
     const orderItemsPayload = items.map((item: any) => ({
@@ -71,41 +145,66 @@ export async function POST(request: Request) {
       quantity: item.quantity,
       unit_price: item.price,
       total_price: item.price * item.quantity,
-      notes: item.notes || null,
+      notes: item.notes || notes || null,
     }));
 
     await OrderItem.bulkCreate(orderItemsPayload, { transaction });
 
-    // 5. Create Payment
-    await Payment.create(
-      {
-        order_id: order.id,
-        payment_method: paymentMethod,
-        amount: total,
-        transaction_status: 'success',
-        transaction_reference: `POS-TX-${Date.now()}`,
-      },
-      { transaction }
-    );
-
-    // 6. Update Table Status if Dine-In
-    if (orderType === 'dine_in' && tableId) {
-      await RestaurantTable.update(
-        { status: 'occupied' },
-        { where: { id: tableId }, transaction }
+    // 5. Create Payment & Update Table Status (Only if checkout/completed, not on hold)
+    if (status !== 'on_hold') {
+      await Payment.create(
+        {
+          order_id: order.id,
+          payment_method: paymentMethod,
+          amount: total,
+          transaction_status: 'success',
+          transaction_reference: `POS-TX-${Date.now()}`,
+        },
+        { transaction }
       );
+
+      if (orderType === 'dine_in' && tableId) {
+        await RestaurantTable.update(
+          { status: 'available' },
+          { where: { id: tableId }, transaction }
+        );
+      }
+    } else {
+      // If dine_in table is selected and order is on_hold, ensure table remains occupied or reserved
+      if (orderType === 'dine_in' && tableId) {
+        const tableObj = await RestaurantTable.findByPk(tableId);
+        if (tableObj && tableObj.status === 'available') {
+          await RestaurantTable.update(
+            { status: 'occupied' },
+            { where: { id: tableId }, transaction }
+          );
+        }
+      }
     }
 
     await transaction.commit();
 
     return NextResponse.json({
       success: true,
-      message: 'Checkout processed successfully!',
+      message: status === 'on_hold' ? 'Order held successfully!' : 'Checkout processed successfully!',
       order: {
         id: order.id,
         orderNumber: order.order_number,
         total: order.total_amount,
+        subtotal: order.subtotal,
+        tax: order.tax_amount,
+        discount: order.discount_amount,
+        taxRate: taxRate,
         status: order.status,
+        Items: items.map((item: any) => ({
+          id: item.id || item.menuItemId,
+          quantity: item.quantity,
+          price: item.price,
+          unit_price: item.price,
+          MenuItem: {
+            name: item.name
+          }
+        }))
       },
     });
   } catch (error: any) {

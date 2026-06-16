@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { Customer } from '../../../../models';
+import { Customer, Order, Payment } from '../../../../models';
 
 export async function GET() {
   try {
@@ -10,8 +10,24 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { organization_id } = session.user as any;
+
     const customers = await Customer.findAll({
+      where: {
+        organization_id,
+      },
       order: [['created_at', 'DESC']],
+      include: [
+        {
+          model: Order,
+          include: [
+            {
+              model: Payment,
+              as: 'payments',
+            },
+          ],
+        },
+      ],
     });
 
     return NextResponse.json({ success: true, customers });
