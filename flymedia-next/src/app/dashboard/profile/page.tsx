@@ -9,7 +9,6 @@ import {
   Calendar,
   FileText,
   Users,
-  Wand2,
   Edit3,
   Save,
   X,
@@ -19,23 +18,41 @@ import {
   MapPin,
   CreditCard,
   AlignLeft,
-  Upload,
   Plus,
   Trash2,
   Clock,
-  Settings,
-  Clipboard,
   CheckCircle,
   AlertTriangle,
   Megaphone,
-  Percent,
   DollarSign,
   Gift,
-  Tag
+  Tag,
+  RefreshCw,
+  ShieldCheck,
+  UserX,
+  UserPlus,
 } from 'lucide-react';
 
 export default function BusinessProfilePage() {
-  const [activeTab, setActiveTab] = useState<'profile' | 'dashboard' | 'info' | 'reservations' | 'eod' | 'delegated' | 'setup' | 'campaigns'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'dashboard' | 'info' | 'reservations' | 'eod' | 'delegated' | 'campaigns'>('profile');
+
+  // Staff / Delegated Accounts State
+  const [staff, setStaff] = useState<any[]>([]);
+  const [staffLoading, setStaffLoading] = useState(false);
+  const [staffError, setStaffError] = useState<string | null>(null);
+  const [staffSuccess, setStaffSuccess] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [revokeLoadingId, setRevokeLoadingId] = useState<string | null>(null);
+  const [newStaff, setNewStaff] = useState({ name: '', email: '', phone: '', password: '', roleName: 'Cashier' });
+  // Edit staff state
+  const [editingStaff, setEditingStaff] = useState<any | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', password: '', roleName: '', status: 'active' });
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [seedStaffLoading, setSeedStaffLoading] = useState(false);
+  const [staffPage, setStaffPage] = useState(1);
+  const STAFF_PER_PAGE = 8;
+  const [availableRoles, setAvailableRoles] = useState<{ id: string; name: string; description: string | null }[]>([]);
   
   // State for data
   const [loading, setLoading] = useState(true);
@@ -131,10 +148,104 @@ export default function BusinessProfilePage() {
     }
   };
 
+  const fetchStaff = async () => {
+    try {
+      setStaffLoading(true);
+      setStaffError(null);
+      const [staffRes, rolesRes] = await Promise.all([
+        fetch('/api/dashboard/staff'),
+        fetch('/api/dashboard/roles'),
+      ]);
+      const staffData = await staffRes.json();
+      const rolesData = await rolesRes.json();
+      if (staffData.success) { setStaff(staffData.staff || []); setStaffPage(1); }
+      else setStaffError(staffData.error || 'Failed to load staff.');
+      if (rolesData.success) setAvailableRoles(rolesData.roles || []);
+    } catch { setStaffError('Network error.'); }
+    finally { setStaffLoading(false); }
+  };
+
+  const handleCreateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setCreateLoading(true); setStaffError(null); setStaffSuccess(null);
+      const res = await fetch('/api/dashboard/staff', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newStaff),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStaffSuccess(data.message); setShowCreateModal(false);
+        setNewStaff({ name: '', email: '', phone: '', password: '', roleName: 'Cashier' });
+        await fetchStaff();
+      } else { setStaffError(data.error || 'Failed to create account.'); }
+    } catch { setStaffError('Network error.'); }
+    finally { setCreateLoading(false); }
+  };
+
+  const handleRevokeStaff = async (userId: string, userName: string) => {
+    if (!window.confirm(`Remove "${userName}" from this restaurant? This cannot be undone.`)) return;
+    try {
+      setRevokeLoadingId(userId); setStaffError(null); setStaffSuccess(null);
+      const res = await fetch(`/api/dashboard/staff?id=${userId}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) { setStaffSuccess(data.message); setStaff(prev => prev.filter(u => u.id !== userId)); }
+      else { setStaffError(data.error || 'Failed to revoke access.'); }
+    } catch { setStaffError('Network error.'); }
+    finally { setRevokeLoadingId(null); }
+  };
+
+  const openEditModal = (member: any) => {
+    const memberRoles: any[] = member.Roles || [];
+    setEditingStaff(member);
+    setEditForm({
+      name: member.name || '',
+      email: member.email || '',
+      phone: member.phone || '',
+      password: '',
+      roleName: memberRoles[0]?.name || 'Cashier',
+      status: member.status || 'active',
+    });
+    setStaffError(null);
+    setStaffSuccess(null);
+  };
+
+  const handleUpdateStaff = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStaff) return;
+    try {
+      setUpdateLoading(true); setStaffError(null); setStaffSuccess(null);
+      const res = await fetch('/api/dashboard/staff', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingStaff.id, ...editForm }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStaffSuccess(data.message);
+        setEditingStaff(null);
+        await fetchStaff();
+      } else { setStaffError(data.error || 'Failed to update account.'); }
+    } catch { setStaffError('Network error.'); }
+    finally { setUpdateLoading(false); }
+  };
+
+  const handleSeedStaff = async () => {
+    try {
+      setSeedStaffLoading(true); setStaffError(null); setStaffSuccess(null);
+      const res = await fetch('/api/dashboard/staff/seed', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setStaffSuccess(`${data.message} Default password: Staff@123`);
+        await fetchStaff();
+      } else { setStaffError(data.error || 'Failed to seed staff.'); }
+    } catch { setStaffError('Network error.'); }
+    finally { setSeedStaffLoading(false); }
+  };
+
   useEffect(() => {
-    if (activeTab === 'campaigns') {
-      fetchCoupons();
-    }
+    if (activeTab === 'campaigns') fetchCoupons();
+    if (activeTab === 'delegated') fetchStaff();
   }, [activeTab]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -204,7 +315,6 @@ export default function BusinessProfilePage() {
     { id: 'reservations', name: 'Current Reservations', icon: Calendar },
     { id: 'eod', name: 'EoD Report.', icon: FileText },
     { id: 'delegated', name: 'Delegated Accounts', icon: Users },
-    { id: 'setup', name: 'Setup Wizard', icon: Wand2 },
     { id: 'campaigns', name: 'Campaigns', icon: Megaphone },
   ] as const;
 
@@ -927,111 +1037,251 @@ export default function BusinessProfilePage() {
 
             {/* Delegated Accounts Tab */}
             {activeTab === 'delegated' && (
-              <div className="p-6 md:p-8">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="text-lg font-black tracking-wide text-white">DELEGATED ACCOUNT ACCESS</h2>
-                    <p className="text-xs text-slate-400">Configure staff roles, access privileges, and terminal handlers.</p>
-                  </div>
-                  <button className="bg-slate-900 border border-[#1e293b] hover:bg-slate-800 text-slate-300 text-xs px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1">
-                    <Plus className="h-3.5 w-3.5 text-[#f59e0b]" /> Create Account
-                  </button>
-                </div>
-
-                <div className="bg-[#080b11]/60 border border-[#1e293b] rounded-2xl overflow-hidden">
-                  <div className="p-5 border-b border-[#1e293b] bg-slate-950/20 text-xs font-bold text-slate-400 uppercase tracking-wider grid grid-cols-4 gap-4">
-                    <span>Name</span>
-                    <span>Role / Privilege</span>
-                    <span>Phone</span>
-                    <span>Actions</span>
-                  </div>
-
-                  <div className="divide-y divide-[#1e293b]/60">
-                    <div className="p-5 grid grid-cols-4 gap-4 items-center text-xs">
-                      <div>
-                        <p className="font-bold text-white">John Doe</p>
-                        <p className="text-slate-500">owner@fordering.com</p>
-                      </div>
-                      <span className="font-bold text-[#f59e0b]">Restaurant Owner</span>
-                      <span className="font-mono text-slate-300">+1 555-0210</span>
-                      <span className="text-slate-500 italic">Global Owner</span>
-                    </div>
-
-                    <div className="p-5 grid grid-cols-4 gap-4 items-center text-xs">
-                      <div>
-                        <p className="font-bold text-white">Sarah Connor</p>
-                        <p className="text-slate-500">cashier@fordering.com</p>
-                      </div>
-                      <span className="font-semibold text-slate-300">Cashier Staff</span>
-                      <span className="font-mono text-slate-300">+1 555-0211</span>
-                      <button className="text-red-400 hover:text-red-300 font-bold transition text-left">
-                        Revoke Access
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Setup Wizard Tab */}
-            {activeTab === 'setup' && (
               <div className="p-6 md:p-8 space-y-6">
-                <div>
-                  <h2 className="text-lg font-black tracking-wide text-white mb-2">STORE CONFIGURATION WIZARD</h2>
-                  <p className="text-xs text-slate-400 font-medium uppercase tracking-wider text-[#f59e0b]">
-                    Status: 4/5 Steps Completed
-                  </p>
-                </div>
-
-                {/* Progress bar */}
-                <div className="w-full bg-[#080b11] h-3 rounded-full overflow-hidden border border-[#1e293b]">
-                  <div className="bg-gradient-to-r from-[#f59e0b] to-[#ea580c] h-full w-4/5"></div>
-                </div>
-
-                {/* Steps checklist */}
-                <div className="space-y-3 pt-2">
-                  <div className="flex items-center gap-3 bg-[#080b11]/50 border border-[#1e293b] p-4 rounded-xl">
-                    <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-white">1. Core Database Initialization</p>
-                      <p className="text-[10px] text-slate-400">Schema synchronized and roles populated.</p>
-                    </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1e293b]/60 pb-5">
+                  <div>
+                    <h2 className="text-lg font-black tracking-wide text-white flex items-center gap-2">
+                      <ShieldCheck className="h-5 w-5 text-[#f59e0b]" /> DELEGATED ACCOUNT ACCESS
+                    </h2>
+                    <p className="text-xs text-slate-400 mt-1">Manage POS cashier logins and store admin roles.</p>
                   </div>
-
-                  <div className="flex items-center gap-3 bg-[#080b11]/50 border border-[#1e293b] p-4 rounded-xl">
-                    <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-white">2. Profile Settings Customization</p>
-                      <p className="text-[10px] text-slate-400">Store location parameters and category saved.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 bg-[#080b11]/50 border border-[#1e293b] p-4 rounded-xl">
-                    <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-white">3. Table Manager Allocation</p>
-                      <p className="text-[10px] text-slate-400">Added restaurant tables mapping POS checkouts.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 bg-[#080b11]/50 border border-[#1e293b] p-4 rounded-xl">
-                    <CheckCircle className="h-5 w-5 text-emerald-400 shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-white">4. Menu Item Synchronization</p>
-                      <p className="text-[10px] text-slate-400">Added courses, variants and customer modifiers.</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3 bg-amber-500/5 border border-amber-500/20 p-4 rounded-xl">
-                    <Clock className="h-5 w-5 text-amber-500 shrink-0" />
-                    <div>
-                      <p className="text-xs font-bold text-white">5. Connect Custom Domain Routing</p>
-                      <p className="text-[10px] text-slate-400">Configure DNS parameters for tenant custom hostname.</p>
-                    </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={fetchStaff} disabled={staffLoading} className="rounded-xl border border-[#1e293b] bg-slate-900/40 p-2.5 text-slate-400 hover:text-white transition" title="Refresh">
+                      <RefreshCw className={`h-4 w-4 ${staffLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                    <button
+                      onClick={handleSeedStaff}
+                      disabled={seedStaffLoading}
+                      className="rounded-xl border border-slate-700 bg-slate-900 text-slate-300 hover:text-white font-bold text-xs px-4 py-2.5 transition flex items-center gap-1.5 disabled:opacity-50"
+                      title="Populate with demo restaurant staff"
+                    >
+                      {seedStaffLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Users className="h-4 w-4" />}
+                      Seed Demo Staff
+                    </button>
+                    <button onClick={() => { setShowCreateModal(true); setStaffError(null); setStaffSuccess(null); }} className="bg-[#f59e0b] hover:bg-amber-400 text-black font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow">
+                      <UserPlus className="h-4 w-4" /> Add Staff Account
+                    </button>
                   </div>
                 </div>
+
+                {staffSuccess && <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/10 px-4 py-3 text-xs font-bold text-emerald-400 flex items-center gap-2"><CheckCircle className="h-4 w-4" />{staffSuccess}</div>}
+                {staffError && <div className="rounded-xl border border-red-500/30 bg-red-950/10 px-4 py-3 text-xs font-bold text-red-400 flex items-center gap-2"><AlertTriangle className="h-4 w-4" />{staffError}</div>}
+
+                {staffLoading ? (
+                  <div className="py-16 text-center"><RefreshCw className="h-7 w-7 animate-spin text-[#f59e0b] mx-auto" /><p className="mt-3 text-xs text-slate-400 font-medium">Loading staff...</p></div>
+                ) : (
+                  <div className="bg-[#080b11]/60 border border-[#1e293b] rounded-2xl overflow-hidden">
+                    <div className="p-4 border-b border-[#1e293b] bg-slate-950/20 text-[10px] font-bold text-slate-400 uppercase tracking-wider grid grid-cols-6 gap-3">
+                      <span className="col-span-2">Staff Member</span><span>Role</span><span>Phone</span><span>Status</span><span className="text-right">Actions</span>
+                    </div>
+                    <div className="divide-y divide-[#1e293b]/60">
+                      {staff.length === 0 ? (
+                        <div className="py-14 text-center">
+                          <Users className="h-10 w-10 text-slate-700 stroke-[1.5] mx-auto mb-2" />
+                          <p className="text-sm font-extrabold text-white">No delegated staff accounts</p>
+                          <p className="text-xs text-slate-500 mt-1">Add a cashier or manager account to grant POS access.</p>
+                          <button onClick={() => setShowCreateModal(true)} className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#f59e0b] text-black font-bold px-4 py-2 text-xs hover:bg-amber-400 transition">
+                            <UserPlus className="h-3.5 w-3.5" /> Add First Account
+                          </button>
+                        </div>
+                      ) : (() => {
+                        const totalPages = Math.ceil(staff.length / STAFF_PER_PAGE);
+                        const paginated = staff.slice((staffPage - 1) * STAFF_PER_PAGE, staffPage * STAFF_PER_PAGE);
+                        return (
+                          <>
+                            {paginated.map((member) => {
+                              const memberRoles: any[] = member.Roles || [];
+                              const primaryRole = memberRoles[0]?.name || 'No Role';
+                              const isProtected = primaryRole === 'Super Admin' || primaryRole === 'Restaurant Owner';
+                              return (
+                                <div key={member.id} className="p-4 grid grid-cols-6 gap-3 items-center text-xs hover:bg-slate-950/20 transition">
+                                  <div className="col-span-2 flex items-center gap-3">
+                                    <div className="h-8 w-8 rounded-full bg-gradient-to-br from-slate-700 to-slate-800 border border-slate-700 flex items-center justify-center shrink-0">
+                                      <span className="text-xs font-black text-white">{member.name?.charAt(0).toUpperCase()}</span>
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-extrabold text-white truncate">{member.name}</p>
+                                      <p className="text-slate-500 text-[10px] truncate">{member.email}</p>
+                                    </div>
+                                  </div>
+                                  <span>
+                                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold border ${primaryRole === 'Super Admin' ? 'border-purple-500/30 bg-purple-950/20 text-purple-400' : primaryRole === 'Restaurant Owner' ? 'border-[#f59e0b]/30 bg-amber-950/20 text-[#f59e0b]' : 'border-slate-700 bg-slate-900 text-slate-300'}`}>
+                                      {primaryRole}
+                                    </span>
+                                  </span>
+                                  <span className="font-mono text-slate-400">{member.phone || '—'}</span>
+                                  <span>
+                                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-extrabold border ${member.status === 'active' ? 'border-emerald-500/30 bg-emerald-950/20 text-emerald-400' : 'border-red-500/30 bg-red-950/20 text-red-400'}`}>
+                                      {member.status === 'active' ? 'Active' : 'Inactive'}
+                                    </span>
+                                  </span>
+                                  <div className="flex justify-end gap-1.5">
+                                    {isProtected ? (
+                                      <span className="text-[10px] text-slate-600 italic">Protected</span>
+                                    ) : (
+                                      <>
+                                        <button onClick={() => openEditModal(member)} className="inline-flex items-center gap-1 rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-[10px] font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition" title="Edit Account">
+                                          <Edit3 className="h-3 w-3" /> Edit
+                                        </button>
+                                        <button onClick={() => handleRevokeStaff(member.id, member.name)} disabled={revokeLoadingId === member.id} className="inline-flex items-center gap-1 rounded-lg border border-red-900/30 bg-red-950/10 px-2.5 py-1.5 text-[10px] font-bold text-red-400 hover:bg-red-900/30 transition disabled:opacity-50" title="Delete Account">
+                                          {revokeLoadingId === member.id ? <RefreshCw className="h-3 w-3 animate-spin" /> : <UserX className="h-3 w-3" />} Delete
+                                        </button>
+                                      </>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+
+                            {/* Pagination Footer */}
+                            <div className="flex items-center justify-between px-4 py-3 border-t border-[#1e293b]/60 bg-slate-950/10">
+                              <p className="text-[10px] text-slate-500 font-medium">
+                                Showing <span className="text-slate-300 font-bold">{((staffPage - 1) * STAFF_PER_PAGE) + 1}–{Math.min(staffPage * STAFF_PER_PAGE, staff.length)}</span> of <span className="text-slate-300 font-bold">{staff.length}</span> staff
+                              </p>
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  onClick={() => setStaffPage(p => Math.max(1, p - 1))}
+                                  disabled={staffPage === 1}
+                                  className="px-3 py-1.5 rounded-lg border border-[#1e293b] text-[10px] font-bold text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                >
+                                  ← Prev
+                                </button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                  <button
+                                    key={page}
+                                    onClick={() => setStaffPage(page)}
+                                    className={`h-7 w-7 rounded-lg text-[10px] font-extrabold transition ${
+                                      page === staffPage
+                                        ? 'bg-[#f59e0b] text-black shadow'
+                                        : 'border border-[#1e293b] text-slate-400 hover:text-white hover:bg-slate-800'
+                                    }`}
+                                  >
+                                    {page}
+                                  </button>
+                                ))}
+                                <button
+                                  onClick={() => setStaffPage(p => Math.min(totalPages, p + 1))}
+                                  disabled={staffPage === totalPages}
+                                  className="px-3 py-1.5 rounded-lg border border-[#1e293b] text-[10px] font-bold text-slate-400 hover:text-white hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition"
+                                >
+                                  Next →
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                )}
+
+                {/* Edit Staff Modal */}
+                {editingStaff && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+                      <div className="flex justify-between items-center border-b border-slate-800 pb-3 mb-5">
+                        <div>
+                          <h3 className="text-base font-extrabold text-white flex items-center gap-2"><Edit3 className="h-4 w-4 text-[#f59e0b]" /> Edit Staff Account</h3>
+                          <p className="text-[10px] text-slate-500 mt-0.5">Editing: {editingStaff.name}</p>
+                        </div>
+                        <button onClick={() => setEditingStaff(null)} className="text-slate-400 hover:text-white"><X className="h-5 w-5" /></button>
+                      </div>
+                      {staffError && <div className="mb-4 rounded-xl border border-red-500/30 bg-red-950/15 p-3 text-xs font-semibold text-red-400 flex items-center gap-2"><AlertTriangle className="h-4 w-4 shrink-0" />{staffError}</div>}
+                      <form onSubmit={handleUpdateStaff} className="space-y-4 text-xs">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Full Name *</label>
+                            <input required value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition" />
+                          </div>
+                          <div>
+                            <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Phone</label>
+                            <input value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Email Address *</label>
+                          <input required type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition" />
+                        </div>
+                        <div>
+                          <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">New Password <span className="text-slate-600 normal-case font-normal">(leave blank to keep current)</span></label>
+                          <input type="password" minLength={6} value={editForm.password} onChange={e => setEditForm(p => ({ ...p, password: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition" placeholder="Min. 6 chars to change" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Role</label>
+                            <select value={editForm.roleName} onChange={e => setEditForm(p => ({ ...p, roleName: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition">
+                              <option value="Cashier">Cashier</option>
+                              <option value="Restaurant Owner">Restaurant Owner</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Status</label>
+                            <select value={editForm.status} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition">
+                              <option value="active">Active</option>
+                              <option value="inactive">Inactive</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                          <button type="button" onClick={() => setEditingStaff(null)} className="flex-1 py-3 border border-slate-800 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">Cancel</button>
+                          <button type="submit" disabled={updateLoading} className="flex-1 py-3 bg-[#f59e0b] text-black rounded-xl text-xs font-extrabold hover:bg-amber-400 transition flex items-center justify-center gap-1.5 disabled:opacity-50">
+                            {updateLoading && <RefreshCw className="h-3.5 w-3.5 animate-spin" />} Save Changes
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
+
+                {showCreateModal && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
+                    <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl">
+                      <div className="flex justify-between items-center border-b border-slate-800 pb-3 mb-5">
+                        <h3 className="text-base font-extrabold text-white flex items-center gap-2"><UserPlus className="h-4 w-4 text-[#f59e0b]" /> Create Staff Account</h3>
+                        <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-white"><X className="h-5 w-5" /></button>
+                      </div>
+                      {staffError && <div className="mb-4 rounded-xl border border-red-500/30 bg-red-950/15 p-3 text-xs font-semibold text-red-400 flex items-center gap-2"><AlertTriangle className="h-4 w-4 shrink-0" />{staffError}</div>}
+                      <form onSubmit={handleCreateStaff} className="space-y-4 text-xs">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Full Name *</label>
+                            <input required value={newStaff.name} onChange={e => setNewStaff(p => ({ ...p, name: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition" placeholder="Sarah Connor" />
+                          </div>
+                          <div>
+                            <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Phone</label>
+                            <input value={newStaff.phone} onChange={e => setNewStaff(p => ({ ...p, phone: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition" placeholder="+1 555-0211" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Email Address *</label>
+                          <input required type="email" value={newStaff.email} onChange={e => setNewStaff(p => ({ ...p, email: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition" placeholder="staff@restaurant.com" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Password *</label>
+                            <input required type="password" minLength={6} value={newStaff.password} onChange={e => setNewStaff(p => ({ ...p, password: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition" placeholder="Min. 6 chars" />
+                          </div>
+                          <div>
+                            <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Role</label>
+                            <select value={newStaff.roleName} onChange={e => setNewStaff(p => ({ ...p, roleName: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition">
+                              <option value="Cashier">Cashier</option>
+                              <option value="Restaurant Owner">Restaurant Owner</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex gap-3 pt-2">
+                          <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-slate-800 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">Cancel</button>
+                          <button type="submit" disabled={createLoading} className="flex-1 py-3 bg-[#f59e0b] text-black rounded-xl text-xs font-extrabold hover:bg-amber-400 transition flex items-center justify-center gap-1.5 disabled:opacity-50">
+                            {createLoading && <RefreshCw className="h-3.5 w-3.5 animate-spin" />} Create Account
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
 
             {/* Campaigns Tab */}
             {activeTab === 'campaigns' && (

@@ -16,6 +16,7 @@ import {
   Building,
   Table,
   History,
+  BarChart3,
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -46,6 +47,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const navItems = [
     { name: 'Overview', href: '/dashboard', icon: TrendingUp },
+    { name: 'Sales & Bookings', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Order History', href: '/dashboard/orders', icon: History },
     { name: 'Business Profile', href: '/dashboard/profile', icon: Building },
     { name: 'Menu Manager', href: '/dashboard/menu', icon: Utensils },

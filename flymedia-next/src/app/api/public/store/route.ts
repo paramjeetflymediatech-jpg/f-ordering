@@ -19,9 +19,14 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
       }
       
-      store = await Store.findOne({ where: { organization_id: org.id } });
+      store = await Store.findOne({
+        where: { organization_id: org.id },
+        include: [{ model: Organization, attributes: ['name', 'logo'] }]
+      });
     } else {
-      store = await Store.findByPk(storeId!);
+      store = await Store.findByPk(storeId!, {
+        include: [{ model: Organization, attributes: ['name', 'logo'] }]
+      });
     }
 
     if (!store) {
