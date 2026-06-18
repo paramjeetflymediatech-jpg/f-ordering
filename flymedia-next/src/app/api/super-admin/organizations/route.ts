@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next';
 import bcrypt from 'bcryptjs';
 import { authOptions } from '../../../../lib/auth';
 import { sequelize, Organization, Store, User, Role } from '../../../../models';
+import { provisionTenantDatabase } from '../../../../lib/tenant-db';
 
 // Helper to check if caller is a Super Admin
 async function checkSuperAdmin() {
@@ -144,9 +145,14 @@ export async function POST(request: Request) {
 
     await transaction.commit();
 
+    // Auto-provision isolated tenant database in background (non-blocking)
+    provisionTenantDatabase(organization.slug).catch((err) =>
+      console.error('[SuperAdmin] Tenant DB provision failed for', organization.slug, err)
+    );
+
     return NextResponse.json({
       success: true,
-      message: 'New organization and owner provisioned successfully!',
+      message: 'New organization and owner provisioned successfully! Tenant database is being initialized.',
       organization,
     });
   } catch (error: any) {

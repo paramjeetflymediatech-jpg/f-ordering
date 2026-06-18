@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { useSession, signOut } from 'next-auth/react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   TrendingUp,
@@ -17,7 +17,79 @@ import {
   Table,
   History,
   BarChart3,
+  CreditCard,
+  Layers,
 } from 'lucide-react';
+
+function NavigationItems({
+  isSuperAdmin,
+  pathname,
+  setMobileOpen,
+}: {
+  isSuperAdmin: boolean;
+  pathname: string;
+  setMobileOpen?: (open: boolean) => void;
+}) {
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'organizations';
+
+  const navItems = isSuperAdmin
+    ? [
+        { name: 'Organizations', href: '/dashboard/super-admin?tab=organizations', icon: Building, tab: 'organizations' },
+        { name: 'Core Services', href: '/dashboard/super-admin?tab=services', icon: Layers, tab: 'services' },
+        { name: 'Package Tiers', href: '/dashboard/super-admin?tab=packages', icon: Tag, tab: 'packages' },
+        { name: 'Revenue', href: '/dashboard/super-admin?tab=revenue', icon: BarChart3, tab: 'revenue' },
+        { name: 'Payment History', href: '/dashboard/super-admin?tab=payments', icon: CreditCard, tab: 'payments' },
+      ]
+    : [
+        { name: 'Overview', href: '/dashboard', icon: TrendingUp },
+        { name: 'Sales & Bookings', href: '/dashboard/analytics', icon: BarChart3 },
+        { name: 'Order History', href: '/dashboard/orders', icon: History },
+        { name: 'Business Profile', href: '/dashboard/profile', icon: Building },
+        { name: 'Menu Manager', href: '/dashboard/menu', icon: Utensils },
+        { name: 'Table Manager', href: '/dashboard/tables', icon: Table },
+        { name: 'Offers & Coupons', href: '/dashboard/offers', icon: Tag },
+        { name: 'Customer Database', href: '/dashboard/customers', icon: Users },
+        { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
+      ];
+
+  return (
+    <>
+      {navItems.map((item) => {
+        const isActive = isSuperAdmin
+          ? pathname === '/dashboard/super-admin' && activeTab === (item as any).tab
+          : pathname === item.href;
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.name}
+            href={item.href}
+            onClick={() => setMobileOpen?.(false)}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition duration-150 ${
+              isActive
+                ? 'bg-[#1a2336] text-[#f59e0b] border-l-2 border-[#f59e0b] shadow-md shadow-[#f59e0b]/5'
+                : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+            }`}
+          >
+            <Icon className="h-4.5 w-4.5" />
+            {item.name}
+          </Link>
+        );
+      })}
+
+      {!isSuperAdmin && (
+        <Link
+          href="/pos"
+          target="_blank"
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-900/50 hover:text-white transition duration-150"
+        >
+          <MonitorPlay className="h-4.5 w-4.5 text-emerald-400" />
+          Launch POS Screen
+        </Link>
+      )}
+    </>
+  );
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
@@ -44,21 +116,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const isSuperAdmin = (session?.user as any)?.roles?.includes('Super Admin');
-
-  const navItems = [
-    { name: 'Overview', href: '/dashboard', icon: TrendingUp },
-    { name: 'Sales & Bookings', href: '/dashboard/analytics', icon: BarChart3 },
-    { name: 'Order History', href: '/dashboard/orders', icon: History },
-    { name: 'Business Profile', href: '/dashboard/profile', icon: Building },
-    { name: 'Menu Manager', href: '/dashboard/menu', icon: Utensils },
-    { name: 'Table Manager', href: '/dashboard/tables', icon: Table },
-    { name: 'Offers & Coupons', href: '/dashboard/offers', icon: Tag },
-    { name: 'Customer Database', href: '/dashboard/customers', icon: Users },
-  ];
-
-  if (isSuperAdmin) {
-    navItems.push({ name: 'Super Admin Panel', href: '/dashboard/super-admin', icon: Building });
-  }
 
   return (
     <div className="flex min-h-screen bg-[#080b11] text-slate-100 font-sans">
@@ -98,34 +155,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           {/* Navigation Links list */}
           <nav className="p-4 space-y-1.5">
-            {navItems.map((item) => {
-              const isActive = pathname === item.href;
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition duration-150 ${
-                    isActive
-                      ? 'bg-[#1a2336] text-[#f59e0b] border-l-2 border-[#f59e0b] shadow-md shadow-[#f59e0b]/5'
-                      : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
-                  }`}
-                >
-                  <Icon className="h-4.5 w-4.5" />
-                  {item.name}
-                </Link>
-              );
-            })}
-
-            {/* Launch POS screen trigger */}
-            <Link
-              href="/pos"
-              target="_blank"
-              className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-900/50 hover:text-white transition duration-150"
-            >
-              <MonitorPlay className="h-4.5 w-4.5 text-emerald-400" />
-              Launch POS Screen
-            </Link>
+            <Suspense fallback={<div className="h-10 w-full animate-pulse bg-slate-800/30 rounded-xl" />}>
+              <NavigationItems isSuperAdmin={isSuperAdmin} pathname={pathname} />
+            </Suspense>
           </nav>
         </div>
 
@@ -185,33 +217,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
 
               <nav className="p-4 space-y-1.5">
-                {navItems.map((item) => {
-                  const isActive = pathname === item.href;
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.name}
-                      href={item.href}
-                      onClick={() => setMobileOpen(false)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition ${
-                        isActive
-                          ? 'bg-[#1a2336] text-[#f59e0b] border-l-2 border-[#f59e0b]'
-                          : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
-                      }`}
-                    >
-                      <Icon className="h-4.5 w-4.5" />
-                      {item.name}
-                    </Link>
-                  );
-                })}
-                <Link
-                  href="/pos"
-                  target="_blank"
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-900/50 hover:text-white transition"
-                >
-                  <MonitorPlay className="h-4.5 w-4.5 text-emerald-400" />
-                  Launch POS Screen
-                </Link>
+                <Suspense fallback={<div className="h-10 w-full animate-pulse bg-slate-800/30 rounded-xl" />}>
+                  <NavigationItems isSuperAdmin={isSuperAdmin} pathname={pathname} setMobileOpen={setMobileOpen} />
+                </Suspense>
               </nav>
             </div>
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { sequelize, Organization, Store, User, Role } from '../../../../models';
+import { provisionTenantDatabase } from '../../../../lib/tenant-db';
 
 export async function POST(request: Request) {
   const transaction = await sequelize.transaction();
@@ -91,9 +92,14 @@ export async function POST(request: Request) {
 
     await transaction.commit();
 
+    // Auto-provision isolated tenant database (non-blocking)
+    provisionTenantDatabase(organization.slug).catch((err) =>
+      console.error('[Register] Tenant DB provision failed for', organization.slug, err)
+    );
+
     return NextResponse.json({
       success: true,
-      message: 'Tenant registration and onboarding successful!',
+      message: 'Tenant registration and onboarding successful! Your dashboard is being initialized.',
       data: {
         organizationId: organization.id,
         storeId: store.id,
