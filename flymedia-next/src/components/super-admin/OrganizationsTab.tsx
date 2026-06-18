@@ -226,7 +226,7 @@ export default function OrganizationsTab() {
       </div>
 
       {/* Metrics Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { name: 'Total Restaurants', val: organizations.length, icon: Building, color: 'text-orange-500 bg-orange-500/10' },
           { name: 'Total Branches', val: organizations.reduce((acc, curr) => acc + (curr.Stores?.length || 0), 0), icon: StoreIcon, color: 'text-sky-400 bg-sky-400/10' },

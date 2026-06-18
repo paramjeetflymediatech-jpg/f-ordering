@@ -216,7 +216,7 @@ export default function ServicesTab() {
             <p className="font-semibold text-sm">No services listed yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
             {paginatedServices.map((srv) => (
               <div key={srv.id} className="bg-slate-950/40 rounded-2xl border border-slate-800 p-5 flex flex-col justify-between hover:border-slate-700 transition">
                 <div>

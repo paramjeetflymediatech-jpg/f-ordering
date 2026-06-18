@@ -118,7 +118,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isSuperAdmin = (session?.user as any)?.roles?.includes('Super Admin');
 
   return (
-    <div className="flex min-h-screen bg-[#080b11] text-slate-100 font-sans">
+    <div className="flex min-h-screen bg-[#080b11] text-slate-100 font-sans px-4 sm:px-6">
       
       {/* 1. SIDEBAR (DESKTOP) */}
       <aside className="hidden md:flex w-64 flex-col bg-[#0c101b] border-r border-[#1e293b]/60 shrink-0 justify-between">

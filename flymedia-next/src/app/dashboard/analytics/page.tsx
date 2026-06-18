@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
 import {
   TrendingUp,
@@ -23,6 +23,7 @@ import {
   User,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Pagination from '@/components/super-admin/Pagination';
 
 interface RevenueItem {
   date?: string;
@@ -83,6 +84,24 @@ export default function AnalyticsDashboardPage() {
   // Search state for reservations
   const [reservationSearch, setReservationSearch] = useState('');
   const [reservationStatusFilter, setReservationStatusFilter] = useState<string>('all');
+
+  // Pagination State for Periodic Breakdown
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Reset page number on filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [timeframe, paymentFilter]);
+
+  // Pagination State for Bookings Registry
+  const [bookingPage, setBookingPage] = useState(1);
+  const [bookingItemsPerPage, setBookingItemsPerPage] = useState(5);
+
+  // Reset bookings page number on search/status filter changes
+  useEffect(() => {
+    setBookingPage(1);
+  }, [reservationSearch, reservationStatusFilter]);
 
   // Data States
   const [revenue, setRevenue] = useState<{
@@ -219,7 +238,13 @@ export default function AnalyticsDashboardPage() {
   const totalPeriodCash = activeData.reduce((sum, item) => sum + item.cash, 0);
   const totalPeriodOnline = activeData.reduce((sum, item) => sum + item.online, 0);
   const totalPeriodTransactions = activeData.reduce((sum, item) => sum + item.count, 0);
-
+  // Stats pagination
+  const reversedData = useMemo(() => [...activeData].reverse(), [activeData]);
+  const statsTotalPages = Math.max(1, Math.ceil(reversedData.length / itemsPerPage));
+  const paginatedStats = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return reversedData.slice(start, start + itemsPerPage);
+  }, [reversedData, currentPage, itemsPerPage]);
   // Filter reservations
   const filteredReservations = reservations.filter((res) => {
     const customerName = res.customer?.name.toLowerCase() || '';
@@ -234,6 +259,12 @@ export default function AnalyticsDashboardPage() {
 
     return matchesSearch && matchesStatus;
   });
+
+  const bookingTotalPages = Math.max(1, Math.ceil(filteredReservations.length / bookingItemsPerPage));
+  const paginatedReservations = useMemo(() => {
+    const start = (bookingPage - 1) * bookingItemsPerPage;
+    return filteredReservations.slice(start, start + bookingItemsPerPage);
+  }, [filteredReservations, bookingPage, bookingItemsPerPage]);
 
   // Check if database has zero data
   const isDatabaseEmpty =
@@ -767,21 +798,18 @@ export default function AnalyticsDashboardPage() {
                     </thead>
                     <tbody className="divide-y divide-slate-800/40">
                       {activeData.length > 0 ? (
-                        activeData
-                          .slice()
-                          .reverse()
-                          .map((row, idx) => (
-                            <tr
-                              key={idx}
-                              className="hover:bg-slate-900/20 transition-all font-semibold"
-                            >
-                              <td className="py-3 px-4 text-white font-extrabold">{row.label}</td>
-                              <td className="py-3 px-4 text-slate-400">${row.cash.toFixed(2)}</td>
-                              <td className="py-3 px-4 text-slate-400">${row.online.toFixed(2)}</td>
-                              <td className="py-3 px-4 text-orange-400 font-extrabold">${row.value.toFixed(2)}</td>
-                              <td className="py-3 px-4 text-slate-500">{row.count} Orders</td>
-                            </tr>
-                          ))
+                        paginatedStats.map((row, idx) => (
+                          <tr
+                            key={idx}
+                            className="hover:bg-slate-900/20 transition-all font-semibold"
+                          >
+                            <td className="py-3 px-4 text-white font-extrabold">{row.label}</td>
+                            <td className="py-3 px-4 text-slate-400">${row.cash.toFixed(2)}</td>
+                            <td className="py-3 px-4 text-slate-400">${row.online.toFixed(2)}</td>
+                            <td className="py-3 px-4 text-orange-400 font-extrabold">${row.value.toFixed(2)}</td>
+                            <td className="py-3 px-4 text-slate-500">{row.count} Orders</td>
+                          </tr>
+                        ))
                       ) : (
                         <tr>
                           <td colSpan={5} className="py-8 text-center text-slate-500">
@@ -789,10 +817,20 @@ export default function AnalyticsDashboardPage() {
                           </td>
                         </tr>
                       )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+                </tbody>
+              </table>
+            </div>
+            {/* Pagination for stats */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={statsTotalPages}
+              totalItems={reversedData.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+              itemLabel="periods"
+            />
+          </div>
             </motion.div>
           )}
 
@@ -974,8 +1012,8 @@ export default function AnalyticsDashboardPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/40">
-                      {filteredReservations.length > 0 ? (
-                        filteredReservations.map((res) => {
+                      {paginatedReservations.length > 0 ? (
+                        paginatedReservations.map((res) => {
                           const dateObj = new Date(res.reservation_time);
                           const formattedDate = dateObj.toLocaleDateString('en-US', {
                             weekday: 'short',
@@ -1078,6 +1116,16 @@ export default function AnalyticsDashboardPage() {
                     </tbody>
                   </table>
                 </div>
+                {/* Pagination for Bookings registry */}
+                <Pagination
+                  currentPage={bookingPage}
+                  totalPages={bookingTotalPages}
+                  totalItems={filteredReservations.length}
+                  itemsPerPage={bookingItemsPerPage}
+                  onPageChange={setBookingPage}
+                  onItemsPerPageChange={setBookingItemsPerPage}
+                  itemLabel="bookings"
+                />
               </div>
             </motion.div>
           )}
