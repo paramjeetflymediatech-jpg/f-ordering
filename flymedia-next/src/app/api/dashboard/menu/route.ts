@@ -12,42 +12,112 @@ export async function POST(request: Request) {
 
     const { organization_id, store_id } = session.user as any;
     const body = await request.json();
-    const { type, name, categoryId, description, price, imageUrl } = body;
+    const { 
+      type, 
+      name, 
+      categoryId, 
+      description, 
+      price, 
+      imageUrl,
+      parentId,
+      printerCategory,
+      // For multi-level creation
+      categoryName,
+      subcategoryName,
+      // Item additions
+      barcode,
+      sku,
+      stockCount,
+      unit
+    } = body;
 
     if (type === 'category') {
       if (!name) {
-        return NextResponse.json({ error: 'Category name is required' }, { status: 400 });
+        return NextResponse.json({ error: 'Category/Menu name is required' }, { status: 400 });
       }
       
-      const count = await MenuCategory.count({ where: { store_id } });
-      const category = await MenuCategory.create({
+      const count = await MenuCategory.count({ where: { store_id, parent_id: parentId || null } });
+      
+      // If we are creating a 3-level catalog details layout in one go:
+      const mainCategory = await MenuCategory.create({
         organization_id,
         store_id,
         name,
         sort_order: count + 1,
         is_active: true,
+        parent_id: parentId || null,
+        printer_category: printerCategory || null,
       });
 
-      return NextResponse.json({ success: true, category });
+      let level1Category = null;
+      let level2Category = null;
+
+      if (categoryName && categoryName.trim()) {
+        level1Category = await MenuCategory.create({
+          organization_id,
+          store_id,
+          name: categoryName.trim(),
+          sort_order: 1,
+          is_active: true,
+          parent_id: mainCategory.id,
+          printer_category: printerCategory || null,
+        });
+
+        if (subcategoryName && subcategoryName.trim()) {
+          level2Category = await MenuCategory.create({
+            organization_id,
+            store_id,
+            name: subcategoryName.trim(),
+            sort_order: 1,
+            is_active: true,
+            parent_id: level1Category.id,
+            printer_category: printerCategory || null,
+          });
+        }
+      }
+
+      return NextResponse.json({ 
+        success: true, 
+        category: mainCategory,
+        level1Category,
+        level2Category
+      });
     } 
     
     if (type === 'item') {
-      if (!name || !categoryId || price === undefined) {
-        return NextResponse.json({ error: 'Name, Category, and Price are required' }, { status: 400 });
+      if (!name || price === undefined) {
+        return NextResponse.json({ error: 'Name and Price are required' }, { status: 400 });
       }
 
       const item = await MenuItem.create({
         organization_id,
         store_id,
-        category_id: categoryId,
+        category_id: categoryId || 'uncategorized', // Allow uncategorized if categoryId is empty
         name,
         description: description || '',
         price: parseFloat(price),
         image_url: imageUrl || null,
         is_available: true,
+        barcode: barcode || null,
+        sku: sku || null,
+        stock_count: stockCount !== undefined ? parseInt(stockCount) : 0,
+        unit: unit || 'pcs',
       });
 
       return NextResponse.json({ success: true, item });
+    }
+
+    if (type === 'sort_categories') {
+      const { orders } = body; // Array of { id: string, sort_order: number }
+      if (!orders || !Array.isArray(orders)) {
+        return NextResponse.json({ error: 'Orders array is required' }, { status: 400 });
+      }
+
+      for (const item of orders) {
+        await MenuCategory.update({ sort_order: item.sort_order }, { where: { id: item.id } });
+      }
+
+      return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ error: 'Invalid operation type' }, { status: 400 });
@@ -65,14 +135,33 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { type, id, name, description, price, imageUrl, isAvailable } = body;
+    const { 
+      type, 
+      id, 
+      name, 
+      description, 
+      price, 
+      imageUrl, 
+      isAvailable, 
+      parentId, 
+      printerCategory,
+      barcode,
+      sku,
+      stockCount,
+      unit,
+      categoryId
+    } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
     if (type === 'category') {
-      await MenuCategory.update({ name }, { where: { id } });
+      await MenuCategory.update({ 
+        name,
+        parent_id: parentId !== undefined ? parentId : undefined,
+        printer_category: printerCategory !== undefined ? printerCategory : undefined,
+      }, { where: { id } });
       return NextResponse.json({ success: true });
     }
 
@@ -84,6 +173,11 @@ export async function PUT(request: Request) {
           price: price !== undefined ? parseFloat(price) : undefined,
           image_url: imageUrl,
           is_available: isAvailable,
+          barcode: barcode !== undefined ? barcode : undefined,
+          sku: sku !== undefined ? sku : undefined,
+          stock_count: stockCount !== undefined ? parseInt(stockCount) : undefined,
+          unit: unit !== undefined ? unit : undefined,
+          category_id: categoryId !== undefined ? categoryId : undefined,
         },
         { where: { id } }
       );

@@ -17,6 +17,8 @@ import { Reservation } from './Reservation';
 import { Coupon } from './Coupon';
 import { Service } from './Service';
 import { Package } from './Package';
+import { DeliveryZone } from './DeliveryZone';
+import { DeliveryRule } from './DeliveryRule';
 
 // Define Associations
 
@@ -46,6 +48,10 @@ if (!User.associations || Object.keys(User.associations).length === 0) {
 
   MenuCategory.hasMany(MenuItem, { foreignKey: 'category_id', onDelete: 'CASCADE' });
   MenuItem.belongsTo(MenuCategory, { foreignKey: 'category_id' });
+
+  // Recursive category hierarchy
+  MenuCategory.hasMany(MenuCategory, { as: 'subcategories', foreignKey: 'parent_id', onDelete: 'CASCADE', constraints: false });
+  MenuCategory.belongsTo(MenuCategory, { as: 'parent', foreignKey: 'parent_id', constraints: false });
 
   // Menu Items, Variants, and Addons
   MenuItem.hasMany(MenuVariant, { foreignKey: 'menu_item_id', as: 'variants', onDelete: 'CASCADE' });
@@ -102,6 +108,12 @@ if (!User.associations || Object.keys(User.associations).length === 0) {
   Service.hasMany(Package, { foreignKey: 'service_id', as: 'packages', onDelete: 'SET NULL' });
   Package.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
 
+  // Delivery Zones & Rules
+  Store.hasMany(DeliveryZone, { foreignKey: 'store_id', onDelete: 'CASCADE' });
+  DeliveryZone.belongsTo(Store, { foreignKey: 'store_id' });
+  DeliveryZone.hasMany(DeliveryRule, { foreignKey: 'delivery_zone_id', as: 'rules', onDelete: 'CASCADE' });
+  DeliveryRule.belongsTo(DeliveryZone, { foreignKey: 'delivery_zone_id' });
+
   (global as any).associationsLoaded = true;
 }
 
@@ -125,4 +137,6 @@ export {
   Coupon,
   Service,
   Package,
+  DeliveryZone,
+  DeliveryRule,
 };

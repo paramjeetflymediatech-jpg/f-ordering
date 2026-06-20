@@ -30,6 +30,8 @@ import { Payment }         from '../models/Payment';
 import { Customer }        from '../models/Customer';
 import { Reservation }     from '../models/Reservation';
 import { Coupon }          from '../models/Coupon';
+import { DeliveryZone }    from '../models/DeliveryZone';
+import { DeliveryRule }    from '../models/DeliveryRule';
 
 // ─── Connection-level config ─────────────────────────────────────────────────
 const DB_HOST = process.env.DB_HOST || '127.0.0.1';
@@ -129,6 +131,8 @@ function makeTenantModels(seq: Sequelize) {
   const TCustomer    = rebind(Customer,        'Customer',        'customers');
   const TReservation = rebind(Reservation,     'Reservation',     'reservations');
   const TCoupon      = rebind(Coupon,          'Coupon',          'coupons');
+  const TDeliveryZone = rebind(DeliveryZone,   'DeliveryZone',    'delivery_zones');
+  const TDeliveryRule = rebind(DeliveryRule,   'DeliveryRule',    'delivery_rules');
 
   // ── Associations ──────────────────────────────────────────────────────────
 
@@ -180,6 +184,12 @@ function makeTenantModels(seq: Sequelize) {
   (TStore as any).hasMany(TCoupon, { foreignKey: 'store_id', onDelete: 'CASCADE' });
   (TCoupon as any).belongsTo(TStore, { foreignKey: 'store_id' });
 
+  // Delivery Zones & Rules
+  (TStore as any).hasMany(TDeliveryZone, { foreignKey: 'store_id', onDelete: 'CASCADE' });
+  (TDeliveryZone as any).belongsTo(TStore, { foreignKey: 'store_id' });
+  (TDeliveryZone as any).hasMany(TDeliveryRule, { foreignKey: 'delivery_zone_id', as: 'rules', onDelete: 'CASCADE' });
+  (TDeliveryRule as any).belongsTo(TDeliveryZone, { foreignKey: 'delivery_zone_id' });
+
   return {
     sequelize: seq,
     User: TUser,
@@ -197,6 +207,8 @@ function makeTenantModels(seq: Sequelize) {
     Customer: TCustomer,
     Reservation: TReservation,
     Coupon: TCoupon,
+    DeliveryZone: TDeliveryZone,
+    DeliveryRule: TDeliveryRule,
   };
 }
 
@@ -219,6 +231,8 @@ export interface TenantModels {
   Customer: any;
   Reservation: any;
   Coupon: any;
+  DeliveryZone: any;
+  DeliveryRule: any;
 }
 
 /**

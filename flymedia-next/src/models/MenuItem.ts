@@ -12,6 +12,10 @@ export class MenuItem extends Model {
   declare image_url: string | null;
   declare is_available: boolean;
   declare is_combo: boolean;
+  declare barcode: string | null;
+  declare sku: string | null;
+  declare stock_count: number;
+  declare unit: string;
 }
 
 MenuItem.init(
@@ -58,6 +62,24 @@ MenuItem.init(
     is_combo: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
+      allowNull: false,
+    },
+    barcode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    sku: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    stock_count: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+      allowNull: false,
+    },
+    unit: {
+      type: DataTypes.STRING,
+      defaultValue: 'pcs',
       allowNull: false,
     },
   },

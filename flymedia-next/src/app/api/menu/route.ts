@@ -22,7 +22,6 @@ export async function GET() {
       include: [
         {
           model: MenuItem,
-          where: { is_available: true },
           required: false,
           include: [
             { model: MenuVariant, as: 'variants' },

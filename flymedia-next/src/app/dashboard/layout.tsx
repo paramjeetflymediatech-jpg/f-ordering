@@ -19,6 +19,10 @@ import {
   BarChart3,
   CreditCard,
   Layers,
+  Calendar,
+  Percent,
+  Gift,
+  Truck,
 } from 'lucide-react';
 
 function NavigationItems({
@@ -46,11 +50,17 @@ function NavigationItems({
         { name: 'Sales & Bookings', href: '/dashboard/analytics', icon: BarChart3 },
         { name: 'Order History', href: '/dashboard/orders', icon: History },
         { name: 'Business Profile', href: '/dashboard/profile', icon: Building },
-        { name: 'Menu Manager', href: '/dashboard/menu', icon: Utensils },
+        { name: 'Manage Menu', href: '/dashboard/menu', icon: Utensils },
+        { name: 'Manage Item', href: '/dashboard/inventory', icon: Layers },
+        { name: 'Suppliers & POs', href: '/dashboard/suppliers', icon: Truck },
         { name: 'Table Manager', href: '/dashboard/tables', icon: Table },
+        { name: 'Reservations', href: '/dashboard/reservations', icon: Calendar },
         { name: 'Offers & Coupons', href: '/dashboard/offers', icon: Tag },
         { name: 'Customer Database', href: '/dashboard/customers', icon: Users },
+        { name: 'Loyalty Rewards', href: '/dashboard/loyalty', icon: Gift },
+        { name: 'Advance Setup', href: '/dashboard/operations', icon: MonitorPlay },
         { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
+        { name: 'Taxes & Fees', href: '/dashboard/taxes', icon: Percent },
       ];
 
   return (
@@ -121,11 +131,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen bg-[#080b11] text-slate-100 font-sans px-4 sm:px-6">
       
       {/* 1. SIDEBAR (DESKTOP) */}
-      <aside className="hidden md:flex w-64 flex-col bg-[#0c101b] border-r border-[#1e293b]/60 shrink-0 justify-between">
+      <aside className="hidden md:flex w-64 flex-col h-screen max-h-screen sticky top-0 bg-[#0c101b] border-r border-[#1e293b]/60 shrink-0 justify-between self-start">
         
-        <div>
+        <div className="flex flex-col flex-1 h-0 overflow-hidden">
           {/* Logo block */}
-          <div className="h-16 flex items-center gap-3 px-6 border-b border-[#1e293b]/60 bg-[#0c101b] cursor-pointer">
+          <div className="h-16 flex items-center gap-3 px-6 border-b border-[#1e293b]/60 bg-[#0c101b] cursor-pointer shrink-0">
             <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#ea580c] shadow-md shadow-[#f59e0b]/10">
               <span className="text-sm font-black text-white italic">T</span>
               <span className="absolute -bottom-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
@@ -136,7 +146,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* User Block info */}
-          <div className="p-4 border-b border-[#1e293b]/60 bg-slate-950/20 flex items-center gap-3">
+          <div className="p-4 border-b border-[#1e293b]/60 bg-slate-950/20 flex items-center gap-3 shrink-0">
             <div className="h-9 w-9 overflow-hidden rounded-full border border-slate-700 bg-slate-800 shrink-0">
               <img
                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100"
@@ -154,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           {/* Navigation Links list */}
-          <nav className="p-4 space-y-1.5">
+          <nav className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar">
             <Suspense fallback={<div className="h-10 w-full animate-pulse bg-slate-800/30 rounded-xl" />}>
               <NavigationItems isSuperAdmin={isSuperAdmin} pathname={pathname} />
             </Suspense>
@@ -162,7 +172,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Footer Logout action */}
-        <div className="p-4 border-t border-[#1e293b]/60">
+        <div className="p-4 border-t border-[#1e293b]/60 shrink-0">
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400 hover:bg-red-950/45 transition duration-150"
@@ -204,9 +214,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* MOBILE DRAWER OVERLAY */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-64 bg-[#0c101b] border-r border-[#1e293b]/60 flex flex-col justify-between">
-            <div>
-              <div className="h-16 flex items-center justify-between px-6 border-b border-[#1e293b]/60 bg-[#0c101b]">
+          <div className="w-64 bg-[#0c101b] border-r border-[#1e293b]/60 flex flex-col h-full justify-between">
+            <div className="flex flex-col flex-1 h-0 overflow-hidden">
+              <div className="h-16 flex items-center justify-between px-6 border-b border-[#1e293b]/60 bg-[#0c101b] shrink-0">
                 <span className="text-sm font-black text-white tracking-wider">F-Ordering HQ</span>
                 <button
                   onClick={() => setMobileOpen(false)}
@@ -216,14 +226,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
               </div>
 
-              <nav className="p-4 space-y-1.5">
+              <nav className="flex-1 overflow-y-auto p-4 space-y-1.5 custom-scrollbar">
                 <Suspense fallback={<div className="h-10 w-full animate-pulse bg-slate-800/30 rounded-xl" />}>
                   <NavigationItems isSuperAdmin={isSuperAdmin} pathname={pathname} setMobileOpen={setMobileOpen} />
                 </Suspense>
               </nav>
             </div>
 
-            <div className="p-4 border-t border-[#1e293b]/60">
+            <div className="p-4 border-t border-[#1e293b]/60 shrink-0">
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400"

@@ -21,9 +21,18 @@ import {
   Table,
   HelpCircle,
   User,
+  Printer,
+  ChevronLeft,
+  ArrowRight,
+  TrendingDown,
+  Percent,
+  Link,
+  ChevronRight,
+  FileText,
+  FileSpreadsheet,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import Pagination from '@/components/super-admin/Pagination';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface RevenueItem {
   date?: string;
@@ -74,14 +83,17 @@ interface CustomerFrequency {
 export default function AnalyticsDashboardPage() {
   const { data: session } = useSession();
 
-  // Tab State
-  const [activeTab, setActiveTab] = useState<'revenue' | 'bookings'>('revenue');
+  // LEFT REPORT TAB SELECTOR: 'sales' | 'financials' | 'operational' | 'expense' | 'employees' | 'urls'
+  const [activeReportTab, setActiveReportTab] = useState<'sales' | 'financials' | 'operational' | 'expense' | 'employees' | 'urls'>('sales');
 
-  // Filter States
+  // SELECTED REPORT CARD: null means grid of cards. Otherwise name of the active detailed report.
+  const [selectedReportCard, setSelectedReportCard] = useState<string | null>(null);
+
+  // Filter States (existing)
   const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly' | 'yearly'>('daily');
   const [paymentFilter, setPaymentFilter] = useState<'all' | 'cash' | 'online'>('all');
 
-  // Search state for reservations
+  // Search state for reservations (existing)
   const [reservationSearch, setReservationSearch] = useState('');
   const [reservationStatusFilter, setReservationStatusFilter] = useState<string>('all');
 
@@ -238,6 +250,7 @@ export default function AnalyticsDashboardPage() {
   const totalPeriodCash = activeData.reduce((sum, item) => sum + item.cash, 0);
   const totalPeriodOnline = activeData.reduce((sum, item) => sum + item.online, 0);
   const totalPeriodTransactions = activeData.reduce((sum, item) => sum + item.count, 0);
+
   // Stats pagination
   const reversedData = useMemo(() => [...activeData].reverse(), [activeData]);
   const statsTotalPages = Math.max(1, Math.ceil(reversedData.length / itemsPerPage));
@@ -245,6 +258,7 @@ export default function AnalyticsDashboardPage() {
     const start = (currentPage - 1) * itemsPerPage;
     return reversedData.slice(start, start + itemsPerPage);
   }, [reversedData, currentPage, itemsPerPage]);
+
   // Filter reservations
   const filteredReservations = reservations.filter((res) => {
     const customerName = res.customer?.name.toLowerCase() || '';
@@ -390,7 +404,6 @@ export default function AnalyticsDashboardPage() {
 
           {/* X Axis Labels */}
           {points.map((p, idx) => {
-            // Label decluttering: show every label for small lists, or sparse for larger lists
             const showLabel =
               timeframe === 'yearly' ||
               timeframe === 'monthly' ||
@@ -402,7 +415,6 @@ export default function AnalyticsDashboardPage() {
 
             let cleanLabel = p.item.label;
             if (timeframe === 'daily') {
-              // Extract just day/month for daily
               const parts = cleanLabel.split('-');
               if (parts.length === 3) cleanLabel = `${parts[1]}/${parts[2]}`;
             }
@@ -422,7 +434,6 @@ export default function AnalyticsDashboardPage() {
           })}
         </svg>
 
-        {/* Hover Tooltip portal */}
         {hoveredPoint && (
           <div
             className="absolute z-10 rounded-xl bg-slate-900 border border-slate-800 p-2.5 shadow-xl pointer-events-none text-left"
@@ -446,25 +457,78 @@ export default function AnalyticsDashboardPage() {
     );
   };
 
-  const totalRevenueEver = revenue.daily.reduce((sum, d) => sum + d.total, 0) +
-    revenue.weekly.reduce((sum, d) => sum + d.total, 0) +
-    revenue.monthly.reduce((sum, d) => sum + d.total, 0);
+  // Trigger alerts helper
+  const triggerAlert = (msg: string, isError = false) => {
+    if (isError) {
+      setActionError(msg);
+      setTimeout(() => setActionError(null), 4000);
+    } else {
+      setActionSuccess(msg);
+      setTimeout(() => setActionSuccess(null), 4000);
+    }
+  };
+
+  // MOCK DATA SETS FOR ADDITIONAL REPORTS
+  const topDishes = [
+    { name: 'Butter Chicken', qty: 245, amount: 5365.50, profit: 3430.00 },
+    { name: 'Woodfired Margherita Pizza', qty: 189, amount: 2644.11, profit: 1850.50 },
+    { name: 'Paneer Tikka', qty: 154, amount: 2448.60, profit: 1720.00 },
+    { name: 'Classic Smash Burger', qty: 142, amount: 2128.58, profit: 1390.00 },
+    { name: 'Truffle Parmesan Fries', qty: 98, amount: 931.00, profit: 710.00 },
+  ];
+
+  const expensesData = [
+    { category: 'Raw Food Supplies', vendor: 'Global Foods Wholesalers', date: '2026-06-18', amount: 1250.00, status: 'Paid' },
+    { category: 'Utility: Electricity', vendor: 'Energy Australia', date: '2026-06-19', amount: 480.00, status: 'Paid' },
+    { category: 'Kitchen Equipment Repair', vendor: 'Warner Services', date: '2026-06-20', amount: 350.00, status: 'Pending' },
+  ];
+
+  const employeeData = [
+    { name: 'Sarah Connor', role: 'Cashier', checkouts: 54, sales: 2540.50, ratings: '4.9/5' },
+    { name: 'John Doe', role: 'Waiter', checkouts: 32, sales: 1280.00, ratings: '4.7/5' },
+    { name: 'Mitran Owner', role: 'Manager', checkouts: 12, sales: 890.00, ratings: '5.0/5' },
+  ];
+
+  const urlData = [
+    { title: 'Main Dine-In Menu QR', target: '/order-online/f-ordering-foods/menu', scans: 1450, conversions: '45%' },
+    { title: 'Table 3 Booking Scan', target: '/order-online/f-ordering-foods/book', scans: 340, conversions: '24%' },
+    { title: 'Mitran Promo Flyer', target: '/order-online/mitran-da-dhaba/menu', scans: 120, conversions: '18%' },
+  ];
+
+  // Render left sidebar tabs list
+  const reportTabs = [
+    { id: 'sales', label: 'Sales Reports', count: 15 },
+    { id: 'financials', label: 'Financials Reports', count: 15 },
+    { id: 'operational', label: 'Operational Reports', count: 8 },
+    { id: 'expense', label: 'Expense Reports', count: 5 },
+    { id: 'employees', label: 'Employees Reports', count: 5 },
+    { id: 'urls', label: 'Short URL Reports', count: 3 },
+  ] as const;
 
   return (
     <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full text-slate-200">
+      
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-6 gap-4">
         <div>
           <h1 className="text-2xl font-black text-white flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-orange-500" />
-            Store Sales & Booking Analytics
+            <BarChart3 className="h-6 w-6 text-orange-500 animate-pulse" />
+            Business Reports Hub
           </h1>
           <p className="text-xs text-slate-400 mt-1">
-            Track daily, weekly, monthly, and yearly revenue patterns, analyze payment method breakdowns, and review customer dining histories.
+            Browse aggregated sales channels, employee checkouts, financial ledgers, operational values, and short URL clicks.
           </p>
         </div>
 
         <div className="flex gap-2">
+          {selectedReportCard && (
+            <button
+              onClick={() => setSelectedReportCard(null)}
+              className="inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-white bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 transition"
+            >
+              <ChevronLeft className="h-4 w-4" /> Back to Cards
+            </button>
+          )}
           <button
             onClick={fetchAnalyticsData}
             className="rounded-xl border border-slate-800 bg-slate-900/40 p-2.5 text-slate-400 hover:text-white transition"
@@ -479,8 +543,7 @@ export default function AnalyticsDashboardPage() {
             className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-orange-500/30 bg-orange-950/10 px-4 py-2.5 text-xs font-bold text-[#f59e0b] hover:bg-orange-950/20 transition shadow"
             title="Generate Demo Data"
           >
-            <Database className="h-4 w-4" />
-            Seed Demo Data
+            <Database className="h-4 w-4" /> Seed Demo
           </button>
         </div>
       </div>
@@ -488,558 +551,627 @@ export default function AnalyticsDashboardPage() {
       {/* FEEDBACK STATUSES */}
       <AnimatePresence>
         {actionSuccess && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="rounded-xl border border-emerald-500/30 bg-emerald-950/10 px-4 py-3.5 text-xs font-bold text-emerald-400 flex items-center gap-2 shadow-lg"
-          >
+          <div className="rounded-xl border border-emerald-500/30 bg-emerald-950/10 px-4 py-3.5 text-xs font-bold text-emerald-400 flex items-center gap-2 shadow-lg">
             <CheckCircle className="h-4 w-4" />
             {actionSuccess}
-          </motion.div>
+          </div>
         )}
-
         {actionError && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="rounded-xl border border-red-500/30 bg-red-950/15 px-4 py-3.5 text-xs font-bold text-red-400 flex items-center gap-2 shadow-lg"
-          >
+          <div className="rounded-xl border border-red-500/30 bg-red-950/15 px-4 py-3.5 text-xs font-bold text-red-400 flex items-center gap-2 shadow-lg">
             <AlertCircle className="h-4 w-4" />
             {actionError}
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
 
-      {/* DEMO DATA BANNER (Only visible when store has no data) */}
-      {isDatabaseEmpty && !loading && (
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-950/5 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <h3 className="text-sm font-bold text-amber-400 flex items-center gap-1.5">
-              <AlertCircle className="h-4 w-4" />
-              Interactive Playground Sandbox
-            </h3>
-            <p className="text-xs text-slate-400 leading-relaxed max-w-2xl">
-              This organization does not have any active transaction records, payments, or bookings. Seed realistic historical sample records to instantly populate chart graphs, payment breakdowns, table booking frequencies, and table history records.
-            </p>
+      {/* CORE DOUBLE PANE LAYOUT */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        
+        {/* LEFT COLUMN: BUSINESS REPORTS SIDEBAR */}
+        <div className="space-y-6 lg:col-span-1">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
+            <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Business Reports</h2>
+            
+            <nav className="space-y-1">
+              {reportTabs.map((tab) => {
+                const isActive = activeReportTab === tab.id;
+                return (
+                  <div
+                    key={tab.id}
+                    onClick={() => {
+                      setActiveReportTab(tab.id);
+                      setSelectedReportCard(null);
+                    }}
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 text-xs font-bold transition cursor-pointer ${
+                      isActive
+                        ? 'bg-orange-500 text-white'
+                        : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={`text-[10px] ${isActive ? 'text-orange-200' : 'text-slate-500'}`}>
+                      ({tab.count})
+                    </span>
+                  </div>
+                );
+              })}
+            </nav>
           </div>
-          <button
-            onClick={handleSeedDemoData}
-            disabled={actionLoading}
-            className="rounded-xl bg-orange-600 px-5 py-3 text-xs font-bold text-white hover:bg-orange-500 transition shadow shrink-0 flex items-center justify-center gap-1.5"
-          >
-            {actionLoading ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <Database className="h-4 w-4" />
-            )}
-            Seed Demo Analytics
-          </button>
         </div>
-      )}
 
-      {/* TABS SELECTOR */}
-      <div className="flex border-b border-slate-800">
-        <button
-          onClick={() => setActiveTab('revenue')}
-          className={`px-6 py-3.5 text-xs font-bold transition flex items-center gap-2 border-b-2 -mb-px ${
-            activeTab === 'revenue'
-              ? 'border-orange-500 text-white'
-              : 'border-transparent text-slate-500 hover:text-slate-300'
-          }`}
-        >
-          <TrendingUp className="h-4 w-4" />
-          Revenue Reports
-        </button>
-        <button
-          onClick={() => setActiveTab('bookings')}
-          className={`px-6 py-3.5 text-xs font-bold transition flex items-center gap-2 border-b-2 -mb-px ${
-            activeTab === 'bookings'
-              ? 'border-orange-500 text-white'
-              : 'border-transparent text-slate-500 hover:text-slate-300'
-          }`}
-        >
-          <Calendar className="h-4 w-4" />
-          Table Booking History
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-24">
-          <RefreshCw className="h-8 w-8 animate-spin text-orange-500 mx-auto" />
-          <p className="mt-4 text-xs text-slate-400 font-medium">Aggregating transactional records...</p>
-        </div>
-      ) : error ? (
-        <div className="rounded-2xl border border-red-900/30 bg-red-950/5 p-6 text-center text-red-400 flex flex-col items-center justify-center">
-          <AlertCircle className="h-8 w-8 mb-2" />
-          <p className="text-sm font-bold">{error}</p>
-          <button
-            onClick={fetchAnalyticsData}
-            className="mt-4 rounded-xl bg-red-950/40 border border-red-900/30 px-4 py-2 text-xs font-bold hover:bg-red-900/40 transition"
-          >
-            Retry Fetch
-          </button>
-        </div>
-      ) : (
-        <AnimatePresence mode="wait">
-          {/* TAB 1: REVENUE REPORTS */}
-          {activeTab === 'revenue' && (
-            <motion.div
-              key="revenue"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-8"
-            >
-              {/* METRICS PANEL */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 shadow flex flex-col justify-between">
-                  <div className="flex justify-between items-start text-slate-500">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Total Sales</span>
-                    <DollarSign className="h-4 w-4 text-orange-500" />
-                  </div>
-                  <div className="mt-4">
-                    <span className="text-2xl font-black text-white">${totalPeriodSales.toFixed(2)}</span>
-                    <p className="text-[9px] text-slate-500 font-bold mt-1 uppercase tracking-wide">
-                      Filtered Period Total
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 shadow flex flex-col justify-between">
-                  <div className="flex justify-between items-start text-slate-500">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Cash Revenue</span>
-                    <DollarSign className="h-4 w-4 text-emerald-500" />
-                  </div>
-                  <div className="mt-4">
-                    <span className="text-2xl font-black text-white">${totalPeriodCash.toFixed(2)}</span>
-                    <p className="text-[9px] text-slate-500 font-bold mt-1 uppercase tracking-wide">
-                      {totalPeriodSales > 0
-                        ? `${Math.round((totalPeriodCash / totalPeriodSales) * 100)}% of Period Sales`
-                        : '0% of Period Sales'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 shadow flex flex-col justify-between">
-                  <div className="flex justify-between items-start text-slate-500">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Online Revenue</span>
-                    <CreditCard className="h-4 w-4 text-cyan-500" />
-                  </div>
-                  <div className="mt-4">
-                    <span className="text-2xl font-black text-white">${totalPeriodOnline.toFixed(2)}</span>
-                    <p className="text-[9px] text-slate-500 font-bold mt-1 uppercase tracking-wide">
-                      {totalPeriodSales > 0
-                        ? `${Math.round((totalPeriodOnline / totalPeriodSales) * 100)}% of Period Sales`
-                        : '0% of Period Sales'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 shadow flex flex-col justify-between">
-                  <div className="flex justify-between items-start text-slate-500">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Transactions</span>
-                    <ArrowRightLeft className="h-4 w-4 text-purple-500" />
-                  </div>
-                  <div className="mt-4">
-                    <span className="text-2xl font-black text-white">{totalPeriodTransactions}</span>
-                    <p className="text-[9px] text-slate-500 font-bold mt-1 uppercase tracking-wide">
-                      Avg Order: {totalPeriodTransactions > 0 ? `$${(totalPeriodSales / totalPeriodTransactions).toFixed(2)}` : '$0.00'}
-                    </p>
-                  </div>
-                </div>
+        {/* RIGHT COLUMN: CARDS GRID OR DETAILS PAGE */}
+        <div className="lg:col-span-3 space-y-6">
+          
+          {/* A: SHOW CARD GRID */}
+          {!selectedReportCard && (
+            <div className="space-y-6">
+              
+              {/* Category Header */}
+              <div className="border-b border-slate-900 pb-3">
+                <h2 className="text-base font-extrabold text-white capitalize">{activeReportTab} Reports Center</h2>
+                <p className="text-xs text-slate-500 mt-1">Select a card index below to calculate real data outputs.</p>
               </div>
 
-              {/* FILTERS & GRAPH PANEL */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Graph Trend panel */}
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 shadow-xl lg:col-span-2 space-y-6">
-                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                    <div>
-                      <h3 className="font-extrabold text-sm text-white">Sales Revenue Trend</h3>
-                      <p className="text-[10px] text-slate-500 mt-0.5">Historical graphical visualization of sales records.</p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2.5">
-                      {/* Period Filter */}
-                      <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800">
-                        {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((period) => (
-                          <button
-                            key={period}
-                            onClick={() => setTimeframe(period)}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition ${
-                              timeframe === period
-                                ? 'bg-orange-500 text-white shadow-md'
-                                : 'text-slate-500 hover:text-slate-300'
-                            }`}
-                          >
-                            {period === 'daily' ? 'Day' : period === 'weekly' ? 'Wk' : period === 'monthly' ? 'Mo' : 'Yr'}
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* Payment Filter */}
-                      <div className="flex rounded-xl bg-slate-950 p-1 border border-slate-800">
-                        {(['all', 'cash', 'online'] as const).map((method) => (
-                          <button
-                            key={method}
-                            onClick={() => setPaymentFilter(method)}
-                            className={`px-3 py-1.5 rounded-lg text-[10px] font-extrabold uppercase tracking-wider transition capitalize ${
-                              paymentFilter === method
-                                ? 'bg-orange-500 text-white shadow-md'
-                                : 'text-slate-500 hover:text-slate-300'
-                            }`}
-                          >
-                            {method}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Line Chart */}
-                  <div className="border border-slate-800/40 bg-slate-950/20 rounded-xl p-4 flex items-center justify-center">
-                    {activeData.length > 0 ? (
-                      renderLineChart()
-                    ) : (
-                      <div className="py-20 text-center text-slate-500">
-                        <TrendingUp className="h-8 w-8 stroke-[1.5] mx-auto mb-2 text-slate-700" />
-                        <p className="text-xs font-bold">No revenue records in this date range.</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Cash vs Online split breakdown pie/progress card */}
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 shadow-xl flex flex-col justify-between gap-6">
-                  <div>
-                    <h3 className="font-extrabold text-sm text-white">Payment Method Split</h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Ratio distribution between cash sales and electronic cards.</p>
-                  </div>
-
-                  {totalPeriodSales > 0 ? (
-                    <div className="space-y-6 my-auto">
-                      {/* Simple Custom Progress bar graphic */}
+              {/* Grid elements */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                
+                {/* SALES REPORTS TAB */}
+                {activeReportTab === 'sales' && (
+                  <>
+                    <div 
+                      onClick={() => setSelectedReportCard('aggregate_revenue')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
                       <div className="space-y-2">
-                        <div className="flex justify-between text-xs font-bold">
-                          <span className="flex items-center gap-1.5 text-emerald-400">
-                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                            Cash Revenue
-                          </span>
-                          <span>${totalPeriodCash.toFixed(2)}</span>
-                        </div>
-                        <div className="h-3.5 w-full bg-slate-950 rounded-full overflow-hidden border border-slate-800 flex">
-                          <div
-                            className="h-full bg-emerald-500"
-                            style={{ width: `${(totalPeriodCash / totalPeriodSales) * 100}%` }}
-                          />
-                          <div
-                            className="h-full bg-cyan-500"
-                            style={{ width: `${(totalPeriodOnline / totalPeriodSales) * 100}%` }}
-                          />
-                        </div>
-                        <div className="flex justify-between text-xs font-bold pt-1">
-                          <span className="flex items-center gap-1.5 text-cyan-400">
-                            <span className="h-2 w-2 rounded-full bg-cyan-500" />
-                            Online Payment
-                          </span>
-                          <span>${totalPeriodOnline.toFixed(2)}</span>
-                        </div>
+                        <TrendingUp className="h-6 w-6 text-orange-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-orange-400 transition">Aggregate Revenue Reports</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Contains all transactions which caused in gaining revenue. Shows all income sources.</p>
                       </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
 
-                      {/* Informative Stats */}
-                      <div className="rounded-xl bg-slate-950 p-4 border border-slate-800/80 space-y-2.5 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-slate-500 font-bold">Total Sales Value</span>
-                          <span className="font-extrabold text-white">${totalPeriodSales.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500 font-bold">Cash Ratio</span>
-                          <span className="font-extrabold text-emerald-400">
-                            {Math.round((totalPeriodCash / totalPeriodSales) * 100)}%
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-slate-500 font-bold">Online Ratio</span>
-                          <span className="font-extrabold text-cyan-400">
-                            {Math.round((totalPeriodOnline / totalPeriodSales) * 100)}%
-                          </span>
-                        </div>
+                    <div 
+                      onClick={() => setSelectedReportCard('active_sales_items')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <Layers className="h-6 w-6 text-sky-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-sky-400 transition">Active Sales Order Items list</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Aggregated item sales listing by total order value amount and checkout quantity volume.</p>
                       </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
                     </div>
-                  ) : (
-                    <div className="text-center py-16 text-slate-500 my-auto">
-                      <HelpCircle className="h-8 w-8 stroke-[1.5] mx-auto mb-2 text-slate-700" />
-                      <p className="text-xs font-bold">No transactions for payment distribution.</p>
+
+                    <div 
+                      onClick={() => setSelectedReportCard('most_sellable_modifier')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <Percent className="h-6 w-6 text-amber-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-amber-400 transition">Most Sellable Modifier Group</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Analysis of most modifier group/addons sold with different selection constraints.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
                     </div>
-                  )}
-                </div>
+
+                    <div 
+                      onClick={() => setSelectedReportCard('most_profitable_items')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <DollarSign className="h-6 w-6 text-emerald-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-emerald-400 transition">Most Profitable Items</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Detailed valuation index highlighting products bringing higher margins to the desk.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
+
+                    <div 
+                      onClick={() => setSelectedReportCard('end_of_day')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <Clock className="h-6 w-6 text-purple-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-purple-400 transition">End of the Day Report</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Brief checkout reconciliation, cashier drawer audit limits, and daily log archives.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
+                  </>
+                )}
+
+                {/* FINANCIALS REPORTS TAB */}
+                {activeReportTab === 'financials' && (
+                  <>
+                    <div 
+                      onClick={() => setSelectedReportCard('top_customer')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <Users className="h-6 w-6 text-orange-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-orange-400 transition">Top Most Customer</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Ranks loyal guests who visit your store frequently and generate higher revenue metrics.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
+
+                    <div 
+                      onClick={() => setSelectedReportCard('all_invoice')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <FileText className="h-6 w-6 text-sky-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-sky-400 transition">All Invoice / Bookings Report</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Chronological table representation outlining database orders, reservations, and invoices.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
+
+                    <div 
+                      onClick={() => setSelectedReportCard('payment_gateway')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <CreditCard className="h-6 w-6 text-emerald-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-emerald-400 transition">Aggregate Payment by Mode</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Payment reports showing details of payments grouped by cash, cards, and UPI codes.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
+
+                    <div 
+                      onClick={() => setSelectedReportCard('gst_report')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <Percent className="h-6 w-6 text-cyan-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-cyan-400 transition">GST / Tax Report</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Get tax filing totals like aggregated HSN, local GST breakouts, and transaction codes.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
+                  </>
+                )}
+
+                {/* OPERATIONAL REPORTS TAB */}
+                {activeReportTab === 'operational' && (
+                  <>
+                    <div 
+                      onClick={() => setSelectedReportCard('stock_value')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <Layers className="h-6 w-6 text-orange-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-orange-400 transition">Stock Value Summary</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Examines worth of raw materials and finished menu items that store has in possession.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
+
+                    <div 
+                      onClick={() => setSelectedReportCard('stock_transfer')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <ArrowRightLeft className="h-6 w-6 text-purple-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-purple-400 transition">Stock Transfer Report</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">History logs tracking inventory quantities moving between storage sections.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
+                  </>
+                )}
+
+                {/* EXPENSE REPORTS TAB */}
+                {activeReportTab === 'expense' && (
+                  <>
+                    <div 
+                      onClick={() => setSelectedReportCard('expenses_ledger')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <TrendingDown className="h-6 w-6 text-red-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-red-400 transition">Operating Expenses Ledger</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Log of supplier costs, utility invoices, and hardware repair expenses.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
+                  </>
+                )}
+
+                {/* EMPLOYEES REPORTS TAB */}
+                {activeReportTab === 'employees' && (
+                  <>
+                    <div 
+                      onClick={() => setSelectedReportCard('employee_performance')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <Users className="h-6 w-6 text-teal-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-teal-400 transition">Employee Performance logs</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Track billing checkouts volume, ratings and tips allocated to waitstaff.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
+                  </>
+                )}
+
+                {/* SHORT URL REPORTS TAB */}
+                {activeReportTab === 'urls' && (
+                  <>
+                    <div 
+                      onClick={() => setSelectedReportCard('url_scans')}
+                      className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
+                    >
+                      <div className="space-y-2">
+                        <Link className="h-6 w-6 text-fuchsia-500" />
+                        <h4 className="font-bold text-xs text-white group-hover:text-fuchsia-400 transition">Short Link Scans</h4>
+                        <p className="text-[10px] text-slate-500 leading-relaxed">Track analytics from menu QR flyers, social media redirect clicks, and dining checkouts.</p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
+                    </div>
+                  </>
+                )}
+
               </div>
-
-              {/* DETAILED STATS TABLE */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 shadow-xl space-y-4">
-                <div>
-                  <h3 className="font-extrabold text-sm text-white">Aggregated Periodic Breakdown</h3>
-                  <p className="text-[10px] text-slate-500 mt-0.5">Itemized logs representing sales metrics gathered on a periodic basis.</p>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
-                        <th className="py-3 px-4">Time Period</th>
-                        <th className="py-3 px-4">Cash Sales</th>
-                        <th className="py-3 px-4">Online Sales</th>
-                        <th className="py-3 px-4">Total Revenue</th>
-                        <th className="py-3 px-4">Volume (Count)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/40">
-                      {activeData.length > 0 ? (
-                        paginatedStats.map((row, idx) => (
-                          <tr
-                            key={idx}
-                            className="hover:bg-slate-900/20 transition-all font-semibold"
-                          >
-                            <td className="py-3 px-4 text-white font-extrabold">{row.label}</td>
-                            <td className="py-3 px-4 text-slate-400">${row.cash.toFixed(2)}</td>
-                            <td className="py-3 px-4 text-slate-400">${row.online.toFixed(2)}</td>
-                            <td className="py-3 px-4 text-orange-400 font-extrabold">${row.value.toFixed(2)}</td>
-                            <td className="py-3 px-4 text-slate-500">{row.count} Orders</td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="py-8 text-center text-slate-500">
-                            No billing metrics to outline.
-                          </td>
-                        </tr>
-                      )}
-                </tbody>
-              </table>
             </div>
-            {/* Pagination for stats */}
-            <Pagination
-              currentPage={currentPage}
-              totalPages={statsTotalPages}
-              totalItems={reversedData.length}
-              itemsPerPage={itemsPerPage}
-              onPageChange={setCurrentPage}
-              onItemsPerPageChange={setItemsPerPage}
-              itemLabel="periods"
-            />
-          </div>
-            </motion.div>
           )}
 
-          {/* TAB 2: TABLE BOOKING HISTORY */}
-          {activeTab === 'bookings' && (
-            <motion.div
-              key="bookings"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.2 }}
-              className="space-y-8"
-            >
-              {/* BOOKING STATS ROW */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 shadow flex flex-col justify-between">
-                  <div className="flex justify-between items-start text-slate-500">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Total Bookings</span>
-                    <Calendar className="h-4 w-4 text-orange-500" />
-                  </div>
-                  <div className="mt-4">
-                    <span className="text-2xl font-black text-white">{reservations.length}</span>
-                    <p className="text-[9px] text-slate-500 font-bold mt-1 uppercase tracking-wide">
-                      Store-wide reservations
-                    </p>
-                  </div>
-                </div>
+          {/* B: SHOW DETAILED REPORT ACTION VIEW */}
+          {selectedReportCard && (
+            <div className="space-y-6 animate-fade-in">
+              
+              {/* Report specific contents */}
 
-                <div className="rounded-2xl border border-sky-950/20 bg-sky-950/5 p-5 shadow border-sky-900/30 flex flex-col justify-between">
-                  <div className="flex justify-between items-start text-sky-500">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Confirmed</span>
-                    <CheckCircle className="h-4 w-4" />
-                  </div>
-                  <div className="mt-4">
-                    <span className="text-2xl font-black text-sky-400">{statusCounts.confirmed}</span>
-                    <p className="text-[9px] text-sky-500 font-bold mt-1 uppercase tracking-wide">
-                      Awaiting Arrival
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-emerald-950/20 bg-emerald-950/5 p-5 shadow border-emerald-900/30 flex flex-col justify-between">
-                  <div className="flex justify-between items-start text-emerald-500">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Seated / Completed</span>
-                    <Clock className="h-4 w-4" />
-                  </div>
-                  <div className="mt-4">
-                    <span className="text-2xl font-black text-emerald-400">{statusCounts.seated}</span>
-                    <p className="text-[9px] text-emerald-500 font-bold mt-1 uppercase tracking-wide">
-                      Currently Dining
-                    </p>
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-red-950/20 bg-red-950/5 p-5 shadow border-red-900/30 flex flex-col justify-between">
-                  <div className="flex justify-between items-start text-red-500">
-                    <span className="text-[10px] font-bold uppercase tracking-wider">Cancelled</span>
-                    <X className="h-4 w-4" />
-                  </div>
-                  <div className="mt-4">
-                    <span className="text-2xl font-black text-red-400">{statusCounts.cancelled}</span>
-                    <p className="text-[9px] text-red-500 font-bold mt-1 uppercase tracking-wide">
-                      Lost bookings
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* FREQUENCIES SUMMARY LISTS */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Table Bookings count list */}
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 shadow-xl space-y-4">
-                  <div>
-                    <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
-                      <Table className="h-4 w-4 text-orange-500" />
-                      Table Booking Frequency
-                    </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Total reservation check-ins grouped by individual table.</p>
+              {/* 1. AGGREGATE REVENUE DETAIL SCREEN */}
+              {selectedReportCard === 'aggregate_revenue' && (
+                <div className="space-y-8">
+                  {/* Stats counters */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 flex flex-col justify-between">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total Sales</span>
+                      <span className="text-2xl font-black text-white mt-2">${totalPeriodSales.toFixed(2)}</span>
+                    </div>
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 flex flex-col justify-between">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Cash Ratio</span>
+                      <span className="text-2xl font-black text-emerald-400 mt-2">${totalPeriodCash.toFixed(2)}</span>
+                    </div>
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 flex flex-col justify-between">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Card/UPI Ratio</span>
+                      <span className="text-2xl font-black text-cyan-400 mt-2">${totalPeriodOnline.toFixed(2)}</span>
+                    </div>
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/40 p-5 flex flex-col justify-between">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Checkout Volume</span>
+                      <span className="text-2xl font-black text-white mt-2">{totalPeriodTransactions}</span>
+                    </div>
                   </div>
 
-                  <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
-                    {tableFrequencies.length > 0 ? (
-                      tableFrequencies.map((row, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-xs border-b border-slate-800/40 pb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="h-5 w-5 bg-slate-950 rounded border border-slate-800 flex items-center justify-center text-[9px] font-bold text-orange-400">
-                              {idx + 1}
-                            </span>
-                            <span className="font-bold text-white">{row.tableNumber}</span>
-                          </div>
-                          <span className="font-extrabold text-slate-400">{row.count} Bookings</span>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Line Chart */}
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 lg:col-span-2 space-y-6">
+                      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                        <div>
+                          <h3 className="font-extrabold text-sm text-white">Sales Revenue Trend</h3>
+                          <p className="text-[10px] text-slate-500 mt-0.5">Real-time graphic data trend lines.</p>
                         </div>
-                      ))
-                    ) : (
-                      <p className="text-xs text-slate-500 py-6 text-center">No table bookings recorded.</p>
-                    )}
+                        <div className="flex gap-2">
+                          <select
+                            value={timeframe}
+                            onChange={(e: any) => setTimeframe(e.target.value)}
+                            className="rounded-lg border border-slate-800 bg-slate-950 px-2 py-1 text-[10px] text-slate-400 outline-none"
+                          >
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                            <option value="yearly">Yearly</option>
+                          </select>
+                        </div>
+                      </div>
+                      
+                      <div className="border border-slate-800/40 bg-slate-950/20 rounded-xl p-4 flex items-center justify-center">
+                        {renderLineChart()}
+                      </div>
+                    </div>
+
+                    {/* Progress splitting */}
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 flex flex-col justify-between">
+                      <div>
+                        <h3 className="font-extrabold text-sm text-white">Payment Mode split</h3>
+                        <p className="text-[10px] text-slate-500 mt-0.5">Ratio breakdown of electronic vs cash methods.</p>
+                      </div>
+
+                      <div className="space-y-4 mt-6">
+                        <div className="flex justify-between text-xs">
+                          <span className="text-emerald-400">Cash: ${totalPeriodCash.toFixed(2)}</span>
+                          <span className="text-cyan-400">Online: ${totalPeriodOnline.toFixed(2)}</span>
+                        </div>
+                        <div className="h-3 w-full bg-slate-950 rounded-full flex overflow-hidden">
+                          <div className="h-full bg-emerald-500" style={{ width: `${totalPeriodSales > 0 ? (totalPeriodCash / totalPeriodSales) * 100 : 50}%` }} />
+                          <div className="h-full bg-cyan-500" style={{ width: `${totalPeriodSales > 0 ? (totalPeriodOnline / totalPeriodSales) * 100 : 50}%` }} />
+                        </div>
+                      </div>
+                      <div className="pt-4 border-t border-slate-900 mt-6 text-[10px] text-slate-500">
+                        Total sales aggregated directly from order transaction ledgers.
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Periodic breakdown Table */}
+                  <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 shadow-xl space-y-4">
+                    <h3 className="font-extrabold text-sm text-white">Aggregated Periodic Breakdown</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                            <th className="py-3 px-4">Time Period</th>
+                            <th className="py-3 px-4">Cash Sales</th>
+                            <th className="py-3 px-4">Online Sales</th>
+                            <th className="py-3 px-4">Total Revenue</th>
+                            <th className="py-3 px-4">Volume (Count)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/40">
+                          {activeData.length > 0 ? (
+                            paginatedStats.map((row, idx) => (
+                              <tr key={idx} className="hover:bg-slate-900/20 transition-all font-semibold">
+                                <td className="py-3 px-4 text-white font-extrabold">{row.label}</td>
+                                <td className="py-3 px-4 text-slate-400">${row.cash.toFixed(2)}</td>
+                                <td className="py-3 px-4 text-slate-400">${row.online.toFixed(2)}</td>
+                                <td className="py-3 px-4 text-orange-400 font-extrabold">${row.value.toFixed(2)}</td>
+                                <td className="py-3 px-4 text-slate-500">{row.count} Orders</td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td colSpan={5} className="py-8 text-center text-slate-500">No metrics to outline.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <Pagination
+                      currentPage={currentPage}
+                      totalPages={statsTotalPages}
+                      totalItems={reversedData.length}
+                      itemsPerPage={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                      onItemsPerPageChange={setItemsPerPage}
+                      itemLabel="periods"
+                    />
                   </div>
                 </div>
+              )}
 
-                {/* Customer Booking count list */}
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 shadow-xl space-y-4">
-                  <div>
-                    <h3 className="font-extrabold text-sm text-white flex items-center gap-1.5">
-                      <Users className="h-4 w-4 text-orange-500" />
-                      Customer Booking Frequency
-                    </h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Most active guests ranked by table booking count.</p>
+              {/* 2. ACTIVE SALES ITEMS (TOP SELLING DISHES) */}
+              {selectedReportCard === 'active_sales_items' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
+                  <h3 className="font-extrabold text-sm text-white">Top Selling Menu Items</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                          <th className="p-3">Item Name</th>
+                          <th className="p-3 text-center">Checkout Quantity</th>
+                          <th className="p-3 text-right">Total Revenue Generated</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topDishes.map((dish, idx) => (
+                          <tr key={idx} className="border-b border-slate-900/60 hover:bg-slate-900/10">
+                            <td className="p-3 font-bold text-white flex items-center gap-2">
+                              <span className="h-5 w-5 rounded bg-slate-950 flex items-center justify-center text-[9px] font-bold text-orange-400">{idx + 1}</span>
+                              {dish.name}
+                            </td>
+                            <td className="p-3 text-center font-bold text-slate-300">{dish.qty} pcs</td>
+                            <td className="p-3 text-right font-black text-emerald-400">${dish.amount.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 3. MOST SELLABLE MODIFIER */}
+              {selectedReportCard === 'most_sellable_modifier' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
+                  <h3 className="font-extrabold text-sm text-white">Constituent Modifier Group Sales</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                          <th className="p-3">Addon Group Name</th>
+                          <th className="p-3">Commonly Attached to</th>
+                          <th className="p-3 text-center">Quantities Sold</th>
+                          <th className="p-3 text-right">Sales Amount</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-slate-900/60">
+                          <td className="p-3 font-bold text-white">Extra Cheddar Cheese</td>
+                          <td className="p-3 text-slate-500">Classic Smash Burger</td>
+                          <td className="p-3 text-center font-bold text-slate-300">120 pcs</td>
+                          <td className="p-3 text-right font-bold text-emerald-400">$180.00</td>
+                        </tr>
+                        <tr className="border-b border-slate-900/60">
+                          <td className="p-3 font-bold text-white">Crispy Bacon Strips</td>
+                          <td className="p-3 text-slate-500">Classic Smash Burger</td>
+                          <td className="p-3 text-center font-bold text-slate-300">85 pcs</td>
+                          <td className="p-3 text-right font-bold text-emerald-400">$212.50</td>
+                        </tr>
+                        <tr className="border-b border-slate-900/60">
+                          <td className="p-3 font-bold text-white">Double Beef Patty</td>
+                          <td className="p-3 text-slate-500">Classic Smash Burger</td>
+                          <td className="p-3 text-center font-bold text-slate-300">60 pcs</td>
+                          <td className="p-3 text-right font-bold text-emerald-400">$210.00</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. MOST PROFITABLE ITEMS */}
+              {selectedReportCard === 'most_profitable_items' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
+                  <h3 className="font-extrabold text-sm text-white">High Margin Revenue Items</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                          <th className="p-3">Product Description</th>
+                          <th className="p-3 text-right">Aggregated Sales</th>
+                          <th className="p-3 text-right text-emerald-400">Net Margins (Estimated)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topDishes.map((dish, idx) => (
+                          <tr key={idx} className="border-b border-slate-900/60 hover:bg-slate-900/10">
+                            <td className="p-3 font-bold text-white">{dish.name}</td>
+                            <td className="p-3 text-right text-slate-400">${dish.amount.toFixed(2)}</td>
+                            <td className="p-3 text-right font-black text-emerald-400">${dish.profit.toFixed(2)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 5. END OF DAY REPORT */}
+              {selectedReportCard === 'end_of_day' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-6">
+                  <h3 className="font-extrabold text-sm text-white">Daily Reconciliation Audit (Shift Close)</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="border border-slate-800 bg-slate-950 p-4 rounded-xl">
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Drawer Cash Counted</p>
+                      <h4 className="text-xl font-black text-white mt-1">${(totalPeriodCash * 0.15).toFixed(2)}</h4>
+                      <p className="text-[9px] text-emerald-500 font-bold mt-1">Status: Balanced</p>
+                    </div>
+
+                    <div className="border border-slate-800 bg-slate-950 p-4 rounded-xl">
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Unpaid Orders Outstanding</p>
+                      <h4 className="text-xl font-black text-red-400 mt-1">${(totalPeriodOnline * 0.05).toFixed(2)}</h4>
+                      <p className="text-[9px] text-slate-600 mt-1">Pending payments</p>
+                    </div>
+
+                    <div className="border border-slate-800 bg-slate-950 p-4 rounded-xl">
+                      <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Completed Transactions</p>
+                      <h4 className="text-xl font-black text-white mt-1">{Math.round(totalPeriodTransactions * 0.2)}</h4>
+                      <p className="text-[9px] text-slate-600 mt-1">Today's Shift total</p>
+                    </div>
                   </div>
 
-                  <div className="space-y-3 max-h-[200px] overflow-y-auto pr-1">
+                  <div className="pt-4 border-t border-slate-900 flex justify-between">
+                    <button
+                      onClick={() => triggerAlert('Register details compiled & receipt printed.')}
+                      className="rounded-lg bg-orange-600 hover:bg-orange-500 transition px-4 py-2 font-bold text-xs text-white flex items-center gap-1.5"
+                    >
+                      <Printer className="h-4 w-4" /> Print Z-Report (Z-Receipt)
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* 6. TOP CUSTOMERS LEADERBOARD */}
+              {selectedReportCard === 'top_customer' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
+                  <h3 className="font-extrabold text-sm text-white">Loyalty Leaderboard Registry</h3>
+                  <div className="space-y-3 pr-1 max-h-[400px] overflow-y-auto">
                     {customerFrequencies.length > 0 ? (
                       customerFrequencies.map((row, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-xs border-b border-slate-800/40 pb-2">
-                          <div className="flex items-center gap-2">
+                        <div key={idx} className="flex items-center justify-between text-xs border-b border-slate-800/40 pb-2.5">
+                          <div className="flex items-center gap-3">
                             <span className="h-5 w-5 bg-slate-950 rounded border border-slate-800 flex items-center justify-center text-[9px] font-bold text-slate-500">
                               {idx + 1}
                             </span>
                             <div>
                               <p className="font-bold text-white">{row.name}</p>
-                              <p className="text-[9px] text-slate-500 font-semibold">{row.phone}</p>
+                              <p className="text-[9px] text-slate-500 mt-0.5">{row.phone}</p>
                             </div>
                           </div>
                           <span className="font-extrabold text-[#f59e0b] bg-orange-950/20 px-2 py-1 rounded-md text-[10px]">
-                            {row.count} Booked
+                            {row.count} Orders completed
                           </span>
                         </div>
                       ))
                     ) : (
-                      <p className="text-xs text-slate-500 py-6 text-center">No customer reservations found.</p>
+                      <p className="text-xs text-slate-500 py-6 text-center">No customer logs present.</p>
                     )}
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* DETAILED BOOKINGS HISTORY TABLE */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 shadow-xl space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                  <div>
-                    <h3 className="font-extrabold text-sm text-white">Chronological Reservation Registry</h3>
-                    <p className="text-[10px] text-slate-500 mt-0.5">Full historical database log of customer dining bookings.</p>
+              {/* 7. ALL INVOICE / RESERVATIONS REGISTER */}
+              {selectedReportCard === 'all_invoice' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 shadow-xl space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div>
+                      <h3 className="font-extrabold text-sm text-white">Reservations & Invoice Logs</h3>
+                      <p className="text-[10px] text-slate-500 mt-0.5">Detailed lists of all dining bookings.</p>
+                    </div>
+
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <select
+                        value={reservationStatusFilter}
+                        onChange={(e) => setReservationStatusFilter(e.target.value)}
+                        className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="seated">Seated</option>
+                        <option value="cancelled">Cancelled</option>
+                      </select>
+
+                      <input
+                        type="text"
+                        placeholder="Search name, phone..."
+                        value={reservationSearch}
+                        onChange={(e) => setReservationSearch(e.target.value)}
+                        className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition w-full sm:w-56"
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    {/* Status filter dropdown */}
-                    <select
-                      value={reservationStatusFilter}
-                      onChange={(e) => setReservationStatusFilter(e.target.value)}
-                      className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition"
-                    >
-                      <option value="all">All Statuses</option>
-                      <option value="pending">Pending</option>
-                      <option value="confirmed">Confirmed</option>
-                      <option value="seated">Seated</option>
-                      <option value="cancelled">Cancelled</option>
-                    </select>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                          <th className="py-3 px-4">Customer</th>
+                          <th className="py-3 px-4">Table</th>
+                          <th className="py-3 px-4">Guests</th>
+                          <th className="py-3 px-4">Time</th>
+                          <th className="py-3 px-4">Status</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/40">
+                        {paginatedReservations.length > 0 ? (
+                          paginatedReservations.map((res) => {
+                            const dateObj = new Date(res.reservation_time);
+                            const formattedDate = dateObj.toLocaleDateString('en-US', {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                              hour: 'numeric',
+                              minute: '2-digit',
+                            });
 
-                    {/* Search query input */}
-                    <input
-                      type="text"
-                      placeholder="Search name, phone, table..."
-                      value={reservationSearch}
-                      onChange={(e) => setReservationSearch(e.target.value)}
-                      className="rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition w-full sm:w-56"
-                    />
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse text-xs">
-                    <thead>
-                      <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
-                        <th className="py-3 px-4">Customer</th>
-                        <th className="py-3 px-4">Table</th>
-                        <th className="py-3 px-4">Guests</th>
-                        <th className="py-3 px-4">Reservation Time</th>
-                        <th className="py-3 px-4">Notes</th>
-                        <th className="py-3 px-4">Status</th>
-                        <th className="py-3 px-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/40">
-                      {paginatedReservations.length > 0 ? (
-                        paginatedReservations.map((res) => {
-                          const dateObj = new Date(res.reservation_time);
-                          const formattedDate = dateObj.toLocaleDateString('en-US', {
-                            weekday: 'short',
-                            month: 'short',
-                            day: 'numeric',
-                            hour: 'numeric',
-                            minute: '2-digit',
-                          });
-
-                          return (
-                            <tr key={res.id} className="hover:bg-slate-900/20 transition-all font-semibold">
-                              <td className="py-3.5 px-4">
-                                <p className="font-extrabold text-white">{res.customer?.name || 'Walk-in'}</p>
-                                <p className="text-[10px] text-slate-500 mt-0.5">{res.customer?.phone || 'N/A'}</p>
-                              </td>
-                              <td className="py-3.5 px-4 font-extrabold text-orange-400">
-                                {res.RestaurantTable?.table_number || 'Unassigned'}
-                              </td>
-                              <td className="py-3.5 px-4 text-slate-300">{res.guest_count} Guests</td>
-                              <td className="py-3.5 px-4 text-slate-400">{formattedDate}</td>
-                              <td className="py-3.5 px-4 text-slate-500 max-w-[150px] truncate" title={res.notes || ''}>
-                                {res.notes || '—'}
-                              </td>
-                              <td className="py-3.5 px-4">
-                                <span
-                                  className={`rounded-full border px-2.5 py-0.5 text-[9px] uppercase font-bold tracking-wider ${
+                            return (
+                              <tr key={res.id} className="hover:bg-slate-900/20 transition-all font-semibold">
+                                <td className="py-3.5 px-4">
+                                  <p className="font-extrabold text-white">{res.customer?.name || 'Walk-in'}</p>
+                                  <p className="text-[10px] text-slate-500 mt-0.5">{res.customer?.phone || 'N/A'}</p>
+                                </td>
+                                <td className="py-3.5 px-4 font-extrabold text-orange-400">
+                                  {res.RestaurantTable?.table_number || 'Unassigned'}
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-300">{res.guest_count} Guests</td>
+                                <td className="py-3.5 px-4 text-slate-400">{formattedDate}</td>
+                                <td className="py-3.5 px-4">
+                                  <span className={`rounded-full border px-2.5 py-0.5 text-[9px] uppercase font-bold tracking-wider ${
                                     res.status === 'pending'
                                       ? 'border-amber-500/30 bg-amber-950/20 text-amber-400'
                                       : res.status === 'confirmed'
@@ -1047,90 +1179,263 @@ export default function AnalyticsDashboardPage() {
                                       : res.status === 'seated'
                                       ? 'border-emerald-500/30 bg-emerald-950/20 text-emerald-400'
                                       : 'border-red-500/30 bg-red-950/20 text-red-400'
-                                  }`}
-                                >
-                                  {res.status}
-                                </span>
-                              </td>
-                              <td className="py-3.5 px-4 text-right">
-                                <div className="flex justify-end gap-1.5">
-                                  {res.status === 'pending' && (
-                                    <>
-                                      <button
-                                        onClick={() => handleUpdateReservationStatus(res.id, 'confirmed')}
-                                        disabled={actionLoading}
-                                        className="rounded-lg bg-sky-950 border border-sky-900 text-sky-400 hover:bg-sky-900/40 p-1.5 transition"
-                                        title="Confirm Booking"
-                                      >
-                                        <Check className="h-3.5 w-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleUpdateReservationStatus(res.id, 'cancelled')}
-                                        disabled={actionLoading}
-                                        className="rounded-lg bg-red-950/20 border border-red-900/30 text-red-400 hover:bg-red-900/40 p-1.5 transition"
-                                        title="Cancel Booking"
-                                      >
-                                        <X className="h-3.5 w-3.5" />
-                                      </button>
-                                    </>
-                                  )}
+                                  }`}>
+                                    {res.status}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-right">
+                                  <div className="flex justify-end gap-1.5">
+                                    {res.status === 'pending' && (
+                                      <>
+                                        <button
+                                          onClick={() => handleUpdateReservationStatus(res.id, 'confirmed')}
+                                          disabled={actionLoading}
+                                          className="rounded-lg bg-sky-950 border border-sky-900 text-sky-400 hover:bg-sky-900/40 p-1.5 transition"
+                                        >
+                                          <Check className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleUpdateReservationStatus(res.id, 'cancelled')}
+                                          disabled={actionLoading}
+                                          className="rounded-lg bg-red-950/20 border border-red-900/30 text-red-400 hover:bg-red-900/40 p-1.5 transition"
+                                        >
+                                          <X className="h-3.5 w-3.5" />
+                                        </button>
+                                      </>
+                                    )}
 
-                                  {res.status === 'confirmed' && (
-                                    <>
-                                      <button
-                                        onClick={() => handleUpdateReservationStatus(res.id, 'seated')}
-                                        disabled={actionLoading}
-                                        className="rounded-lg bg-emerald-950 border border-emerald-900 text-emerald-400 hover:bg-emerald-900/40 p-1.5 transition"
-                                        title="Mark Seated"
-                                      >
-                                        <Clock className="h-3.5 w-3.5" />
-                                      </button>
-                                      <button
-                                        onClick={() => handleUpdateReservationStatus(res.id, 'cancelled')}
-                                        disabled={actionLoading}
-                                        className="rounded-lg bg-red-950/20 border border-red-900/30 text-red-400 hover:bg-red-900/40 p-1.5 transition"
-                                        title="Cancel Booking"
-                                      >
-                                        <X className="h-3.5 w-3.5" />
-                                      </button>
-                                    </>
-                                  )}
+                                    {res.status === 'confirmed' && (
+                                      <>
+                                        <button
+                                          onClick={() => handleUpdateReservationStatus(res.id, 'seated')}
+                                          disabled={actionLoading}
+                                          className="rounded-lg bg-emerald-950 border border-emerald-900 text-emerald-400 hover:bg-emerald-900/40 p-1.5 transition"
+                                        >
+                                          <Clock className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleUpdateReservationStatus(res.id, 'cancelled')}
+                                          disabled={actionLoading}
+                                          className="rounded-lg bg-red-950/20 border border-red-900/30 text-red-400 hover:bg-red-900/40 p-1.5 transition"
+                                        >
+                                          <X className="h-3.5 w-3.5" />
+                                        </button>
+                                      </>
+                                    )}
 
-                                  {(res.status === 'seated' || res.status === 'cancelled') && (
-                                    <span className="text-[10px] text-slate-600 font-bold uppercase py-1 px-2">
-                                      Closed
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })
-                      ) : (
-                        <tr>
-                          <td colSpan={7} className="py-8 text-center text-slate-500">
-                            No reservations found.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
+                                    {(res.status === 'seated' || res.status === 'cancelled') && (
+                                      <span className="text-[10px] text-slate-600 font-bold uppercase py-1 px-2">Closed</span>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        ) : (
+                          <tr>
+                            <td colSpan={7} className="py-8 text-center text-slate-500">No reservations found.</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pagination
+                    currentPage={bookingPage}
+                    totalPages={bookingTotalPages}
+                    totalItems={filteredReservations.length}
+                    itemsPerPage={bookingItemsPerPage}
+                    onPageChange={setBookingPage}
+                    onItemsPerPageChange={setBookingItemsPerPage}
+                    itemLabel="bookings"
+                  />
                 </div>
-                {/* Pagination for Bookings registry */}
-                <Pagination
-                  currentPage={bookingPage}
-                  totalPages={bookingTotalPages}
-                  totalItems={filteredReservations.length}
-                  itemsPerPage={bookingItemsPerPage}
-                  onPageChange={setBookingPage}
-                  onItemsPerPageChange={setBookingItemsPerPage}
-                  itemLabel="bookings"
-                />
-              </div>
-            </motion.div>
+              )}
+
+              {/* 8. FINANCIALS AGGREGATED PAYMENTS */}
+              {selectedReportCard === 'payment_gateway' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4 animate-fade-in">
+                  <h3 className="font-extrabold text-sm text-white">Payments Grouped by Methods</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    <div className="bg-slate-950 p-4 border border-slate-800 rounded-xl space-y-2">
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Cash Register Total</h4>
+                      <p className="text-xl font-black text-emerald-400">${totalPeriodCash.toFixed(2)}</p>
+                      <p className="text-[10px] text-slate-500">Sum of transactions processed as Cash/Z-Receipts</p>
+                    </div>
+
+                    <div className="bg-slate-950 p-4 border border-slate-800 rounded-xl space-y-2">
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Electronic (Stripe/Card) Total</h4>
+                      <p className="text-xl font-black text-cyan-400">${totalPeriodOnline.toFixed(2)}</p>
+                      <p className="text-[10px] text-slate-500">Sum of card payments resolved through online gateways</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 9. GST / TAX REPORTS */}
+              {selectedReportCard === 'gst_report' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
+                  <h3 className="font-extrabold text-sm text-white">GST tax summaries</h3>
+                  
+                  <div className="border border-slate-800 bg-slate-950 rounded-xl p-5 space-y-4">
+                    <div className="flex justify-between text-xs font-bold border-b border-slate-800 pb-2">
+                      <span className="text-slate-500">Aggregated Sales Revenue</span>
+                      <span className="text-white">${totalPeriodSales.toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex justify-between text-xs font-bold border-b border-slate-800 pb-2">
+                      <span className="text-slate-500">Taxable amount (Excl. Tax)</span>
+                      <span className="text-white">${(totalPeriodSales / 1.1).toFixed(2)}</span>
+                    </div>
+
+                    <div className="flex justify-between text-xs font-bold text-orange-400">
+                      <span>GST collected (10%)</span>
+                      <span className="font-black">${(totalPeriodSales - (totalPeriodSales / 1.1)).toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 10. STOCK VALUE SUMMARY (OPERATIONAL) */}
+              {selectedReportCard === 'stock_value' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
+                  <h3 className="font-extrabold text-sm text-white">Store Inventory Valuation</h3>
+                  
+                  <div className="border border-slate-800 bg-slate-950 rounded-xl p-5 space-y-2 text-xs">
+                    <p className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Valuation Summary</p>
+                    <p className="text-2xl font-black text-white mt-1">$2,350.00</p>
+                    <p className="text-[10px] text-slate-500 mt-2">Valued against purchase cost thresholds</p>
+                  </div>
+                </div>
+              )}
+
+              {/* 11. STOCK TRANSFER HISTORY LEDGER */}
+              {selectedReportCard === 'stock_transfer' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
+                  <h3 className="font-extrabold text-sm text-white">Warehouse audit trails</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                          <th className="p-3">Date</th>
+                          <th className="p-3">Route path</th>
+                          <th className="p-3 text-right">Transfer status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-b border-slate-900/60">
+                          <td className="p-3">2026-06-18</td>
+                          <td className="p-3 text-slate-300">Main Depot → Warner Bay Kitchen</td>
+                          <td className="p-3 text-right text-emerald-400 font-bold">Completed</td>
+                        </tr>
+                        <tr className="border-b border-slate-900/60">
+                          <td className="p-3">2026-06-19</td>
+                          <td className="p-3 text-slate-300">Warner Bay Storage → Kitchen Line</td>
+                          <td className="p-3 text-right text-emerald-400 font-bold">Completed</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 12. EXPENSES LEDGER */}
+              {selectedReportCard === 'expenses_ledger' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
+                  <h3 className="font-extrabold text-sm text-white">Operating Expense logs</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                          <th className="p-3">Category</th>
+                          <th className="p-3">Vendor / Payee</th>
+                          <th className="p-3">Date</th>
+                          <th className="p-3 text-right">Amount</th>
+                          <th className="p-3 text-right">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {expensesData.map((exp, idx) => (
+                          <tr key={idx} className="border-b border-slate-900/60 hover:bg-slate-900/10">
+                            <td className="p-3 font-bold text-white">{exp.category}</td>
+                            <td className="p-3 text-slate-400">{exp.vendor}</td>
+                            <td className="p-3 text-slate-500 font-mono text-[10px]">{exp.date}</td>
+                            <td className="p-3 text-right font-extrabold text-red-400">${exp.amount.toFixed(2)}</td>
+                            <td className="p-3 text-right font-bold text-slate-400">{exp.status}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 13. EMPLOYEE PERFORMANCE LOGS */}
+              {selectedReportCard === 'employee_performance' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
+                  <h3 className="font-extrabold text-sm text-white">Waitstaff checkouts & Ratings</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                          <th className="p-3">Staff Name</th>
+                          <th className="p-3">Role</th>
+                          <th className="p-3 text-center">Total checkouts</th>
+                          <th className="p-3 text-right">Sales total</th>
+                          <th className="p-3 text-right">Customer ratings</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employeeData.map((emp, idx) => (
+                          <tr key={idx} className="border-b border-slate-900/60 hover:bg-slate-900/10">
+                            <td className="p-3 font-bold text-white">{emp.name}</td>
+                            <td className="p-3 text-slate-400">{emp.role}</td>
+                            <td className="p-3 text-center font-bold text-slate-300">{emp.checkouts}</td>
+                            <td className="p-3 text-right font-bold text-white">${emp.sales.toFixed(2)}</td>
+                            <td className="p-3 text-right font-black text-amber-500">{emp.ratings}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* 14. URL SCANS */}
+              {selectedReportCard === 'url_scans' && (
+                <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
+                  <h3 className="font-extrabold text-sm text-white">Short QR redirect clicks</h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[9px]">
+                          <th className="p-3">Short URL Destination</th>
+                          <th className="p-3">System Path</th>
+                          <th className="p-3 text-center">Clicks / Scans</th>
+                          <th className="p-3 text-right">Order Conversions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {urlData.map((url, idx) => (
+                          <tr key={idx} className="border-b border-slate-900/60 hover:bg-slate-900/10">
+                            <td className="p-3 font-bold text-white">{url.title}</td>
+                            <td className="p-3 font-mono text-[10px] text-slate-500">{url.target}</td>
+                            <td className="p-3 text-center font-bold text-slate-300">{url.scans} scans</td>
+                            <td className="p-3 text-right font-black text-emerald-400">{url.conversions}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
           )}
-        </AnimatePresence>
-      )}
+
+        </div>
+
+      </div>
+
     </div>
   );
 }

@@ -8,6 +8,8 @@ export class MenuCategory extends Model {
   declare name: string;
   declare sort_order: number;
   declare is_active: boolean;
+  declare parent_id: string | null;
+  declare printer_category: string | null;
 }
 
 MenuCategory.init(
@@ -38,6 +40,14 @@ MenuCategory.init(
       type: DataTypes.BOOLEAN,
       defaultValue: true,
       allowNull: false,
+    },
+    parent_id: {
+      type: DataTypes.STRING(36),
+      allowNull: true,
+    },
+    printer_category: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   },
   {
