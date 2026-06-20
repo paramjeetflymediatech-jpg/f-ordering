@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth';
-import { RestaurantTable } from '../../../models';
+import { RestaurantTable, Reservation, Order, sequelize } from '../../../models';
 
 export async function GET() {
   try {
@@ -20,7 +20,48 @@ export async function GET() {
       order: [['table_number', 'ASC']],
     });
 
-    return NextResponse.json({ success: true, tables });
+    // Fetch counts of reservations group by table_id for this store
+    const reservationCounts = await Reservation.findAll({
+      where: { store_id },
+      attributes: ['table_id', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      group: ['table_id'],
+      raw: true,
+    });
+
+    // Fetch counts of orders group by table_id for this store
+    const orderCounts = await Order.findAll({
+      where: { store_id },
+      attributes: ['table_id', [sequelize.fn('COUNT', sequelize.col('id')), 'count']],
+      group: ['table_id'],
+      raw: true,
+    });
+
+    // Map counts to lookup tables
+    const resMap: Record<string, number> = {};
+    reservationCounts.forEach((item: any) => {
+      if (item.table_id) {
+        resMap[item.table_id] = parseInt(item.count) || 0;
+      }
+    });
+
+    const orderMap: Record<string, number> = {};
+    orderCounts.forEach((item: any) => {
+      if (item.table_id) {
+        orderMap[item.table_id] = parseInt(item.count) || 0;
+      }
+    });
+
+    // Merge counts into table data
+    const tablesWithCounts = tables.map((t) => {
+      const tableJson = t.toJSON();
+      return {
+        ...tableJson,
+        reservation_count: resMap[t.id] || 0,
+        order_count: orderMap[t.id] || 0,
+      };
+    });
+
+    return NextResponse.json({ success: true, tables: tablesWithCounts });
   } catch (error: any) {
     console.error('Fetch Tables Error:', error);
     return NextResponse.json(

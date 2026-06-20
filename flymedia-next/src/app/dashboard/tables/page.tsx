@@ -19,6 +19,8 @@ import {
   Info,
   Calendar,
   Lock,
+  History,
+  Clock,
 } from 'lucide-react';
 
 interface RestaurantTableType {
@@ -29,6 +31,8 @@ interface RestaurantTableType {
   seating_capacity: number;
   status: 'available' | 'occupied' | 'reserved' | 'cleaning';
   qr_code_token: string | null;
+  reservation_count?: number;
+  order_count?: number;
 }
 
 export default function TableManagerPage() {
@@ -43,8 +47,15 @@ export default function TableManagerPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Modals & Selected items
-  const [activeModal, setActiveModal] = useState<'add' | 'edit' | 'delete' | 'qr' | null>(null);
+  const [activeModal, setActiveModal] = useState<'add' | 'edit' | 'delete' | 'qr' | 'history' | null>(null);
   const [selectedTable, setSelectedTable] = useState<RestaurantTableType | null>(null);
+
+  // History State
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyReservations, setHistoryReservations] = useState<any[]>([]);
+  const [historyOrders, setHistoryOrders] = useState<any[]>([]);
+  const [historyActiveTab, setHistoryActiveTab] = useState<'reservations' | 'orders'>('reservations');
 
   // Form States
   const [formTableNumber, setFormTableNumber] = useState('');
@@ -102,6 +113,31 @@ export default function TableManagerPage() {
   const openQrModal = (table: RestaurantTableType) => {
     setSelectedTable(table);
     setActiveModal('qr');
+  };
+
+  const openHistoryModal = async (table: RestaurantTableType) => {
+    setSelectedTable(table);
+    setHistoryActiveTab('reservations');
+    setActiveModal('history');
+    setHistoryLoading(true);
+    setHistoryError(null);
+    setHistoryReservations([]);
+    setHistoryOrders([]);
+
+    try {
+      const res = await fetch(`/api/tables/${table.id}`);
+      const data = await res.json();
+      if (data.success) {
+        setHistoryReservations(data.reservations || []);
+        setHistoryOrders(data.orders || []);
+      } else {
+        setHistoryError(data.message || 'Failed to retrieve table history.');
+      }
+    } catch (err) {
+      setHistoryError('Network error occurred.');
+    } finally {
+      setHistoryLoading(false);
+    }
   };
 
   const showTemporarySuccess = (message: string) => {
@@ -391,9 +427,19 @@ export default function TableManagerPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h3 className="font-extrabold text-base text-white">{table.table_number}</h3>
-                    <div className="flex items-center gap-1.5 text-slate-400 text-xs mt-1.5">
-                      <Users className="h-3.5 w-3.5 text-slate-500" />
-                      <span>{table.seating_capacity} Seats</span>
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-slate-400 text-xs mt-1.5">
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3.5 w-3.5 text-slate-500" />
+                        <span>{table.seating_capacity} Seats</span>
+                      </div>
+                      {(table.reservation_count !== undefined || table.order_count !== undefined) && (
+                        <div className="flex items-center gap-1 text-orange-400/90 font-semibold" title="Total Reservations + Dine-in Orders">
+                          <History className="h-3.5 w-3.5 text-slate-500" />
+                          <span>
+                            {(table.reservation_count || 0) + (table.order_count || 0)} Bookings
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -447,6 +493,13 @@ export default function TableManagerPage() {
                   </button>
                 )}
                 <button
+                  onClick={() => openHistoryModal(table)}
+                  className="rounded-xl border border-slate-800 bg-slate-950/50 p-2.5 text-slate-400 hover:text-white transition"
+                  title="Booking & Dine-In History"
+                >
+                  <History className="h-4 w-4" />
+                </button>
+                <button
                   onClick={() => openEditModal(table)}
                   className="rounded-xl border border-slate-800 bg-slate-950/50 p-2.5 text-slate-400 hover:text-white transition"
                   title="Edit Table"
@@ -474,7 +527,9 @@ export default function TableManagerPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl relative"
+              className={`w-full ${
+                activeModal === 'history' ? 'max-w-2xl' : 'max-w-md'
+              } rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl relative`}
             >
               {/* MODAL HEADER */}
               <div className="flex justify-between items-center border-b border-slate-800 pb-3">
@@ -483,10 +538,12 @@ export default function TableManagerPage() {
                   {activeModal === 'edit' && <Edit2 className="h-4.5 w-4.5 text-orange-500" />}
                   {activeModal === 'delete' && <Trash2 className="h-4.5 w-4.5 text-red-500" />}
                   {activeModal === 'qr' && <QrCode className="h-4.5 w-4.5 text-orange-500" />}
+                  {activeModal === 'history' && <History className="h-4.5 w-4.5 text-orange-500" />}
                   {activeModal === 'add' && 'Add New Table'}
                   {activeModal === 'edit' && 'Edit Table'}
                   {activeModal === 'delete' && 'Delete Table'}
                   {activeModal === 'qr' && 'QR Ordering Card'}
+                  {activeModal === 'history' && `History & Bookings: ${selectedTable?.table_number}`}
                 </h3>
                 <button
                   onClick={() => setActiveModal(null)}
@@ -731,6 +788,192 @@ export default function TableManagerPage() {
                       className="w-full py-3 bg-slate-950 border border-slate-800 text-white rounded-xl text-xs font-bold hover:bg-slate-900 transition"
                     >
                       Print Scan Card
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL - HISTORY */}
+              {activeModal === 'history' && selectedTable && (
+                <div className="mt-4 space-y-5 text-xs text-slate-300">
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 flex flex-col justify-between">
+                      <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">Total Reservations</span>
+                      <span className="text-xl font-black text-white mt-1">
+                        {historyLoading ? '...' : historyReservations.length}
+                      </span>
+                    </div>
+                    <div className="rounded-xl border border-slate-800 bg-slate-950/40 p-3 flex flex-col justify-between">
+                      <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-wider">Dine-In Orders</span>
+                      <span className="text-xl font-black text-white mt-1">
+                        {historyLoading ? '...' : historyOrders.length}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tabs */}
+                  <div className="flex border-b border-slate-800 gap-2">
+                    <button
+                      onClick={() => setHistoryActiveTab('reservations')}
+                      className={`pb-2.5 px-2 font-extrabold border-b-2 transition ${
+                        historyActiveTab === 'reservations'
+                          ? 'border-orange-500 text-white'
+                          : 'border-transparent text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      Reservations ({historyLoading ? '...' : historyReservations.length})
+                    </button>
+                    <button
+                      onClick={() => setHistoryActiveTab('orders')}
+                      className={`pb-2.5 px-2 font-extrabold border-b-2 transition ${
+                        historyActiveTab === 'orders'
+                          ? 'border-orange-500 text-white'
+                          : 'border-transparent text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      Dine-In Orders ({historyLoading ? '...' : historyOrders.length})
+                    </button>
+                  </div>
+
+                  {/* Tab Contents */}
+                  {historyLoading ? (
+                    <div className="py-12 text-center">
+                      <RefreshCw className="h-6 w-6 animate-spin text-orange-500 mx-auto" />
+                      <p className="mt-2 text-slate-500">Loading history details...</p>
+                    </div>
+                  ) : historyError ? (
+                    <div className="py-8 text-center text-red-400">
+                      <AlertCircle className="h-6 w-6 mx-auto mb-2 text-red-500" />
+                      <p>{historyError}</p>
+                    </div>
+                  ) : historyActiveTab === 'reservations' ? (
+                    <div className="space-y-3 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                      {historyReservations.length === 0 ? (
+                        <div className="py-12 text-center text-slate-500 border border-slate-800/40 border-dashed rounded-xl">
+                          <Calendar className="h-8 w-8 mx-auto mb-2 stroke-[1.5]" />
+                          <p className="font-bold text-slate-400">No reservations found</p>
+                          <p className="text-[10px] mt-0.5">This table has not been reserved yet.</p>
+                        </div>
+                      ) : (
+                        historyReservations.map((res: any) => (
+                          <div
+                            key={res.id}
+                            className="p-3.5 rounded-xl border border-slate-800/60 bg-slate-950/20 hover:border-slate-800 transition duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-black text-slate-200 text-sm">
+                                  {res.customer?.name || 'Anonymous Customer'}
+                                </span>
+                                <span className="flex items-center gap-0.5 text-[10px] bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-full text-slate-400 font-bold">
+                                  <Users className="h-2.5 w-2.5 text-slate-500" />
+                                  {res.guest_count} guests
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-400 space-y-0.5">
+                                <p className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3 text-slate-500" />
+                                  {new Date(res.reservation_time).toLocaleString('en-US', {
+                                    dateStyle: 'medium',
+                                    timeStyle: 'short',
+                                  })}
+                                </p>
+                                {res.customer?.phone && (
+                                  <p className="text-[10px] text-slate-500 select-all">
+                                    Phone: {res.customer.phone}
+                                  </p>
+                                )}
+                              </div>
+                              {res.notes && (
+                                <p className="text-[10px] text-slate-500 bg-slate-950/40 border border-slate-900/50 p-2 rounded-lg italic mt-1.5 leading-relaxed">
+                                  Note: "{res.notes}"
+                                </p>
+                              )}
+                            </div>
+                            <span
+                              className={`self-start sm:self-center rounded-full border px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider ${
+                                res.status === 'confirmed'
+                                  ? 'border-emerald-500 bg-emerald-950/20 text-emerald-400'
+                                  : res.status === 'seated'
+                                  ? 'border-sky-500 bg-sky-950/20 text-sky-400'
+                                  : res.status === 'cancelled'
+                                  ? 'border-red-500 bg-red-950/20 text-red-400'
+                                  : 'border-amber-500 bg-amber-950/20 text-amber-400'
+                              }`}
+                            >
+                              {res.status}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                      {historyOrders.length === 0 ? (
+                        <div className="py-12 text-center text-slate-500 border border-slate-800/40 border-dashed rounded-xl">
+                          <Table className="h-8 w-8 mx-auto mb-2 stroke-[1.5]" />
+                          <p className="font-bold text-slate-400">No dine-in orders found</p>
+                          <p className="text-[10px] mt-0.5">This table has not hosted any dine-in orders.</p>
+                        </div>
+                      ) : (
+                        historyOrders.map((ord: any) => (
+                          <div
+                            key={ord.id}
+                            className="p-3.5 rounded-xl border border-slate-800/60 bg-slate-950/20 hover:border-slate-800 transition duration-150 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          >
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-black text-slate-200 text-sm">
+                                  {ord.customer?.name || 'Walk-in Guest'}
+                                </span>
+                                <span className="text-[10px] bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-full text-slate-400 font-extrabold uppercase tracking-wide">
+                                  {ord.order_number}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-400 space-y-0.5">
+                                <p className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3 text-slate-500" />
+                                  {new Date(ord.createdAt).toLocaleString('en-US', {
+                                    dateStyle: 'medium',
+                                    timeStyle: 'short',
+                                  })}
+                                </p>
+                                {ord.customer?.phone && (
+                                  <p className="text-[10px] text-slate-500 select-all">
+                                    Phone: {ord.customer.phone}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex sm:flex-col items-start sm:items-end justify-between sm:justify-center gap-2">
+                              <span className="font-black text-white text-sm">
+                                ${parseFloat(ord.total_amount).toFixed(2)}
+                              </span>
+                              <span
+                                className={`rounded-full border px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider ${
+                                  ord.status === 'completed'
+                                    ? 'border-emerald-500 bg-emerald-950/20 text-emerald-400'
+                                    : ord.status === 'cancelled'
+                                    ? 'border-red-500 bg-red-950/20 text-red-400'
+                                    : 'border-amber-500 bg-amber-950/20 text-amber-400'
+                                }`}
+                              >
+                                {ord.status}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <button
+                      onClick={() => setActiveModal(null)}
+                      className="w-full py-3 bg-slate-950 border border-slate-800 text-white rounded-xl text-xs font-bold hover:bg-slate-900 transition"
+                    >
+                      Close History Window
                     </button>
                   </div>
                 </div>

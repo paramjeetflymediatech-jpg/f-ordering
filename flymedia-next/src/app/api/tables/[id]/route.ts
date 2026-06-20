@@ -1,7 +1,82 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { RestaurantTable } from '../../../../models';
+import { RestaurantTable, Reservation, Customer, Order } from '../../../../models';
+
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const session = await getServerSession(authOptions);
+    if (!session || !(session.user as any).organization_id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { organization_id, store_id } = session.user as any;
+
+    const table = await RestaurantTable.findOne({
+      where: {
+        id,
+        organization_id,
+        store_id,
+      },
+    });
+
+    if (!table) {
+      return NextResponse.json(
+        { success: false, message: 'Table not found.' },
+        { status: 404 }
+      );
+    }
+
+    // Fetch all reservations for this table, including customer info
+    const reservations = await Reservation.findAll({
+      where: {
+        table_id: id,
+        store_id,
+      },
+      include: [
+        {
+          model: Customer,
+          as: 'customer',
+          attributes: ['id', 'name', 'phone', 'email'],
+        },
+      ],
+      order: [['reservation_time', 'DESC']],
+    });
+
+    // Fetch all orders for this table, including customer info
+    const orders = await Order.findAll({
+      where: {
+        table_id: id,
+        store_id,
+      },
+      include: [
+        {
+          model: Customer,
+          as: 'customer',
+          attributes: ['id', 'name', 'phone', 'email'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    return NextResponse.json({
+      success: true,
+      table,
+      reservations,
+      orders,
+    });
+  } catch (error: any) {
+    console.error('Fetch Table Detail/History Error:', error);
+    return NextResponse.json(
+      { success: false, message: 'Failed to fetch table history.', error: error.message },
+      { status: 500 }
+    );
+  }
+}
 
 export async function PUT(
   req: Request,
