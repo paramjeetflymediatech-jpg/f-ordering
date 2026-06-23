@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSession } from 'next-auth/react';
+import Pagination from '@/components/super-admin/Pagination';
 import {
   Layers,
   Plus,
@@ -38,6 +39,10 @@ export default function ManageItemPage() {
   const [allItems, setAllItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Search & Filter
@@ -376,6 +381,16 @@ export default function ManageItemPage() {
 
     return matchesSearch && matchesCategory;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / itemsPerPage));
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredItems.slice(start, start + itemsPerPage);
+  }, [filteredItems, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedCategoryFilter]);
 
   const uncategorisedItems = allItems.filter(
     (item) => !item.category_id || item.category_id === 'uncategorized'
@@ -747,7 +762,7 @@ export default function ManageItemPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredItems.map((item) => {
+                  paginatedItems.map((item) => {
                     const isLow = item.stock_count <= 5;
                     const isOut = item.stock_count === 0;
 
@@ -809,6 +824,15 @@ export default function ManageItemPage() {
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredItems.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+            itemLabel="products"
+          />
         </div>
       )}
 
