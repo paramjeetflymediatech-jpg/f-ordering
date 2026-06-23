@@ -1,15 +1,18 @@
 import React from 'react';
+import { TrendingUp } from 'lucide-react';
 
 // Sparkline for stats widgets
 export function Sparkline({ points, strokeColor }: { points: number[]; strokeColor: string }) {
   const width = 140;
   const height = 36;
-  const max = Math.max(...points);
-  const min = Math.min(...points);
+  // Ensure we don't crash on empty points array
+  const pointsData = points && points.length > 0 ? points : [0, 0, 0, 0, 0, 0, 0, 0];
+  const max = Math.max(...pointsData);
+  const min = Math.min(...pointsData);
   const range = max - min || 1;
 
-  const coords = points.map((p, i) => {
-    const x = (i / (points.length - 1)) * width;
+  const coords = pointsData.map((p, i) => {
+    const x = (i / (pointsData.length - 1)) * width;
     const y = height - ((p - min) / range) * (height - 8) - 4;
     return `${x},${y}`;
   });
@@ -39,17 +42,18 @@ interface SalesTrendPoint {
 }
 
 export function DailySalesTrendChart({ data }: { data?: SalesTrendPoint[] }) {
-  const defaultData = [
-    { day: 'Mon', sales: 140 },
-    { day: 'Tue', sales: 240 },
-    { day: 'Wed', sales: 160 },
-    { day: 'Thu', sales: 420 },
-    { day: 'Fri', sales: 220 },
-    { day: 'Sat', sales: 360 },
-    { day: 'Sun', sales: 450 }
-  ];
+  // If no data, or data contains only zeroes, render empty state placeholder
+  if (!data || data.length === 0 || data.every(d => d.sales === 0)) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[140px] text-center text-slate-500 border border-dashed border-slate-800/80 rounded-xl p-4 bg-[#0a0f1d]/20">
+        <TrendingUp className="h-6 w-6 text-slate-650 opacity-60 mb-1" />
+        <span className="text-[11.5px] font-bold text-slate-400">No sales trend data yet</span>
+        <span className="text-[9.5px] text-slate-500 mt-0.5">Sales trends will chart dynamically as tables are checked out.</span>
+      </div>
+    );
+  }
 
-  const chartData = data && data.length > 0 ? data : defaultData;
+  const chartData = data;
   const points = chartData.map(d => d.sales);
   const days = chartData.map(d => d.day);
   const width = 500;
@@ -150,15 +154,17 @@ interface CategorySalesItem {
 }
 
 export function CategorySalesChart({ data, totalSales }: { data?: CategorySalesItem[]; totalSales?: number }) {
-  const defaultCategories = [
-    { name: 'Main Course', percentage: 45, color: '#f59e0b' },
-    { name: 'Beverages', percentage: 25, color: '#06b6d4' },
-    { name: 'Appetizers', percentage: 15, color: '#10b981' },
-    { name: 'Desserts', percentage: 10, color: '#a855f7' },
-    { name: 'Others', percentage: 5, color: '#64748b' },
-  ];
+  // If no data or all percentages are zero, show dynamic empty state
+  if (!data || data.length === 0 || data.every(c => c.percentage === 0)) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[96px] text-center text-slate-550 border border-dashed border-slate-800/80 rounded-xl p-4 bg-[#0a0f1d]/20 w-full">
+        <span className="text-[11.5px] font-bold text-slate-400">No category sales distribution</span>
+        <span className="text-[9.5px] text-slate-500 mt-0.5">Distribution will dynamically display here.</span>
+      </div>
+    );
+  }
 
-  const categories = data && data.length > 0 ? data : defaultCategories;
+  const categories = data;
 
   const radius = 34;
   const strokeWidth = 8;
@@ -194,7 +200,7 @@ export function CategorySalesChart({ data, totalSales }: { data?: CategorySalesI
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
           <span className="text-[9px] text-slate-400 font-semibold tracking-wider uppercase leading-none">Sales</span>
           <span className="text-[10px] font-bold text-white mt-0.5 truncate max-w-[50px]">
-            {totalSales !== undefined ? `$${Math.round(totalSales)}` : '$4.8k'}
+            ${Math.round(totalSales || 0)}
           </span>
         </div>
       </div>

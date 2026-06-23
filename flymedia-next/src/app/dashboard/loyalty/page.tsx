@@ -42,30 +42,41 @@ export default function LoyaltyPage() {
   };
 
   useEffect(() => {
-    // Load local configs
-    const savedEnabled = localStorage.getItem('loyaltyEnabled');
+    if (!session || !(session.user as any)?.store_id) return;
+
+    const storeId = (session.user as any).store_id;
+    const enabledKey = `loyaltyEnabled_${storeId}`;
+    const perDollarKey = `loyaltyPointsPerDollar_${storeId}`;
+    const minRedeemKey = `loyaltyMinRedeem_${storeId}`;
+    const discountKey = `loyaltyDiscountPerPoint_${storeId}`;
+    const customersKey = `loyaltyCustomers_${storeId}`;
+
+    const savedEnabled = localStorage.getItem(enabledKey);
     if (savedEnabled !== null) setLoyaltyEnabled(savedEnabled === 'true');
+    else setLoyaltyEnabled(true);
 
-    const savedPerDollar = localStorage.getItem('loyaltyPointsPerDollar');
+    const savedPerDollar = localStorage.getItem(perDollarKey);
     if (savedPerDollar) setPointsPerDollar(savedPerDollar);
+    else setPointsPerDollar('1');
 
-    const savedMinRedeem = localStorage.getItem('loyaltyMinRedeem');
+    const savedMinRedeem = localStorage.getItem(minRedeemKey);
     if (savedMinRedeem) setMinRedeemPoints(savedMinRedeem);
+    else setMinRedeemPoints('100');
 
-    const savedDiscount = localStorage.getItem('loyaltyDiscountPerPoint');
+    const savedDiscount = localStorage.getItem(discountKey);
     if (savedDiscount) setDiscountPerPoint(savedDiscount);
+    else setDiscountPerPoint('0.05');
 
-    const savedCustomers = localStorage.getItem('loyaltyCustomers');
+    const savedCustomers = localStorage.getItem(customersKey);
     if (savedCustomers) {
       setCustomers(JSON.parse(savedCustomers));
     } else {
-      const mocks = seedMockCustomers();
-      setCustomers(mocks);
-      localStorage.setItem('loyaltyCustomers', JSON.stringify(mocks));
+      setCustomers([]);
+      localStorage.setItem(customersKey, JSON.stringify([]));
     }
 
     setLoading(false);
-  }, []);
+  }, [session]);
 
   const triggerAlert = (msg: string, isError = false) => {
     if (isError) {
@@ -78,10 +89,16 @@ export default function LoyaltyPage() {
   };
 
   const handleSaveSettings = () => {
-    localStorage.setItem('loyaltyEnabled', loyaltyEnabled.toString());
-    localStorage.setItem('loyaltyPointsPerDollar', pointsPerDollar);
-    localStorage.setItem('loyaltyMinRedeem', minRedeemPoints);
-    localStorage.setItem('loyaltyDiscountPerPoint', discountPerPoint);
+    const storeId = (session?.user as any)?.store_id || 'default';
+    const enabledKey = `loyaltyEnabled_${storeId}`;
+    const perDollarKey = `loyaltyPointsPerDollar_${storeId}`;
+    const minRedeemKey = `loyaltyMinRedeem_${storeId}`;
+    const discountKey = `loyaltyDiscountPerPoint_${storeId}`;
+
+    localStorage.setItem(enabledKey, loyaltyEnabled.toString());
+    localStorage.setItem(perDollarKey, pointsPerDollar);
+    localStorage.setItem(minRedeemKey, minRedeemPoints);
+    localStorage.setItem(discountKey, discountPerPoint);
     triggerAlert('Loyalty program settings updated successfully.');
   };
 

@@ -59,7 +59,7 @@ export default function POSPage() {
   const [stats, setStats] = useState<any>(null);
 
   const [viewMode, setViewMode] = useState<'menu' | 'order_type'>('menu');
-  const [posTab, setPosTab] = useState<'tables' | 'menu' | 'analytics'>('tables');
+  const [posTab, setPosTab] = useState<'analytics' | 'tables' | 'menu'>('analytics');
   const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -664,6 +664,18 @@ export default function POSPage() {
               <div className="flex gap-1.5 shrink-0 overflow-x-auto scrollbar-none whitespace-nowrap">
                 <button
                   type="button"
+                  onClick={() => setPosTab('analytics')}
+                  className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider transition border-b-2 -mb-[6px] shrink-0 ${
+                    posTab === 'analytics'
+                      ? 'border-[#f59e0b] text-[#f59e0b]'
+                      : 'border-transparent text-slate-500 hover:text-slate-350'
+                  }`}
+                >
+                  <LineChart className="h-4 w-4" />
+                  Sales Analytics
+                </button>
+                <button
+                  type="button"
                   onClick={() => setPosTab('tables')}
                   className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider transition border-b-2 -mb-[6px] shrink-0 ${
                     posTab === 'tables'
@@ -686,18 +698,7 @@ export default function POSPage() {
                   <Utensils className="h-4 w-4" />
                   Order Menu
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setPosTab('analytics')}
-                  className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider transition border-b-2 -mb-[6px] shrink-0 ${
-                    posTab === 'analytics'
-                      ? 'border-[#f59e0b] text-[#f59e0b]'
-                      : 'border-transparent text-slate-500 hover:text-slate-350'
-                  }`}
-                >
-                  <LineChart className="h-4 w-4" />
-                  Sales Analytics
-                </button>
+               
               </div>
 
               {/* Real-time status update tag */}
@@ -749,52 +750,52 @@ export default function POSPage() {
                       <div>
                         <p className="text-xs font-semibold text-slate-400">Total Orders</p>
                         <p className="text-2xl font-black text-white mt-1">
-                          {stats?.totalOrders !== undefined ? stats.totalOrders : (284 + (recentOrder ? 1 : 0))}
+                          {stats?.totalOrders !== undefined ? stats.totalOrders : (recentOrder ? 1 : 0)}
                         </p>
                         <span className="text-[10px] font-semibold text-[#f59e0b] bg-[#f59e0b]/10 px-1.5 py-0.5 rounded mt-1 inline-block">
-                          +8.5% today
+                          Active store total
                         </span>
                       </div>
-                      <Sparkline points={stats?.sparklines?.orders || [35, 45, 30, 55, 40, 75, 88, 85]} strokeColor="#f59e0b" />
+                      <Sparkline points={stats?.sparklines?.orders || [0, 0, 0, 0, 0, 0, 0, 0]} strokeColor="#f59e0b" />
                     </div>
 
                     <div className="rounded-2xl border border-slate-800/80 bg-[#0c101b]/60 backdrop-blur-md p-4 flex items-center justify-between shadow-xl">
                       <div>
                         <p className="text-xs font-semibold text-slate-400">Active Orders</p>
                         <p className="text-2xl font-black text-white mt-1">
-                          {stats?.activeOrders !== undefined ? stats.activeOrders : 22}
+                          {stats?.activeOrders !== undefined ? stats.activeOrders : 0}
                         </p>
                         <span className="text-[10px] font-semibold text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
                           Live tables
                         </span>
                       </div>
-                      <Sparkline points={stats?.sparklines?.orders ? stats.sparklines.orders.map((o: number) => Math.round(o * 0.15 + 10)) : [12, 18, 10, 22, 14, 25, 20, 22]} strokeColor="#06b6d4" />
+                      <Sparkline points={stats?.sparklines?.orders ? stats.sparklines.orders.map((o: number) => Math.round(o * 0.15 + 10)) : [0, 0, 0, 0, 0, 0, 0, 0]} strokeColor="#06b6d4" />
                     </div>
 
                     <div className="rounded-2xl border border-slate-800/80 bg-[#0c101b]/60 backdrop-blur-md p-4 flex items-center justify-between shadow-xl">
                       <div>
                         <p className="text-xs font-semibold text-slate-400">Pending Billing</p>
                         <p className="text-2xl font-black text-white mt-1">
-                          {stats?.pendingBilling !== undefined ? stats.pendingBilling : (7 + heldOrders.length)}
+                          {stats?.pendingBilling !== undefined ? stats.pendingBilling : heldOrders.length}
                         </p>
                         <span className="text-[10px] font-semibold text-purple-500 bg-purple-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
                           Held bills
                         </span>
                       </div>
-                      <Sparkline points={stats?.sparklines?.pending || [4, 8, 3, 10, 5, 8, 7, 9]} strokeColor="#a855f7" />
+                      <Sparkline points={stats?.sparklines?.pending || [0, 0, 0, 0, 0, 0, 0, 0]} strokeColor="#a855f7" />
                     </div>
 
                     <div className="rounded-2xl border border-slate-800/80 bg-[#0c101b]/60 backdrop-blur-md p-4 flex items-center justify-between shadow-xl">
                       <div>
                         <p className="text-xs font-semibold text-slate-400">Today's Sales</p>
                         <p className="text-2xl font-black text-white mt-1">
-                          ${((stats?.todaySales !== undefined ? stats.todaySales : 4850.50) + subtotal).toFixed(2)}
+                          ${((stats?.todaySales !== undefined ? stats.todaySales : 0) + subtotal).toFixed(2)}
                         </p>
                         <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
-                          +12% yesterday
+                          Live checkout sales
                         </span>
                       </div>
-                      <Sparkline points={stats?.sparklines?.sales || [1500, 2500, 1800, 3400, 2600, 4200, 4850.5]} strokeColor="#10b981" />
+                      <Sparkline points={stats?.sparklines?.sales || [0, 0, 0, 0, 0, 0, 0, 0]} strokeColor="#10b981" />
                     </div>
 
                   </div>

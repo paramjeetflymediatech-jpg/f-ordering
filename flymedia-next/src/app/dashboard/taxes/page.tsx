@@ -31,24 +31,28 @@ export default function TaxesPage() {
   const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
-    // Load local config
-    const savedRate = localStorage.getItem('primaryTaxRate');
+    if (!session || !(session.user as any)?.store_id) return;
+
+    const storeId = (session.user as any).store_id;
+    const rateKey = `primaryTaxRate_${storeId}`;
+    const addKey = `additionalTaxes_${storeId}`;
+
+    const savedRate = localStorage.getItem(rateKey);
     if (savedRate) {
       setTaxRate(savedRate);
+    } else {
+      setTaxRate('10.00');
     }
-    const savedAdditional = localStorage.getItem('additionalTaxes');
+
+    const savedAdditional = localStorage.getItem(addKey);
     if (savedAdditional) {
       setAdditionalTaxes(JSON.parse(savedAdditional));
     } else {
-      const defaults = [
-        { id: 't_1', name: 'Service Charge', rate: 5.00, type: 'Percentage', description: 'Applied for dine-in operations' },
-        { id: 't_2', name: 'Container Surcharge', rate: 1.50, type: 'Fixed', description: 'Applied for takeaway/delivery packaging' }
-      ];
-      setAdditionalTaxes(defaults);
-      localStorage.setItem('additionalTaxes', JSON.stringify(defaults));
+      setAdditionalTaxes([]);
+      localStorage.setItem(addKey, JSON.stringify([]));
     }
     setLoading(false);
-  }, []);
+  }, [session]);
 
   const triggerAlert = (msg: string, isError = false) => {
     if (isError) {
@@ -66,7 +70,10 @@ export default function TaxesPage() {
       triggerAlert('Primary tax rate must be a valid percentage between 0 and 100.', true);
       return;
     }
-    localStorage.setItem('primaryTaxRate', rateVal.toFixed(2));
+    const storeId = (session?.user as any)?.store_id || 'default';
+    const rateKey = `primaryTaxRate_${storeId}`;
+
+    localStorage.setItem(rateKey, rateVal.toFixed(2));
     triggerAlert('Primary location tax rate updated successfully.');
   };
 
@@ -88,9 +95,12 @@ export default function TaxesPage() {
       description: newType === 'Percentage' ? `${rateVal}% surcharge fee` : `$${rateVal.toFixed(2)} fixed surcharge`
     };
 
+    const storeId = (session?.user as any)?.store_id || 'default';
+    const addKey = `additionalTaxes_${storeId}`;
+
     const updated = [...additionalTaxes, newItem];
     setAdditionalTaxes(updated);
-    localStorage.setItem('additionalTaxes', JSON.stringify(updated));
+    localStorage.setItem(addKey, JSON.stringify(updated));
     setShowAddModal(false);
     setNewName('');
     setNewRate('');
@@ -99,9 +109,13 @@ export default function TaxesPage() {
 
   const handleDeleteTax = (id: string) => {
     if (!confirm('Are you sure you want to delete this tax rule?')) return;
+    
+    const storeId = (session?.user as any)?.store_id || 'default';
+    const addKey = `additionalTaxes_${storeId}`;
+
     const updated = additionalTaxes.filter(t => t.id !== id);
     setAdditionalTaxes(updated);
-    localStorage.setItem('additionalTaxes', JSON.stringify(updated));
+    localStorage.setItem(addKey, JSON.stringify(updated));
     triggerAlert('Tax rule deleted.');
   };
 

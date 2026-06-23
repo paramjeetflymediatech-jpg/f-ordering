@@ -63,21 +63,30 @@ export default function SuppliersPage() {
   };
 
   useEffect(() => {
-    const savedSups = localStorage.getItem('suppliersConfig');
-    const savedPOs = localStorage.getItem('purchaseOrdersConfig');
+    if (!session || !(session.user as any)?.store_id) return;
 
-    if (savedSups && savedPOs) {
+    const storeId = (session.user as any).store_id;
+    const supsKey = `suppliersConfig_${storeId}`;
+    const posKey = `purchaseOrdersConfig_${storeId}`;
+
+    const savedSups = localStorage.getItem(supsKey);
+    const savedPOs = localStorage.getItem(posKey);
+
+    if (savedSups) {
       setSuppliers(JSON.parse(savedSups));
+    } else {
+      setSuppliers([]);
+      localStorage.setItem(supsKey, JSON.stringify([]));
+    }
+
+    if (savedPOs) {
       setPurchaseOrders(JSON.parse(savedPOs));
     } else {
-      const mocks = seedMockData();
-      setSuppliers(mocks.mockSups);
-      setPurchaseOrders(mocks.mockPOs);
-      localStorage.setItem('suppliersConfig', JSON.stringify(mocks.mockSups));
-      localStorage.setItem('purchaseOrdersConfig', JSON.stringify(mocks.mockPOs));
+      setPurchaseOrders([]);
+      localStorage.setItem(posKey, JSON.stringify([]));
     }
     setLoading(false);
-  }, []);
+  }, [session]);
 
   const triggerAlert = (msg: string, isError = false) => {
     if (isError) {
@@ -103,9 +112,12 @@ export default function SuppliersPage() {
       category: supCategory
     };
 
+    const storeId = (session?.user as any)?.store_id || 'default';
+    const supsKey = `suppliersConfig_${storeId}`;
+
     const updated = [...suppliers, newSup];
     setSuppliers(updated);
-    localStorage.setItem('suppliersConfig', JSON.stringify(updated));
+    localStorage.setItem(supsKey, JSON.stringify(updated));
     setShowAddSupplierModal(false);
     clearSupplierForm();
     triggerAlert('Supplier profile created successfully.');
@@ -134,9 +146,12 @@ export default function SuppliersPage() {
       status: 'Pending'
     };
 
+    const storeId = (session?.user as any)?.store_id || 'default';
+    const posKey = `purchaseOrdersConfig_${storeId}`;
+
     const updated = [...purchaseOrders, newPO];
     setPurchaseOrders(updated);
-    localStorage.setItem('purchaseOrdersConfig', JSON.stringify(updated));
+    localStorage.setItem(posKey, JSON.stringify(updated));
     setShowAddPOModal(false);
     setPoSupplierId('');
     setPoAmount('');
@@ -146,13 +161,20 @@ export default function SuppliersPage() {
 
   const handleDeleteSupplier = (id: string) => {
     if (!confirm('Are you sure you want to delete this supplier?')) return;
+    
+    const storeId = (session?.user as any)?.store_id || 'default';
+    const supsKey = `suppliersConfig_${storeId}`;
+
     const updated = suppliers.filter(s => s.id !== id);
     setSuppliers(updated);
-    localStorage.setItem('suppliersConfig', JSON.stringify(updated));
+    localStorage.setItem(supsKey, JSON.stringify(updated));
     triggerAlert('Supplier deleted.');
   };
 
   const handleUpdatePOStatus = (id: string, newStatus: 'Received' | 'Cancelled') => {
+    const storeId = (session?.user as any)?.store_id || 'default';
+    const posKey = `purchaseOrdersConfig_${storeId}`;
+
     const updated = purchaseOrders.map(po => {
       if (po.id === id) {
         return { ...po, status: newStatus };
@@ -160,7 +182,7 @@ export default function SuppliersPage() {
       return po;
     });
     setPurchaseOrders(updated);
-    localStorage.setItem('purchaseOrdersConfig', JSON.stringify(updated));
+    localStorage.setItem(posKey, JSON.stringify(updated));
     triggerAlert(`Purchase Order status updated to: ${newStatus}`);
   };
 

@@ -94,6 +94,8 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { organization_id } = session.user as any;
+
     const body = await request.json();
     const { id, name, phone, email, first_name, last_name, company_name, date_of_birth, address, city, state, country, zip_code, loyalty_points, shipping_address, shipping_city, shipping_state, shipping_country, shipping_zip_code } = body;
 
@@ -101,7 +103,8 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
     }
 
-    const customer = await Customer.findByPk(id, {
+    const customer = await Customer.findOne({
+      where: { id, organization_id },
       include: [
         {
           model: Order,

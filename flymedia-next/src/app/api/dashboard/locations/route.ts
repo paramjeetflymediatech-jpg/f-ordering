@@ -98,6 +98,8 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
+    const { organization_id } = session.user as any;
+
     await Store.update(
       {
         name,
@@ -111,7 +113,7 @@ export async function PUT(request: Request) {
         category,
         description,
       },
-      { where: { id } }
+      { where: { id, organization_id } }
     );
 
     return NextResponse.json({ success: true });
@@ -135,13 +137,15 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
+    const { organization_id } = session.user as any;
+
     // Check if it's the only store
-    const count = await Store.count({ where: { organization_id: (session.user as any).organization_id } });
+    const count = await Store.count({ where: { organization_id } });
     if (count <= 1) {
       return NextResponse.json({ error: 'Cannot delete the only location of this organization' }, { status: 400 });
     }
 
-    await Store.destroy({ where: { id } });
+    await Store.destroy({ where: { id, organization_id } });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

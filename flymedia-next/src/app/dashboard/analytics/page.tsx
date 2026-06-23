@@ -127,6 +127,12 @@ export default function AnalyticsDashboardPage() {
   const [reservations, setReservations] = useState<ReservationType[]>([]);
   const [statusCounts, setStatusCounts] = useState({ pending: 0, confirmed: 0, cancelled: 0, seated: 0 });
 
+  const [topDishes, setTopDishes] = useState<any[]>([]);
+  const [modifiersList, setModifiersList] = useState<any[]>([]);
+  const [expensesData, setExpensesData] = useState<any[]>([]);
+  const [employeeData, setEmployeeData] = useState<any[]>([]);
+  const [urlData, setUrlData] = useState<any[]>([]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -157,6 +163,10 @@ export default function AnalyticsDashboardPage() {
         setCustomerFrequencies(data.customerFrequencies || []);
         setReservations(data.reservations || []);
         setStatusCounts(data.statusCounts || { pending: 0, confirmed: 0, cancelled: 0, seated: 0 });
+        setTopDishes(data.topDishes || []);
+        setModifiersList(data.modifiersList || []);
+        setEmployeeData(data.employeeData || []);
+        setUrlData(data.urlData || []);
       } else {
         setError(data.error || 'Failed to load analytics data.');
       }
@@ -166,6 +176,28 @@ export default function AnalyticsDashboardPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!session || !(session.user as any)?.store_id) return;
+    const storeId = (session.user as any).store_id;
+    const posKey = `purchaseOrdersConfig_${storeId}`;
+    const savedPOs = localStorage.getItem(posKey);
+    if (savedPOs) {
+      try {
+        const pos = JSON.parse(savedPOs);
+        const mapped = pos.map((po: any) => ({
+          category: 'Raw Food Supplies',
+          vendor: po.supplier_name,
+          date: po.issue_date,
+          amount: Number(po.amount) || 0,
+          status: po.status === 'Received' ? 'Paid' : (po.status === 'Cancelled' ? 'Cancelled' : 'Pending'),
+        }));
+        setExpensesData(mapped);
+      } catch (e) {}
+    } else {
+      setExpensesData([]);
+    }
+  }, [session]);
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -467,33 +499,6 @@ export default function AnalyticsDashboardPage() {
       setTimeout(() => setActionSuccess(null), 4000);
     }
   };
-
-  // MOCK DATA SETS FOR ADDITIONAL REPORTS
-  const topDishes = [
-    { name: 'Butter Chicken', qty: 245, amount: 5365.50, profit: 3430.00 },
-    { name: 'Woodfired Margherita Pizza', qty: 189, amount: 2644.11, profit: 1850.50 },
-    { name: 'Paneer Tikka', qty: 154, amount: 2448.60, profit: 1720.00 },
-    { name: 'Classic Smash Burger', qty: 142, amount: 2128.58, profit: 1390.00 },
-    { name: 'Truffle Parmesan Fries', qty: 98, amount: 931.00, profit: 710.00 },
-  ];
-
-  const expensesData = [
-    { category: 'Raw Food Supplies', vendor: 'Global Foods Wholesalers', date: '2026-06-18', amount: 1250.00, status: 'Paid' },
-    { category: 'Utility: Electricity', vendor: 'Energy Australia', date: '2026-06-19', amount: 480.00, status: 'Paid' },
-    { category: 'Kitchen Equipment Repair', vendor: 'Warner Services', date: '2026-06-20', amount: 350.00, status: 'Pending' },
-  ];
-
-  const employeeData = [
-    { name: 'Sarah Connor', role: 'Cashier', checkouts: 54, sales: 2540.50, ratings: '4.9/5' },
-    { name: 'John Doe', role: 'Waiter', checkouts: 32, sales: 1280.00, ratings: '4.7/5' },
-    { name: 'Mitran Owner', role: 'Manager', checkouts: 12, sales: 890.00, ratings: '5.0/5' },
-  ];
-
-  const urlData = [
-    { title: 'Main Dine-In Menu QR', target: '/order-online/f-ordering-foods/menu', scans: 1450, conversions: '45%' },
-    { title: 'Table 3 Booking Scan', target: '/order-online/f-ordering-foods/book', scans: 340, conversions: '24%' },
-    { title: 'Mitran Promo Flyer', target: '/order-online/mitran-da-dhaba/menu', scans: 120, conversions: '18%' },
-  ];
 
   // Render left sidebar tabs list
   const reportTabs = [
@@ -987,24 +992,20 @@ export default function AnalyticsDashboardPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        <tr className="border-b border-slate-900/60">
-                          <td className="p-3 font-bold text-white">Extra Cheddar Cheese</td>
-                          <td className="p-3 text-slate-500">Classic Smash Burger</td>
-                          <td className="p-3 text-center font-bold text-slate-300">120 pcs</td>
-                          <td className="p-3 text-right font-bold text-emerald-400">$180.00</td>
-                        </tr>
-                        <tr className="border-b border-slate-900/60">
-                          <td className="p-3 font-bold text-white">Crispy Bacon Strips</td>
-                          <td className="p-3 text-slate-500">Classic Smash Burger</td>
-                          <td className="p-3 text-center font-bold text-slate-300">85 pcs</td>
-                          <td className="p-3 text-right font-bold text-emerald-400">$212.50</td>
-                        </tr>
-                        <tr className="border-b border-slate-900/60">
-                          <td className="p-3 font-bold text-white">Double Beef Patty</td>
-                          <td className="p-3 text-slate-500">Classic Smash Burger</td>
-                          <td className="p-3 text-center font-bold text-slate-300">60 pcs</td>
-                          <td className="p-3 text-right font-bold text-emerald-400">$210.00</td>
-                        </tr>
+                        {modifiersList.length > 0 ? (
+                          modifiersList.map((mod, idx) => (
+                            <tr key={idx} className="border-b border-slate-900/60 hover:bg-slate-900/10">
+                              <td className="p-3 font-bold text-white">{mod.name}</td>
+                              <td className="p-3 text-slate-500">{mod.menuItemName}</td>
+                              <td className="p-3 text-center font-bold text-slate-300">{mod.qty} pcs</td>
+                              <td className="p-3 text-right font-bold text-emerald-400">${mod.amount.toFixed(2)}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={4} className="p-3 text-center text-slate-500 font-bold">No modifiers sold yet.</td>
+                          </tr>
+                        )}
                       </tbody>
                     </table>
                   </div>

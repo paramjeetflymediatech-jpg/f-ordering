@@ -37,17 +37,20 @@ export default function ReservationsPage() {
   };
 
   useEffect(() => {
+    if (!session || !(session.user as any)?.store_id) return;
+    const storeId = (session.user as any).store_id;
+    const reservationsKey = `reservationsConfig_${storeId}`;
+
     const fetchReservations = async () => {
       try {
         setLoading(true);
-        // Fallback to local storage or mocks
-        const saved = localStorage.getItem('reservationsConfig');
+        // Fallback to local storage
+        const saved = localStorage.getItem(reservationsKey);
         if (saved) {
           setReservations(JSON.parse(saved));
         } else {
-          const mocks = seedMockReservations();
-          setReservations(mocks);
-          localStorage.setItem('reservationsConfig', JSON.stringify(mocks));
+          setReservations([]);
+          localStorage.setItem(reservationsKey, JSON.stringify([]));
         }
       } catch (err) {
         console.error(err);
@@ -56,7 +59,7 @@ export default function ReservationsPage() {
       }
     };
     fetchReservations();
-  }, []);
+  }, [session]);
 
   const triggerAlert = (msg: string, isError = false) => {
     if (isError) {
@@ -76,7 +79,8 @@ export default function ReservationsPage() {
       return r;
     });
     setReservations(updated);
-    localStorage.setItem('reservationsConfig', JSON.stringify(updated));
+    const storeId = (session?.user as any)?.store_id || 'default';
+    localStorage.setItem(`reservationsConfig_${storeId}`, JSON.stringify(updated));
     triggerAlert(`Reservation marked as ${newStatus}.`);
   };
 

@@ -34,18 +34,9 @@ export default function AdvanceSetupPage() {
   const [activeSubView, setActiveSubView] = useState<'dashboard' | 'delivery-zones' | 'delivery-rules' | 'rule-form' | 'locations' | 'location-form' | 'order-types' | 'surcharges' | 'printers'>('dashboard');
 
   // Printers & IOT Devices State
-  const [printers, setPrinters] = useState<any[]>([
-    { id: 'p1', seq: 1, name: 'WARNERS: ONLINE ORDER', location: 'Warners Bay', ip: 'http://10.0.0.22:80', type: 'Printer', status: 'active' },
-    { id: 'p2', seq: 2, name: 'WW - POS PRINTER', location: 'Warners Bay', ip: '—', type: 'Printer', status: 'active' },
-  ]);
+  const [printers, setPrinters] = useState<any[]>([]);
 
-  const [otherDevices, setOtherDevices] = useState<any[]>([
-    { id: 'd1', seq: 1, name: 'DRINKS', type: 'POS Printer', location: 'Warners Bay', description: 'DRINKS', lastUpdate: '29/07/26 @ 02:45 PM', status: 'active' },
-    { id: 'd2', seq: 2, name: 'DESSERTS', type: 'POS Printer', location: 'Warners Bay', description: 'DESSERTS', lastUpdate: '29/07/26 @ 02:45 PM', status: 'active' },
-    { id: 'd3', seq: 3, name: 'SIDES', type: 'POS Printer', location: 'Warners Bay', description: 'SIDES', lastUpdate: '29/07/26 @ 02:44 PM', status: 'active' },
-    { id: 'd4', seq: 4, name: 'MAINS', type: 'POS Printer', location: 'Warners Bay', description: 'MAINS', lastUpdate: '29/07/26 @ 02:44 PM', status: 'active' },
-    { id: 'd5', seq: 5, name: 'ENTREE', type: 'POS Printer', location: 'Warners Bay', description: 'ENTREE', lastUpdate: '29/07/26 @ 02:44 PM', status: 'active' },
-  ]);
+  const [otherDevices, setOtherDevices] = useState<any[]>([]);
 
   // Printers filter state
   const [deviceFilterName, setDeviceFilterName] = useState('');
@@ -204,28 +195,50 @@ export default function AdvanceSetupPage() {
   };
 
   useEffect(() => {
+    if (!session || !(session.user as any)?.store_id) return;
+    const storeId = (session.user as any).store_id;
+
     fetchZones();
     fetchLocations();
+
+    const channelsKey = `channelsConfig_${storeId}`;
+    const surchargesKey = `surchargesConfig_${storeId}`;
+    const printersKey = `printersConfig_${storeId}`;
+    const otherDevicesKey = `otherDevicesConfig_${storeId}`;
+
     // Load local storage states for order types, surcharges, and printers
     if (typeof window !== 'undefined') {
-      const savedChannels = localStorage.getItem('channelsConfig');
+      const savedChannels = localStorage.getItem(channelsKey);
       if (savedChannels) {
         try { setChannelsConfig(JSON.parse(savedChannels)); } catch(e){}
+      } else {
+        localStorage.setItem(channelsKey, JSON.stringify(channelsConfig));
       }
-      const savedSurcharges = localStorage.getItem('surchargesConfig');
+
+      const savedSurcharges = localStorage.getItem(surchargesKey);
       if (savedSurcharges) {
         try { setSurcharges(JSON.parse(savedSurcharges)); } catch(e){}
+      } else {
+        localStorage.setItem(surchargesKey, JSON.stringify(surcharges));
       }
-      const savedPrinters = localStorage.getItem('printersConfig');
+
+      const savedPrinters = localStorage.getItem(printersKey);
       if (savedPrinters) {
         try { setPrinters(JSON.parse(savedPrinters)); } catch(e){}
+      } else {
+        setPrinters([]);
+        localStorage.setItem(printersKey, JSON.stringify([]));
       }
-      const savedOtherDevices = localStorage.getItem('otherDevicesConfig');
+
+      const savedOtherDevices = localStorage.getItem(otherDevicesKey);
       if (savedOtherDevices) {
         try { setOtherDevices(JSON.parse(savedOtherDevices)); } catch(e){}
+      } else {
+        setOtherDevices([]);
+        localStorage.setItem(otherDevicesKey, JSON.stringify([]));
       }
     }
-  }, []);
+  }, [session]);
 
   const triggerAlert = (msg: string, isError = false) => {
     if (isError) {
@@ -559,12 +572,14 @@ export default function AdvanceSetupPage() {
 
   // Order types handlers
   const handleSaveOrderTypes = () => {
-    localStorage.setItem('channelsConfig', JSON.stringify(channelsConfig));
+    const storeId = (session?.user as any)?.store_id || 'default';
+    localStorage.setItem(`channelsConfig_${storeId}`, JSON.stringify(channelsConfig));
     triggerAlert('Order and Payment types updated successfully.');
   };
 
   const handleSaveSurcharges = () => {
-    localStorage.setItem('surchargesConfig', JSON.stringify(surcharges));
+    const storeId = (session?.user as any)?.store_id || 'default';
+    localStorage.setItem(`surchargesConfig_${storeId}`, JSON.stringify(surcharges));
     triggerAlert('Payment surcharges updated successfully.');
   };
 
@@ -604,9 +619,10 @@ export default function AdvanceSetupPage() {
       status: 'active'
     };
 
+    const storeId = (session?.user as any)?.store_id || 'default';
     const updated = [...printers, newPrinter];
     setPrinters(updated);
-    localStorage.setItem('printersConfig', JSON.stringify(updated));
+    localStorage.setItem(`printersConfig_${storeId}`, JSON.stringify(updated));
     setShowAddPrinterModal(false);
     setNewPrinterName('');
     setNewPrinterIp('');
@@ -615,9 +631,10 @@ export default function AdvanceSetupPage() {
 
   const handleDeletePrinter = (id: string) => {
     if (!confirm('Are you sure you want to delete this printer?')) return;
+    const storeId = (session?.user as any)?.store_id || 'default';
     const updated = printers.filter(p => p.id !== id).map((p, idx) => ({ ...p, seq: idx + 1 }));
     setPrinters(updated);
-    localStorage.setItem('printersConfig', JSON.stringify(updated));
+    localStorage.setItem(`printersConfig_${storeId}`, JSON.stringify(updated));
     triggerAlert('Printer deleted.');
   };
 
@@ -637,9 +654,10 @@ export default function AdvanceSetupPage() {
       status: 'active'
     };
 
+    const storeId = (session?.user as any)?.store_id || 'default';
     const updated = [...otherDevices, newDev];
     setOtherDevices(updated);
-    localStorage.setItem('otherDevicesConfig', JSON.stringify(updated));
+    localStorage.setItem(`otherDevicesConfig_${storeId}`, JSON.stringify(updated));
     setShowAddOtherDeviceModal(false);
     setNewDeviceName('');
     setNewDeviceDesc('');
@@ -648,9 +666,10 @@ export default function AdvanceSetupPage() {
 
   const handleDeleteOtherDevice = (id: string) => {
     if (!confirm('Are you sure you want to delete this device?')) return;
+    const storeId = (session?.user as any)?.store_id || 'default';
     const updated = otherDevices.filter(d => d.id !== id).map((d, idx) => ({ ...d, seq: idx + 1 }));
     setOtherDevices(updated);
-    localStorage.setItem('otherDevicesConfig', JSON.stringify(updated));
+    localStorage.setItem(`otherDevicesConfig_${storeId}`, JSON.stringify(updated));
     triggerAlert('Device deleted.');
   };
 
