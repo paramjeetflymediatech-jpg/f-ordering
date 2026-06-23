@@ -28,6 +28,11 @@ export interface HeldOrder {
   orderType: 'dine_in' | 'takeaway' | 'delivery';
   selectedTable: { id: string; table_number: string } | null;
   notes?: string;
+  customer?: {
+    name?: string;
+    phone?: string;
+    email?: string;
+  } | null;
 }
 
 interface POSState {
@@ -204,7 +209,10 @@ export const usePOSStore = create<POSState>((set, get) => ({
     
     const taxableAmount = Math.max(0, subtotal - totalDiscount);
     const tax = (taxableAmount * get().taxRate) / 100;
-    const total = taxableAmount + tax;
+    
+    // Delivery fee surcharge
+    const deliveryFee = get().orderType === 'delivery' ? 5.00 : 0.00;
+    const total = taxableAmount + tax + deliveryFee;
 
     return {
       subtotal: parseFloat(subtotal.toFixed(2)),

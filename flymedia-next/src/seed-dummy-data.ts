@@ -20,9 +20,111 @@ import {
   Payment as CentralPayment,
   RestaurantTable as CentralTable,
   MenuCategory as CentralCategory,
-  MenuItem as CentralMenuItem
+  MenuItem as CentralMenuItem,
+  MenuVariant as CentralVariant,
+  MenuAddon as CentralAddon
 } from './models';
 import { provisionTenantDatabase, getTenantModels } from './lib/tenant-db';
+
+async function seedMenuAndTablesInCentral(orgId: string, storeId: string, itemsList: any[]) {
+  const categoriesMap: Record<string, any> = {};
+  for (const item of itemsList) {
+    if (!categoriesMap[item.category]) {
+      const [cat] = await CentralCategory.findOrCreate({
+        where: { name: item.category, store_id: storeId },
+        defaults: {
+          name: item.category,
+          sort_order: 1,
+          is_active: true,
+          organization_id: orgId,
+          store_id: storeId,
+        }
+      });
+      categoriesMap[item.category] = cat;
+    }
+    const category = categoriesMap[item.category];
+    const [menuItem] = await CentralMenuItem.findOrCreate({
+      where: { name: item.name, category_id: category.id },
+      defaults: {
+        category_id: category.id,
+        name: item.name,
+        description: item.description,
+        price: item.price,
+        is_available: true,
+        organization_id: orgId,
+        store_id: storeId,
+      }
+    });
+
+    // Seed variants
+    if (item.variants) {
+      await CentralVariant.destroy({ where: { menu_item_id: menuItem.id } });
+      for (const v of item.variants) {
+        await CentralVariant.create({
+          menu_item_id: menuItem.id,
+          name: v.name,
+          additional_price: v.additional_price,
+        });
+      }
+    }
+
+    // Seed addons
+    if (item.addons) {
+      await CentralAddon.destroy({ where: { menu_item_id: menuItem.id } });
+      for (const a of item.addons) {
+        await CentralAddon.create({
+          menu_item_id: menuItem.id,
+          name: a.name,
+          price: a.price,
+        });
+      }
+    }
+  }
+
+  // Seed Tables in Central
+  await Promise.all([
+    CentralTable.findOrCreate({
+      where: { table_number: 'Table 1', store_id: storeId },
+      defaults: {
+        table_number: 'Table 1',
+        seating_capacity: 4,
+        status: 'available',
+        store_id: storeId,
+        organization_id: orgId,
+      }
+    }),
+    CentralTable.findOrCreate({
+      where: { table_number: 'Table 2', store_id: storeId },
+      defaults: {
+        table_number: 'Table 2',
+        seating_capacity: 4,
+        status: 'available',
+        store_id: storeId,
+        organization_id: orgId,
+      }
+    }),
+    CentralTable.findOrCreate({
+      where: { table_number: 'Table 3', store_id: storeId },
+      defaults: {
+        table_number: 'Table 3',
+        seating_capacity: 6,
+        status: 'available',
+        store_id: storeId,
+        organization_id: orgId,
+      }
+    }),
+    CentralTable.findOrCreate({
+      where: { table_number: 'Table 4', store_id: storeId },
+      defaults: {
+        table_number: 'Table 4',
+        seating_capacity: 2,
+        status: 'available',
+        store_id: storeId,
+        organization_id: orgId,
+      }
+    }),
+  ]);
+}
 
 async function seedCentralDb() {
   console.log('--- Seeding Central Database ---');
@@ -139,6 +241,91 @@ async function seedCentralDb() {
     }
   });
   await (mOwner as any).addRole(ownerRole);
+
+  // 3. Seed Menu & Tables in Central DB for both brands
+  console.log('Seeding central menu & tables for F-Ordering Foods...');
+  await seedMenuAndTablesInCentral(
+    fOrg.id,
+    fStore.id,
+    [
+      { category: 'Appetizers', name: 'Truffle Parmesan Fries', description: 'Fries with white truffle oil and parmesan', price: 9.50 },
+      { 
+        category: 'Main Course', 
+        name: 'Classic Smash Burger', 
+        description: 'Smash beef patty with cheddar cheese', 
+        price: 14.99,
+        variants: [
+          { name: 'Single Patty', additional_price: 0.00 },
+          { name: 'Double Patty', additional_price: 3.50 },
+          { name: 'Triple Patty', additional_price: 6.00 }
+        ],
+        addons: [
+          { name: 'Extra Cheese', price: 1.50 },
+          { name: 'Bacon Stripe', price: 2.00 },
+          { name: 'Fried Egg', price: 1.50 }
+        ]
+      },
+      { 
+        category: 'Main Course', 
+        name: 'Woodfired Margherita Pizza', 
+        description: 'Fresh buffalo mozzarella and basil', 
+        price: 13.99,
+        variants: [
+          { name: 'Small 9"', additional_price: 0.00 },
+          { name: 'Medium 12"', additional_price: 4.00 },
+          { name: 'Large 15"', additional_price: 8.00 }
+        ],
+        addons: [
+          { name: 'Extra Mozzarella', price: 2.00 },
+          { name: 'Truffle Oil Drizzle', price: 3.00 },
+          { name: 'Olives', price: 1.00 }
+        ]
+      },
+      { 
+        category: 'Beverages', 
+        name: 'Fresh Mint Lime Soda', 
+        description: 'Sparkling mint lime mocktail', 
+        price: 4.50,
+        variants: [
+          { name: 'Regular', additional_price: 0.00 },
+          { name: 'Large', additional_price: 1.50 }
+        ]
+      },
+    ]
+  );
+
+  console.log('Seeding central menu & tables for Mitran Da Dhaba...');
+  await seedMenuAndTablesInCentral(
+    mOrg.id,
+    mStore.id,
+    [
+      { 
+        category: 'Entree', 
+        name: 'Paneer Tikka', 
+        description: 'Grilled marinated cottage cheese cubes', 
+        price: 15.90,
+        variants: [
+          { name: 'Standard Portion', additional_price: 0.00 },
+          { name: 'Large Portion', additional_price: 5.00 }
+        ]
+      },
+      { 
+        category: 'Mains', 
+        name: 'Butter Chicken', 
+        description: 'Creamy tomato-based clay oven tandoori chicken', 
+        price: 21.90,
+        variants: [
+          { name: 'Half portion', additional_price: 0.00 },
+          { name: 'Full portion', additional_price: 8.00 }
+        ],
+        addons: [
+          { name: 'Extra Butter Drizzle', price: 1.00 },
+          { name: 'Add Boneless Breast pieces', price: 3.50 }
+        ]
+      },
+      { category: 'Mains', name: 'Dal Makhani', description: 'Slow cooked creamy black lentils', price: 18.90 },
+    ]
+  );
 
   // Clean up transactional records to avoid duplicates/unique constraints on re-run
   await CentralPayment.destroy({ where: {}, force: true }).catch(() => {});
@@ -279,7 +466,7 @@ async function seedTenantDb(slug: string, storeName: string, itemsList: any[], c
       categoriesMap[item.category] = cat;
     }
     const category = categoriesMap[item.category];
-    await models.MenuItem.findOrCreate({
+    const [menuItem] = await models.MenuItem.findOrCreate({
       where: { name: item.name },
       defaults: {
         category_id: category.id,
@@ -291,6 +478,30 @@ async function seedTenantDb(slug: string, storeName: string, itemsList: any[], c
         store_id: store.id,
       }
     });
+
+    // Seed variants if provided
+    if (item.variants) {
+      await models.MenuVariant.destroy({ where: { menu_item_id: menuItem.id } });
+      for (const v of item.variants) {
+        await models.MenuVariant.create({
+          menu_item_id: menuItem.id,
+          name: v.name,
+          additional_price: v.additional_price,
+        });
+      }
+    }
+
+    // Seed addons if provided
+    if (item.addons) {
+      await models.MenuAddon.destroy({ where: { menu_item_id: menuItem.id } });
+      for (const a of item.addons) {
+        await models.MenuAddon.create({
+          menu_item_id: menuItem.id,
+          name: a.name,
+          price: a.price,
+        });
+      }
+    }
   }
 
   // Seed Tables
@@ -369,9 +580,48 @@ async function main() {
       'The Grand Pavillion Warner Bay',
       [
         { category: 'Appetizers', name: 'Truffle Parmesan Fries', description: 'Fries with white truffle oil and parmesan', price: 9.50 },
-        { category: 'Main Course', name: 'Classic Smash Burger', description: 'Smash beef patty with cheddar cheese', price: 14.99 },
-        { category: 'Main Course', name: 'Woodfired Margherita Pizza', description: 'Fresh buffalo mozzarella and basil', price: 13.99 },
-        { category: 'Beverages', name: 'Fresh Mint Lime Soda', description: 'Sparkling mint lime mocktail', price: 4.50 },
+        { 
+          category: 'Main Course', 
+          name: 'Classic Smash Burger', 
+          description: 'Smash beef patty with cheddar cheese', 
+          price: 14.99,
+          variants: [
+            { name: 'Single Patty', additional_price: 0.00 },
+            { name: 'Double Patty', additional_price: 3.50 },
+            { name: 'Triple Patty', additional_price: 6.00 }
+          ],
+          addons: [
+            { name: 'Extra Cheese', price: 1.50 },
+            { name: 'Bacon Stripe', price: 2.00 },
+            { name: 'Fried Egg', price: 1.50 }
+          ]
+        },
+        { 
+          category: 'Main Course', 
+          name: 'Woodfired Margherita Pizza', 
+          description: 'Fresh buffalo mozzarella and basil', 
+          price: 13.99,
+          variants: [
+            { name: 'Small 9"', additional_price: 0.00 },
+            { name: 'Medium 12"', additional_price: 4.00 },
+            { name: 'Large 15"', additional_price: 8.00 }
+          ],
+          addons: [
+            { name: 'Extra Mozzarella', price: 2.00 },
+            { name: 'Truffle Oil Drizzle', price: 3.00 },
+            { name: 'Olives', price: 1.00 }
+          ]
+        },
+        { 
+          category: 'Beverages', 
+          name: 'Fresh Mint Lime Soda', 
+          description: 'Sparkling mint lime mocktail', 
+          price: 4.50,
+          variants: [
+            { name: 'Regular', additional_price: 0.00 },
+            { name: 'Large', additional_price: 1.50 }
+          ]
+        },
       ],
       [
         { name: 'Mr Warrick Jordan', email: 'warrickjordan@gmail.com', phone: '0451633197', orderCount: 3, orderAmount: 50.00 },
@@ -384,8 +634,30 @@ async function main() {
       'mitran-da-dhaba',
       'Mitran Da Dhaba',
       [
-        { category: 'Entree', name: 'Paneer Tikka', description: 'Grilled marinated cottage cheese cubes', price: 15.90 },
-        { category: 'Mains', name: 'Butter Chicken', description: 'Creamy tomato-based clay oven tandoori chicken', price: 21.90 },
+        { 
+          category: 'Entree', 
+          name: 'Paneer Tikka', 
+          description: 'Grilled marinated cottage cheese cubes', 
+          price: 15.90,
+          variants: [
+            { name: 'Standard Portion', additional_price: 0.00 },
+            { name: 'Large Portion', additional_price: 5.00 }
+          ]
+        },
+        { 
+          category: 'Mains', 
+          name: 'Butter Chicken', 
+          description: 'Creamy tomato-based clay oven tandoori chicken', 
+          price: 21.90,
+          variants: [
+            { name: 'Half portion', additional_price: 0.00 },
+            { name: 'Full portion', additional_price: 8.00 }
+          ],
+          addons: [
+            { name: 'Extra Butter Drizzle', price: 1.00 },
+            { name: 'Add Boneless Breast pieces', price: 3.50 }
+          ]
+        },
         { category: 'Mains', name: 'Dal Makhani', description: 'Slow cooked creamy black lentils', price: 18.90 },
       ],
       [

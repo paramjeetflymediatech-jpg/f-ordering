@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth';
-import { sequelize, Order, OrderItem, Payment, RestaurantTable, MenuItem } from '../../../models';
+import { sequelize, Order, OrderItem, Payment, RestaurantTable, MenuItem, Customer } from '../../../models';
 
 export async function GET() {
   try {
@@ -31,6 +31,10 @@ export async function GET() {
         {
           model: RestaurantTable,
           attributes: ['table_number'],
+        },
+        {
+          model: Customer,
+          as: 'customer',
         }
       ],
       order: [['createdAt', 'DESC']],
@@ -68,10 +72,38 @@ export async function POST(request: Request) {
       status = 'completed',
       heldOrderId,
       notes,
+      customerName,
+      customerPhone,
+      customerEmail,
+      deliveryAddress,
+      cartRef,
+      readyBy,
     } = body;
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
+    }
+
+    // Resolve Customer Profile
+    let customerId = null;
+    if (customerPhone) {
+      const [customerObj] = await Customer.findOrCreate({
+        where: { phone: customerPhone },
+        defaults: {
+          organization_id,
+          name: customerName || 'POS Guest Customer',
+          email: customerEmail || null,
+        },
+        transaction,
+      });
+      customerId = customerObj.id;
+    } else if (customerName) {
+      const customerObj = await Customer.create({
+        organization_id,
+        name: customerName,
+        email: customerEmail || null,
+      }, { transaction });
+      customerId = customerObj.id;
     }
 
     // 1. Calculate Prices
@@ -84,7 +116,10 @@ export async function POST(request: Request) {
     const totalDiscount = percentDiscountVal + discountAmount;
     const taxableAmount = Math.max(0, subtotal - totalDiscount);
     const tax = (taxableAmount * taxRate) / 100;
-    const total = taxableAmount + tax;
+    
+    // Add delivery surcharge if applicable
+    const deliverySurcharge = orderType === 'delivery' ? 5.00 : 0.00;
+    const total = taxableAmount + tax + deliverySurcharge;
 
     let order;
 
@@ -100,6 +135,7 @@ export async function POST(request: Request) {
         {
           table_id: tableId || null,
           cashier_id,
+          customer_id: customerId,
           order_type: orderType,
           status: orderType === 'dine_in' ? 'preparing' : 'ready',
           subtotal,
@@ -124,6 +160,7 @@ export async function POST(request: Request) {
           store_id,
           table_id: tableId || null,
           cashier_id,
+          customer_id: customerId,
           order_number: orderNumber,
           order_type: orderType,
           status: status === 'on_hold' ? 'on_hold' : (orderType === 'dine_in' ? 'preparing' : 'ready'),
@@ -136,6 +173,18 @@ export async function POST(request: Request) {
       );
     }
 
+    // Consolidate delivery details, cart refs, and ready by times into notes
+    let finalNotes = notes || '';
+    if (orderType === 'delivery' && deliveryAddress) {
+      finalNotes = `Delivery Address: ${deliveryAddress}${finalNotes ? ` | Notes: ${finalNotes}` : ''}`;
+    }
+    if (readyBy) {
+      finalNotes = `Ready By: ${readyBy}${finalNotes ? ` | ${finalNotes}` : ''}`;
+    }
+    if (orderType !== 'dine_in' && cartRef) {
+      finalNotes = `Cart Ref: ${cartRef}${finalNotes ? ` | ${finalNotes}` : ''}`;
+    }
+
     // 4. Create Order Items
     const orderItemsPayload = items.map((item: any) => ({
       order_id: order.id,
@@ -145,7 +194,7 @@ export async function POST(request: Request) {
       quantity: item.quantity,
       unit_price: item.price,
       total_price: item.price * item.quantity,
-      notes: item.notes || notes || null,
+      notes: item.notes || finalNotes || null,
     }));
 
     await OrderItem.bulkCreate(orderItemsPayload, { transaction });
@@ -203,7 +252,9 @@ export async function POST(request: Request) {
           unit_price: item.price,
           MenuItem: {
             name: item.name
-          }
+          },
+          addons: item.addons || [],
+          notes: item.notes || null
         }))
       },
     });

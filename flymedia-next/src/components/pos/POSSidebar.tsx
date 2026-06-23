@@ -1,5 +1,6 @@
 import React from 'react';
 import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import {
   Layers,
   FolderOpen,
@@ -14,14 +15,25 @@ import {
 interface POSSidebarProps {
   session: any;
   heldOrdersCount: number;
-  setActiveModal: (modal: any) => void;
+  setActiveModal?: (modal: any) => void;
+  activeTab?: 'pos' | 'drafts';
 }
 
-export function POSSidebar({ session, heldOrdersCount, setActiveModal }: POSSidebarProps) {
+export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab = 'pos' }: POSSidebarProps) {
+  const router = useRouter();
+
+  const handleModalClick = (modalName: string) => {
+    if (activeTab === 'drafts') {
+      router.push('/pos');
+    } else {
+      setActiveModal?.(modalName);
+    }
+  };
+
   return (
     <aside className="w-20 shrink-0 border-r border-[#1e293b]/60 bg-[#0c101b] flex flex-col justify-between items-center py-5">
       {/* Brand Logo */}
-      <div className="flex flex-col items-center gap-1 cursor-pointer">
+      <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => router.push('/pos')}>
         <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#ea580c] shadow-lg shadow-[#f59e0b]/20">
           <span className="text-xl font-black text-white italic">T</span>
           <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-[#0c101b] bg-emerald-400"></span>
@@ -31,21 +43,34 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal }: POSSide
       {/* Navigation items */}
       <nav className="flex flex-col gap-2.5 w-full px-2">
         <button
-          onClick={() => {}}
-          className="group relative flex w-full flex-col items-center justify-center rounded-xl py-3 text-[#f59e0b] bg-[#1a2336] transition duration-200"
+          onClick={() => router.push('/pos')}
+          className={`group relative flex w-full flex-col items-center justify-center rounded-xl py-3 transition duration-200 ${
+            activeTab === 'pos'
+              ? 'text-[#f59e0b] bg-[#1a2336]'
+              : 'text-slate-400 hover:bg-[#111827] hover:text-white'
+          }`}
           title="Dashboard Terminal"
         >
           {/* Active Indicator line */}
-          <span className="absolute left-0 top-1/4 h-1/2 w-1 rounded-r-md bg-[#f59e0b]"></span>
+          {activeTab === 'pos' && (
+            <span className="absolute left-0 top-1/4 h-1/2 w-1 rounded-r-md bg-[#f59e0b]"></span>
+          )}
           <Layers className="h-5.5 w-5.5" />
           <span className="text-[10px] font-bold mt-1 scale-90">POS</span>
         </button>
 
         <button
-          onClick={() => setActiveModal('resume')}
-          className="group flex w-full flex-col items-center justify-center rounded-xl py-3 text-slate-400 hover:bg-[#111827] hover:text-white transition duration-200"
-          title="Hold Queue"
+          onClick={() => router.push('/pos/drafts')}
+          className={`group relative flex w-full flex-col items-center justify-center rounded-xl py-3 transition duration-200 ${
+            activeTab === 'drafts'
+              ? 'text-[#f59e0b] bg-[#1a2336]'
+              : 'text-slate-400 hover:bg-[#111827] hover:text-white'
+          }`}
+          title="Hold Queue / Drafts"
         >
+          {activeTab === 'drafts' && (
+            <span className="absolute left-0 top-1/4 h-1/2 w-1 rounded-r-md bg-[#f59e0b]"></span>
+          )}
           <div className="relative">
             <FolderOpen className="h-5.5 w-5.5" />
             {heldOrdersCount > 0 && (
@@ -54,11 +79,11 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal }: POSSide
               </span>
             )}
           </div>
-          <span className="text-[10px] font-bold mt-1 scale-90">Orders</span>
+          <span className="text-[10px] font-bold mt-1 scale-90">Drafts</span>
         </button>
 
         <button
-          onClick={() => setActiveModal('table')}
+          onClick={() => handleModalClick('table')}
           className="group flex w-full flex-col items-center justify-center rounded-xl py-3 text-slate-400 hover:bg-[#111827] hover:text-white transition duration-200"
           title="Dining Tables Status"
         >
@@ -87,7 +112,7 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal }: POSSide
         </a>
 
         <button
-          onClick={() => setActiveModal('inventory')}
+          onClick={() => handleModalClick('inventory')}
           className="group flex w-full flex-col items-center justify-center rounded-xl py-3 text-slate-400 hover:bg-[#111827] hover:text-white transition duration-200"
           title="Ingredient Inventory"
         >
@@ -96,7 +121,7 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal }: POSSide
         </button>
 
         <button
-          onClick={() => setActiveModal('settings')}
+          onClick={() => handleModalClick('settings')}
           className="group flex w-full flex-col items-center justify-center rounded-xl py-3 text-slate-400 hover:bg-[#111827] hover:text-white transition duration-200"
           title="System Settings"
         >

@@ -12,6 +12,7 @@ import { POSTableGrid } from '../../components/pos/POSTableGrid';
 import { POSMenuGrid } from '../../components/pos/POSMenuGrid';
 import { POSCart } from '../../components/pos/POSCart';
 import { POSModals } from '../../components/pos/POSModals';
+import { POSOrderTypePanel } from '../../components/pos/POSOrderTypePanel';
 import { Sparkline, DailySalesTrendChart, CategorySalesChart } from '../../components/pos/POSCharts';
 
 import { Clock, TrendingUp } from 'lucide-react';
@@ -47,6 +48,7 @@ export default function POSPage() {
     setSplitCount,
     resumeOrder,
     getTotals,
+    setOrderType,
   } = usePOSStore();
 
   // Component States
@@ -55,6 +57,23 @@ export default function POSPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [tables, setTables] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
+
+  // Order Type & Customization form states
+  const [viewMode, setViewMode] = useState<'menu' | 'order_type'>('menu');
+  const [orderNotes, setOrderNotes] = useState('');
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [cartRef, setCartRef] = useState('MA-001');
+  const [readyDate, setReadyDate] = useState('');
+  const [readyTime, setReadyTime] = useState('');
+  const [dineInCovers, setDineInCovers] = useState('1');
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [deliveryAddress2, setDeliveryAddress2] = useState('');
+  const [deliveryCity, setDeliveryCity] = useState('');
+  const [deliveryZip, setDeliveryZip] = useState('');
+  const [deliveryState, setDeliveryState] = useState('NSW');
+  const [deliveryCountry, setDeliveryCountry] = useState('Australia');
   
   // Track active cart state for each table dynamically
   const [tableCarts, setTableCarts] = useState<Record<string, any[]>>({});
@@ -138,6 +157,162 @@ export default function POSPage() {
       .catch((err) => console.error('Error fetching held orders:', err));
   };
 
+  const handleClearCart = () => {
+    clearCart();
+    setOrderNotes('');
+    setCustomerName('');
+    setCustomerPhone('');
+    setCustomerEmail('');
+    setCartRef('MA-001');
+    setReadyDate('');
+    setReadyTime('');
+    setDineInCovers('1');
+    setDeliveryAddress('');
+    setDeliveryAddress2('');
+    setDeliveryCity('');
+    setDeliveryZip('');
+    setDeliveryState('NSW');
+    setDeliveryCountry('Australia');
+    setViewMode('menu');
+  };
+
+  const handleResumeOrder = (id: string) => {
+    const order = heldOrders.find((o) => o.id === id);
+    if (order) {
+      if (order.customer) {
+        setCustomerName(order.customer.name || '');
+        setCustomerPhone(order.customer.phone || '');
+        setCustomerEmail(order.customer.email || '');
+      } else {
+        setCustomerName('');
+        setCustomerPhone('');
+        setCustomerEmail('');
+      }
+
+      const rawNotes = order.notes || '';
+      let parsedNotes = rawNotes;
+      let parsedAddress = '';
+      let parsedCartRef = '';
+      let parsedReadyBy = '';
+
+      const parts = rawNotes.split(' | ');
+      for (const part of parts) {
+        if (part.startsWith('Delivery Address: ')) {
+          parsedAddress = part.replace('Delivery Address: ', '');
+        } else if (part.startsWith('Ready By: ')) {
+          parsedReadyBy = part.replace('Ready By: ', '');
+        } else if (part.startsWith('Cart Ref: ')) {
+          parsedCartRef = part.replace('Cart Ref: ', '');
+        } else if (part.startsWith('Notes: ')) {
+          parsedNotes = part.replace('Notes: ', '');
+        }
+      }
+
+      setOrderNotes(parsedNotes);
+      setCartRef(parsedCartRef || 'MA-001');
+
+      if (parsedReadyBy) {
+        const [datePart, timePart] = parsedReadyBy.split(' ');
+        if (datePart) setReadyDate(datePart);
+        if (timePart) setReadyTime(timePart);
+      } else {
+        setReadyDate('');
+        setReadyTime('');
+      }
+
+      if (parsedAddress) {
+        setDeliveryAddress(parsedAddress);
+        setDeliveryAddress2('');
+        setDeliveryCity('');
+        setDeliveryZip('');
+        setDeliveryState('NSW');
+        setDeliveryCountry('Australia');
+      } else {
+        setDeliveryAddress('');
+        setDeliveryAddress2('');
+        setDeliveryCity('');
+        setDeliveryZip('');
+        setDeliveryState('NSW');
+        setDeliveryCountry('Australia');
+      }
+
+      resumeOrder(id);
+    }
+  };
+
+  const lastResumedOrderIdRef = React.useRef<string | null>(null);
+
+  useEffect(() => {
+    if (activeHeldOrderId && heldOrders.length > 0) {
+      if (lastResumedOrderIdRef.current === activeHeldOrderId) {
+        return;
+      }
+      lastResumedOrderIdRef.current = activeHeldOrderId;
+
+      const order = heldOrders.find((o) => o.id === activeHeldOrderId);
+      if (order) {
+        if (order.customer) {
+          setCustomerName(order.customer.name || '');
+          setCustomerPhone(order.customer.phone || '');
+          setCustomerEmail(order.customer.email || '');
+        } else {
+          setCustomerName('');
+          setCustomerPhone('');
+          setCustomerEmail('');
+        }
+
+        const rawNotes = order.notes || '';
+        let parsedNotes = rawNotes;
+        let parsedAddress = '';
+        let parsedCartRef = '';
+        let parsedReadyBy = '';
+
+        const parts = rawNotes.split(' | ');
+        for (const part of parts) {
+          if (part.startsWith('Delivery Address: ')) {
+            parsedAddress = part.replace('Delivery Address: ', '');
+          } else if (part.startsWith('Ready By: ')) {
+            parsedReadyBy = part.replace('Ready By: ', '');
+          } else if (part.startsWith('Cart Ref: ')) {
+            parsedCartRef = part.replace('Cart Ref: ', '');
+          } else if (part.startsWith('Notes: ')) {
+            parsedNotes = part.replace('Notes: ', '');
+          }
+        }
+
+        setOrderNotes(parsedNotes);
+        setCartRef(parsedCartRef || 'MA-001');
+
+        if (parsedReadyBy) {
+          const [datePart, timePart] = parsedReadyBy.split(' ');
+          if (datePart) setReadyDate(datePart);
+          if (timePart) setReadyTime(timePart);
+        } else {
+          setReadyDate('');
+          setReadyTime('');
+        }
+
+        if (parsedAddress) {
+          setDeliveryAddress(parsedAddress);
+          setDeliveryAddress2('');
+          setDeliveryCity('');
+          setDeliveryZip('');
+          setDeliveryState('NSW');
+          setDeliveryCountry('Australia');
+        } else {
+          setDeliveryAddress('');
+          setDeliveryAddress2('');
+          setDeliveryCity('');
+          setDeliveryZip('');
+          setDeliveryState('NSW');
+          setDeliveryCountry('Australia');
+        }
+      }
+    } else if (!activeHeldOrderId) {
+      lastResumedOrderIdRef.current = null;
+    }
+  }, [activeHeldOrderId, heldOrders]);
+
   // Fetch Menu, Tables, Stats, and Held Orders on mount
   useEffect(() => {
     if (status === 'authenticated') {
@@ -218,6 +393,13 @@ export default function POSPage() {
           discountAmount,
           taxRate,
           heldOrderId: activeHeldOrderId || undefined,
+          notes: orderNotes || checkoutNotes || undefined,
+          customerName,
+          customerPhone,
+          customerEmail,
+          deliveryAddress: deliveryAddress ? `${deliveryAddress}${deliveryAddress2 ? `, ${deliveryAddress2}` : ''}, ${deliveryCity}, ${deliveryZip}, ${deliveryState}, ${deliveryCountry}` : undefined,
+          cartRef,
+          readyBy: readyDate && readyTime ? `${readyDate} ${readyTime}` : undefined,
         }),
       });
 
@@ -234,7 +416,7 @@ export default function POSPage() {
           });
         }
 
-        clearCart();
+        handleClearCart();
         fetchTables(); // Refresh table statuses in POS screen
         fetchStats();  // Refresh stats dynamically in POS screen
         fetchHeldOrders(); // Refresh held orders list in POS screen
@@ -266,13 +448,19 @@ export default function POSPage() {
           discountAmount,
           taxRate,
           status: 'on_hold',
-          notes,
+          notes: notes || orderNotes || undefined,
+          customerName,
+          customerPhone,
+          customerEmail,
+          deliveryAddress: deliveryAddress ? `${deliveryAddress}${deliveryAddress2 ? `, ${deliveryAddress2}` : ''}, ${deliveryCity}, ${deliveryZip}, ${deliveryState}, ${deliveryCountry}` : undefined,
+          cartRef,
+          readyBy: readyDate && readyTime ? `${readyDate} ${readyTime}` : undefined,
         }),
       });
 
       const data = await res.json();
       if (data.success) {
-        clearCart();
+        handleClearCart();
         fetchTables();
         fetchStats();
         fetchHeldOrders();
@@ -426,127 +614,167 @@ export default function POSPage() {
         {/* TOP ROW HEADER */}
         <POSHeader session={session} />
 
-        {/* MAIN BODY AREA */}
-        <div className="p-6 space-y-6 flex-1 flex flex-col justify-start">
-          
-          {/* A. ORDER STATISTICS */}
-          <div>
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3.5">
-              Order Statistics
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              
-              <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
-                <div>
-                  <p className="text-xs font-semibold text-slate-400">Total Orders</p>
-                  <p className="text-2xl font-black text-white mt-1">
-                    {stats?.totalOrders !== undefined ? stats.totalOrders : (284 + (recentOrder ? 1 : 0))}
-                  </p>
-                  <span className="text-[10px] font-semibold text-[#f59e0b] bg-[#f59e0b]/10 px-1.5 py-0.5 rounded mt-1 inline-block">
-                    +8.5% today
-                  </span>
-                </div>
-                <Sparkline points={stats?.sparklines?.orders || [35, 45, 30, 55, 40, 75, 88, 85]} strokeColor="#f59e0b" />
-              </div>
-
-              <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
-                <div>
-                  <p className="text-xs font-semibold text-slate-400">Active Orders</p>
-                  <p className="text-2xl font-black text-white mt-1">
-                    {stats?.activeOrders !== undefined ? stats.activeOrders : 22}
-                  </p>
-                  <span className="text-[10px] font-semibold text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
-                    Live tables
-                  </span>
-                </div>
-                <Sparkline points={stats?.sparklines?.orders ? stats.sparklines.orders.map((o: number) => Math.round(o * 0.15 + 10)) : [12, 18, 10, 22, 14, 25, 20, 22]} strokeColor="#06b6d4" />
-              </div>
-
-              <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
-                <div>
-                  <p className="text-xs font-semibold text-slate-400">Pending Billing</p>
-                  <p className="text-2xl font-black text-white mt-1">
-                    {stats?.pendingBilling !== undefined ? stats.pendingBilling : (7 + heldOrders.length)}
-                  </p>
-                  <span className="text-[10px] font-semibold text-purple-500 bg-purple-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
-                    Held bills
-                  </span>
-                </div>
-                <Sparkline points={stats?.sparklines?.pending || [4, 8, 3, 10, 5, 8, 7, 9]} strokeColor="#a855f7" />
-              </div>
-
-              <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
-                <div>
-                  <p className="text-xs font-semibold text-slate-400">Today's Sales</p>
-                  <p className="text-2xl font-black text-white mt-1">
-                    ${((stats?.todaySales !== undefined ? stats.todaySales : 4850.50) + subtotal).toFixed(2)}
-                  </p>
-                  <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
-                    +12% yesterday
-                  </span>
-                </div>
-                <Sparkline points={stats?.sparklines?.sales || [1500, 2500, 1800, 3400, 2600, 4200, 4850.5]} strokeColor="#10b981" />
-              </div>
-
-            </div>
-          </div>
-
-          {/* B. ACTIVE TABLES & MENU GRID ROW */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+        {viewMode === 'order_type' ? (
+          <POSOrderTypePanel
+            onBack={() => setViewMode('menu')}
+            onSave={() => setViewMode('menu')}
+            tables={tables}
+            selectedTable={selectedTable}
+            selectTable={selectTable}
+            orderType={orderType}
+            setOrderType={setOrderType}
+            orderNotes={orderNotes}
+            setOrderNotes={setOrderNotes}
+            customerName={customerName}
+            setCustomerName={setCustomerName}
+            customerPhone={customerPhone}
+            setCustomerPhone={setCustomerPhone}
+            customerEmail={customerEmail}
+            setCustomerEmail={setCustomerEmail}
+            cartRef={cartRef}
+            setCartRef={setCartRef}
+            readyDate={readyDate}
+            setReadyDate={setReadyDate}
+            readyTime={readyTime}
+            setReadyTime={setReadyTime}
+            dineInCovers={dineInCovers}
+            setDineInCovers={setDineInCovers}
+            deliveryAddress={deliveryAddress}
+            setDeliveryAddress={setDeliveryAddress}
+            deliveryAddress2={deliveryAddress2}
+            setDeliveryAddress2={setDeliveryAddress2}
+            deliveryCity={deliveryCity}
+            setDeliveryCity={setDeliveryCity}
+            deliveryZip={deliveryZip}
+            setDeliveryZip={setDeliveryZip}
+            deliveryState={deliveryState}
+            setDeliveryState={setDeliveryState}
+            deliveryCountry={deliveryCountry}
+            setDeliveryCountry={setDeliveryCountry}
+          />
+        ) : (
+          /* MAIN BODY AREA */
+          <div className="p-6 space-y-6 flex-1 flex flex-col justify-start">
             
-            {/* ACTIVE TABLES OVERVIEW (5 Columns) */}
-            <POSTableGrid
-              tables={tables}
-              selectedTable={selectedTable}
-              handleTableSelection={handleTableSelection}
-              getDummyTableBill={getDummyTableBill}
-              setActiveModal={setActiveModal}
-            />
-
-            {/* PRODUCT MENU GRID (7 Columns) */}
-            <POSMenuGrid
-              categories={categories}
-              selectedCategoryId={selectedCategoryId}
-              setSelectedCategoryId={setSelectedCategoryId}
-              searchQuery={searchQuery}
-              setSearchQuery={setSearchQuery}
-              filteredItems={filteredItems}
-              getItemQty={getItemQty}
-              addToCart={addToCart}
-              updateQuantity={updateQuantity}
-              cart={cart}
-            />
-
-          </div>
-
-          {/* C. SALES ANALYTICS PLOTS ROW */}
-          <div>
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3.5">
-              Sales Analytics
-            </h2>
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              
-              {/* Daily Sales Curve (7 columns) */}
-              <div className="lg:col-span-7 rounded-2xl border border-[#1e293b]/60 bg-[#0c101b] p-4 shadow-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-sm font-bold text-white">Daily Sales Trend</h3>
-                  <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                    <Clock className="h-3 w-3 text-[#f59e0b]" /> Refresh interval 10m
-                  </span>
+            {/* A. ORDER STATISTICS */}
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3.5">
+                Order Statistics
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">Total Orders</p>
+                    <p className="text-2xl font-black text-white mt-1">
+                      {stats?.totalOrders !== undefined ? stats.totalOrders : (284 + (recentOrder ? 1 : 0))}
+                    </p>
+                    <span className="text-[10px] font-semibold text-[#f59e0b] bg-[#f59e0b]/10 px-1.5 py-0.5 rounded mt-1 inline-block">
+                      +8.5% today
+                    </span>
+                  </div>
+                  <Sparkline points={stats?.sparklines?.orders || [35, 45, 30, 55, 40, 75, 88, 85]} strokeColor="#f59e0b" />
                 </div>
-                <DailySalesTrendChart data={stats?.salesTrend} />
-              </div>
 
-              {/* Category Sales Donut (5 columns) */}
-              <div className="lg:col-span-5 rounded-2xl border border-[#1e293b]/60 bg-[#0c101b] p-4 shadow-xl flex flex-col justify-between">
-                <h3 className="text-sm font-bold text-white mb-3">Category Sales</h3>
-                <CategorySalesChart data={stats?.categorySales} totalSales={stats?.todaySales} />
+                <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">Active Orders</p>
+                    <p className="text-2xl font-black text-white mt-1">
+                      {stats?.activeOrders !== undefined ? stats.activeOrders : 22}
+                    </p>
+                    <span className="text-[10px] font-semibold text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
+                      Live tables
+                    </span>
+                  </div>
+                  <Sparkline points={stats?.sparklines?.orders ? stats.sparklines.orders.map((o: number) => Math.round(o * 0.15 + 10)) : [12, 18, 10, 22, 14, 25, 20, 22]} strokeColor="#06b6d4" />
+                </div>
+
+                <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">Pending Billing</p>
+                    <p className="text-2xl font-black text-white mt-1">
+                      {stats?.pendingBilling !== undefined ? stats.pendingBilling : (7 + heldOrders.length)}
+                    </p>
+                    <span className="text-[10px] font-semibold text-purple-500 bg-purple-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
+                      Held bills
+                    </span>
+                  </div>
+                  <Sparkline points={stats?.sparklines?.pending || [4, 8, 3, 10, 5, 8, 7, 9]} strokeColor="#a855f7" />
+                </div>
+
+                <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
+                  <div>
+                    <p className="text-xs font-semibold text-slate-400">Today's Sales</p>
+                    <p className="text-2xl font-black text-white mt-1">
+                      ${((stats?.todaySales !== undefined ? stats.todaySales : 4850.50) + subtotal).toFixed(2)}
+                    </p>
+                    <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
+                      +12% yesterday
+                    </span>
+                  </div>
+                  <Sparkline points={stats?.sparklines?.sales || [1500, 2500, 1800, 3400, 2600, 4200, 4850.5]} strokeColor="#10b981" />
+                </div>
+
               </div>
+            </div>
+
+            {/* B. ACTIVE TABLES & MENU GRID ROW */}
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+              
+              {/* ACTIVE TABLES OVERVIEW (5 Columns) */}
+              <POSTableGrid
+                tables={tables}
+                selectedTable={selectedTable}
+                handleTableSelection={handleTableSelection}
+                getDummyTableBill={getDummyTableBill}
+                setActiveModal={setActiveModal}
+              />
+
+              {/* PRODUCT MENU GRID (7 Columns) */}
+              <POSMenuGrid
+                categories={categories}
+                selectedCategoryId={selectedCategoryId}
+                setSelectedCategoryId={setSelectedCategoryId}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                filteredItems={filteredItems}
+                getItemQty={getItemQty}
+                addToCart={addToCart}
+                updateQuantity={updateQuantity}
+                cart={cart}
+              />
 
             </div>
-          </div>
 
-        </div>
+            {/* C. SALES ANALYTICS PLOTS ROW */}
+            <div>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3.5">
+                Sales Analytics
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* Daily Sales Curve (7 columns) */}
+                <div className="lg:col-span-7 rounded-2xl border border-[#1e293b]/60 bg-[#0c101b] p-4 shadow-xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-sm font-bold text-white">Daily Sales Trend</h3>
+                    <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                      <Clock className="h-3 w-3 text-[#f59e0b]" /> Refresh interval 10m
+                    </span>
+                  </div>
+                  <DailySalesTrendChart data={stats?.salesTrend} />
+                </div>
+
+                {/* Category Sales Donut (5 columns) */}
+                <div className="lg:col-span-5 rounded-2xl border border-[#1e293b]/60 bg-[#0c101b] p-4 shadow-xl flex flex-col justify-between">
+                  <h3 className="text-sm font-bold text-white mb-3">Category Sales</h3>
+                  <CategorySalesChart data={stats?.categorySales} totalSales={stats?.todaySales} />
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        )}
 
       </div>
 
@@ -565,10 +793,15 @@ export default function POSPage() {
         total={total}
         splitCount={splitCount}
         recentOrder={recentOrder}
-        clearCart={clearCart}
+        clearCart={handleClearCart}
         removeFromCart={removeFromCart}
+        updateQuantity={updateQuantity}
         setActiveModal={setActiveModal}
         allItems={allItems}
+        onOrderTypeClick={() => setViewMode('order_type')}
+        orderType={orderType}
+        customerName={customerName}
+        cartRef={cartRef}
       />
 
       {/* ========================================================================= */}
@@ -588,7 +821,7 @@ export default function POSPage() {
         taxRate={taxRate}
         recentOrder={recentOrder}
         setRecentOrder={setRecentOrder}
-        clearCart={clearCart}
+        clearCart={handleClearCart}
         session={session}
         orderType={orderType}
         selectedTable={selectedTable}
@@ -598,7 +831,7 @@ export default function POSPage() {
         setInputTaxRate={setInputTaxRate}
         handleSaveSettings={handleSaveSettings}
         heldOrders={heldOrders}
-        resumeOrder={resumeOrder}
+        resumeOrder={handleResumeOrder}
         deleteHeldOrder={handleDeleteHeldOrder}
         splitCount={splitCount}
         setSplitCount={setSplitCount}

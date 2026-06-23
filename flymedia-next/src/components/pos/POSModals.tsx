@@ -527,10 +527,22 @@ export function POSModals({
                 <tbody>
                   {recentOrder.Items && recentOrder.Items.length > 0 ? (
                     recentOrder.Items.map((item: any) => (
-                      <tr key={item.id}>
-                        <td className="py-1 max-w-[130px] truncate">{item.MenuItem?.name || 'Dish Item'}</td>
-                        <td className="text-center py-1">{item.quantity}</td>
-                        <td className="text-right py-1">${(parseFloat(item.price) * item.quantity).toFixed(2)}</td>
+                      <tr key={item.id} className="border-b border-slate-100 last:border-b-0">
+                        <td className="py-1.5 align-top">
+                          <div className="font-bold">{item.MenuItem?.name || 'Dish Item'}</div>
+                          {item.addons && item.addons.length > 0 && (
+                            <div className="text-[9px] text-slate-500 italic mt-0.5 leading-none">
+                              + {item.addons.map((a: any) => a.name).join(', ')}
+                            </div>
+                          )}
+                          {item.notes && (
+                            <div className="text-[9px] text-slate-500 italic mt-0.5 leading-none">
+                              Note: {item.notes}
+                            </div>
+                          )}
+                        </td>
+                        <td className="text-center py-1.5 align-top">{item.quantity}</td>
+                        <td className="text-right py-1.5 align-top">${(parseFloat(item.price) * item.quantity).toFixed(2)}</td>
                       </tr>
                     ))
                   ) : (
