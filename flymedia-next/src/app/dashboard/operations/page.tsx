@@ -51,7 +51,7 @@ export default function AdvanceSetupPage() {
   // Form fields
   const [newPrinterName, setNewPrinterName] = useState('');
   const [newPrinterIp, setNewPrinterIp] = useState('');
-  const [newPrinterLocation, setNewPrinterLocation] = useState('Warners Bay');
+  const [newPrinterLocation, setNewPrinterLocation] = useState('');
   const [newDeviceName, setNewDeviceName] = useState('');
   const [newDeviceType, setNewDeviceType] = useState('POS Printer');
   const [newDeviceDesc, setNewDeviceDesc] = useState('');
@@ -66,6 +66,14 @@ export default function AdvanceSetupPage() {
   const [locations, setLocations] = useState<any[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<any>(null);
   const [locLoading, setLocLoading] = useState(false);
+
+  const activeStoreName = locations.find(l => l.id === (session?.user as any)?.store_id)?.name || locations[0]?.name || 'Main Location';
+
+  useEffect(() => {
+    if (activeStoreName) {
+      setNewPrinterLocation(activeStoreName);
+    }
+  }, [locations, activeStoreName]);
 
   // Location Form state
   const [locName, setLocName] = useState('');
@@ -648,7 +656,7 @@ export default function AdvanceSetupPage() {
       seq: otherDevices.length + 1,
       name: newDeviceName.toUpperCase(),
       type: newDeviceType,
-      location: 'Warners Bay',
+      location: activeStoreName,
       description: (newDeviceDesc || newDeviceName).toUpperCase(),
       lastUpdate: new Date().toLocaleString(),
       status: 'active'
@@ -1645,7 +1653,7 @@ export default function AdvanceSetupPage() {
               </div>
 
               <div className="text-[10px] text-slate-500 font-mono">
-                Store context: Warners Bay (2532)
+                Store context: {activeStoreName}
               </div>
             </div>
 
