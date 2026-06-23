@@ -1,5 +1,5 @@
 import React from 'react';
-import { Receipt, Trash2, ShoppingBag, DollarSign } from 'lucide-react';
+import { Receipt, Trash2, ShoppingBag, DollarSign, X } from 'lucide-react';
 
 interface POSCartProps {
   cart: any[];
@@ -26,6 +26,7 @@ interface POSCartProps {
   orderType: string;
   customerName?: string;
   cartRef?: string;
+  onClose?: () => void;
 }
 
 export function POSCart({
@@ -51,15 +52,27 @@ export function POSCart({
   orderType,
   customerName,
   cartRef,
+  onClose,
 }: POSCartProps) {
   return (
-    <aside className="w-96 shrink-0 border-l border-[#1e293b]/60 bg-[#0c101b] flex flex-col justify-between overflow-hidden shadow-2xl">
+    <aside className="w-full lg:w-96 h-full shrink-0 border-l border-[#1e293b]/60 bg-[#0c101b] flex flex-col justify-between overflow-hidden shadow-2xl">
       {/* Header receipt metadata */}
       <div className="p-4 border-b border-[#1e293b]/60 bg-[#0f1524]/60">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
-            <Receipt className="h-4.5 w-4.5 text-[#f59e0b]" /> Checkout & Receipt
-          </h3>
+          <div className="flex items-center gap-2">
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="lg:hidden p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition mr-0.5"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+            <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
+              <Receipt className="h-4.5 w-4.5 text-[#f59e0b]" /> Checkout & Receipt
+            </h3>
+          </div>
           <button
             onClick={clearCart}
             className="text-[10px] text-slate-400 hover:text-red-400 font-bold uppercase"

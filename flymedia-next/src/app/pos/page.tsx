@@ -15,7 +15,7 @@ import { POSModals } from '../../components/pos/POSModals';
 import { POSOrderTypePanel } from '../../components/pos/POSOrderTypePanel';
 import { Sparkline, DailySalesTrendChart, CategorySalesChart } from '../../components/pos/POSCharts';
 
-import { Clock, TrendingUp } from 'lucide-react';
+import { Clock, TrendingUp, LayoutGrid, LineChart, Utensils, FolderOpen, Settings, ShoppingBag, X } from 'lucide-react';
 
 export default function POSPage() {
   const { data: session, status } = useSession();
@@ -58,8 +58,9 @@ export default function POSPage() {
   const [tables, setTables] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
 
-  // Order Type & Customization form states
   const [viewMode, setViewMode] = useState<'menu' | 'order_type'>('menu');
+  const [posTab, setPosTab] = useState<'tables' | 'menu' | 'analytics'>('tables');
+  const [isMobileCartOpen, setIsMobileCartOpen] = useState(false);
   const [orderNotes, setOrderNotes] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -595,11 +596,13 @@ export default function POSPage() {
           }));
         }
       }
+      // Transition immediately to the Menu Tab!
+      setPosTab('menu');
     }
   };
 
   return (
-    <div className="flex h-screen w-screen bg-[#080b11] font-sans text-slate-100 overflow-hidden select-none">
+    <div className="flex h-screen w-screen bg-gradient-to-br from-[#070b12] via-[#080d16] to-[#0c1220] font-sans text-slate-100 overflow-hidden select-none">
       
       {/* 1. LEFT SIDEBAR NAVIGATION */}
       <POSSidebar
@@ -609,7 +612,7 @@ export default function POSPage() {
       />
 
       {/* 2. MIDDLE DASHBOARD CONTENT CONTAINER */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-[#080b11]">
+      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-transparent pb-16 md:pb-0">
         
         {/* TOP ROW HEADER */}
         <POSHeader session={session} />
@@ -654,155 +657,242 @@ export default function POSPage() {
           />
         ) : (
           /* MAIN BODY AREA */
-          <div className="p-6 space-y-6 flex-1 flex flex-col justify-start">
+          <div className="flex-1 flex flex-col justify-start">
             
-            {/* A. ORDER STATISTICS */}
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3.5">
-                Order Statistics
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                
-                <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400">Total Orders</p>
-                    <p className="text-2xl font-black text-white mt-1">
-                      {stats?.totalOrders !== undefined ? stats.totalOrders : (284 + (recentOrder ? 1 : 0))}
-                    </p>
-                    <span className="text-[10px] font-semibold text-[#f59e0b] bg-[#f59e0b]/10 px-1.5 py-0.5 rounded mt-1 inline-block">
-                      +8.5% today
-                    </span>
-                  </div>
-                  <Sparkline points={stats?.sparklines?.orders || [35, 45, 30, 55, 40, 75, 88, 85]} strokeColor="#f59e0b" />
-                </div>
+            {/* STYLISH TAB HEADER BAR */}
+            <div className="flex border-b border-slate-800 bg-[#070b13]/40 backdrop-blur-md px-4 sm:px-6 py-1 sticky top-0 z-10 select-none items-center justify-between shrink-0 shadow-sm overflow-x-auto scrollbar-none">
+              <div className="flex gap-1.5 shrink-0 overflow-x-auto scrollbar-none whitespace-nowrap">
+                <button
+                  type="button"
+                  onClick={() => setPosTab('tables')}
+                  className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider transition border-b-2 -mb-[6px] shrink-0 ${
+                    posTab === 'tables'
+                      ? 'border-[#f59e0b] text-[#f59e0b]'
+                      : 'border-transparent text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  <LayoutGrid className="h-4 w-4" />
+                  Tables Map
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPosTab('menu')}
+                  className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider transition border-b-2 -mb-[6px] shrink-0 ${
+                    posTab === 'menu'
+                      ? 'border-[#f59e0b] text-[#f59e0b]'
+                      : 'border-transparent text-slate-500 hover:text-slate-350'
+                  }`}
+                >
+                  <Utensils className="h-4 w-4" />
+                  Order Menu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPosTab('analytics')}
+                  className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider transition border-b-2 -mb-[6px] shrink-0 ${
+                    posTab === 'analytics'
+                      ? 'border-[#f59e0b] text-[#f59e0b]'
+                      : 'border-transparent text-slate-500 hover:text-slate-350'
+                  }`}
+                >
+                  <LineChart className="h-4 w-4" />
+                  Sales Analytics
+                </button>
+              </div>
 
-                <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400">Active Orders</p>
-                    <p className="text-2xl font-black text-white mt-1">
-                      {stats?.activeOrders !== undefined ? stats.activeOrders : 22}
-                    </p>
-                    <span className="text-[10px] font-semibold text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
-                      Live tables
-                    </span>
-                  </div>
-                  <Sparkline points={stats?.sparklines?.orders ? stats.sparklines.orders.map((o: number) => Math.round(o * 0.15 + 10)) : [12, 18, 10, 22, 14, 25, 20, 22]} strokeColor="#06b6d4" />
-                </div>
-
-                <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400">Pending Billing</p>
-                    <p className="text-2xl font-black text-white mt-1">
-                      {stats?.pendingBilling !== undefined ? stats.pendingBilling : (7 + heldOrders.length)}
-                    </p>
-                    <span className="text-[10px] font-semibold text-purple-500 bg-purple-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
-                      Held bills
-                    </span>
-                  </div>
-                  <Sparkline points={stats?.sparklines?.pending || [4, 8, 3, 10, 5, 8, 7, 9]} strokeColor="#a855f7" />
-                </div>
-
-                <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0f1524] p-4 flex items-center justify-between shadow-xl">
-                  <div>
-                    <p className="text-xs font-semibold text-slate-400">Today's Sales</p>
-                    <p className="text-2xl font-black text-white mt-1">
-                      ${((stats?.todaySales !== undefined ? stats.todaySales : 4850.50) + subtotal).toFixed(2)}
-                    </p>
-                    <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
-                      +12% yesterday
-                    </span>
-                  </div>
-                  <Sparkline points={stats?.sparklines?.sales || [1500, 2500, 1800, 3400, 2600, 4200, 4850.5]} strokeColor="#10b981" />
-                </div>
-
+              {/* Real-time status update tag */}
+              <div className="hidden sm:flex items-center gap-1.5 text-[10px] font-bold text-slate-500 bg-slate-900/40 border border-slate-800 px-3 py-1 rounded-full uppercase tracking-wider shrink-0 ml-4">
+                <Clock className="h-3.5 w-3.5 text-[#f59e0b] animate-spin" style={{ animationDuration: '60s' }} />
+                Auto-Sync Active
               </div>
             </div>
 
-            {/* B. ACTIVE TABLES & MENU GRID ROW */}
-            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-              
-              {/* ACTIVE TABLES OVERVIEW (5 Columns) */}
-              <POSTableGrid
-                tables={tables}
-                selectedTable={selectedTable}
-                handleTableSelection={handleTableSelection}
-                getDummyTableBill={getDummyTableBill}
-                setActiveModal={setActiveModal}
-              />
-
-              {/* PRODUCT MENU GRID (7 Columns) */}
-              <POSMenuGrid
-                categories={categories}
-                selectedCategoryId={selectedCategoryId}
-                setSelectedCategoryId={setSelectedCategoryId}
-                searchQuery={searchQuery}
-                setSearchQuery={setSearchQuery}
-                filteredItems={filteredItems}
-                getItemQty={getItemQty}
-                addToCart={addToCart}
-                updateQuantity={updateQuantity}
-                cart={cart}
-              />
-
-            </div>
-
-            {/* C. SALES ANALYTICS PLOTS ROW */}
-            <div>
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-400 mb-3.5">
-                Sales Analytics
-              </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
-                {/* Daily Sales Curve (7 columns) */}
-                <div className="lg:col-span-7 rounded-2xl border border-[#1e293b]/60 bg-[#0c101b] p-4 shadow-xl">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-bold text-white">Daily Sales Trend</h3>
-                    <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
-                      <Clock className="h-3 w-3 text-[#f59e0b]" /> Refresh interval 10m
-                    </span>
-                  </div>
-                  <DailySalesTrendChart data={stats?.salesTrend} />
-                </div>
-
-                {/* Category Sales Donut (5 columns) */}
-                <div className="lg:col-span-5 rounded-2xl border border-[#1e293b]/60 bg-[#0c101b] p-4 shadow-xl flex flex-col justify-between">
-                  <h3 className="text-sm font-bold text-white mb-3">Category Sales</h3>
-                  <CategorySalesChart data={stats?.categorySales} totalSales={stats?.todaySales} />
-                </div>
-
+            {posTab === 'tables' && (
+              <div className="p-6 space-y-6 flex-1 flex flex-col animate-fade-in">
+                <POSTableGrid
+                  tables={tables}
+                  selectedTable={selectedTable}
+                  handleTableSelection={handleTableSelection}
+                  getDummyTableBill={getDummyTableBill}
+                  setActiveModal={setActiveModal}
+                />
               </div>
-            </div>
+            )}
 
+            {posTab === 'menu' && (
+              <div className="p-6 space-y-6 flex-1 flex flex-col animate-fade-in">
+                <POSMenuGrid
+                  categories={categories}
+                  selectedCategoryId={selectedCategoryId}
+                  setSelectedCategoryId={setSelectedCategoryId}
+                  searchQuery={searchQuery}
+                  setSearchQuery={setSearchQuery}
+                  filteredItems={filteredItems}
+                  getItemQty={getItemQty}
+                  addToCart={addToCart}
+                  updateQuantity={updateQuantity}
+                  cart={cart}
+                />
+              </div>
+            )}
+
+            {posTab === 'analytics' && (
+              <div className="p-6 space-y-6 flex-1 flex flex-col animate-fade-in">
+                {/* A. ORDER STATISTICS */}
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3.5">
+                    Order Statistics
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    
+                    <div className="rounded-2xl border border-slate-800/80 bg-[#0c101b]/60 backdrop-blur-md p-4 flex items-center justify-between shadow-xl">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-400">Total Orders</p>
+                        <p className="text-2xl font-black text-white mt-1">
+                          {stats?.totalOrders !== undefined ? stats.totalOrders : (284 + (recentOrder ? 1 : 0))}
+                        </p>
+                        <span className="text-[10px] font-semibold text-[#f59e0b] bg-[#f59e0b]/10 px-1.5 py-0.5 rounded mt-1 inline-block">
+                          +8.5% today
+                        </span>
+                      </div>
+                      <Sparkline points={stats?.sparklines?.orders || [35, 45, 30, 55, 40, 75, 88, 85]} strokeColor="#f59e0b" />
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800/80 bg-[#0c101b]/60 backdrop-blur-md p-4 flex items-center justify-between shadow-xl">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-400">Active Orders</p>
+                        <p className="text-2xl font-black text-white mt-1">
+                          {stats?.activeOrders !== undefined ? stats.activeOrders : 22}
+                        </p>
+                        <span className="text-[10px] font-semibold text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
+                          Live tables
+                        </span>
+                      </div>
+                      <Sparkline points={stats?.sparklines?.orders ? stats.sparklines.orders.map((o: number) => Math.round(o * 0.15 + 10)) : [12, 18, 10, 22, 14, 25, 20, 22]} strokeColor="#06b6d4" />
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800/80 bg-[#0c101b]/60 backdrop-blur-md p-4 flex items-center justify-between shadow-xl">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-400">Pending Billing</p>
+                        <p className="text-2xl font-black text-white mt-1">
+                          {stats?.pendingBilling !== undefined ? stats.pendingBilling : (7 + heldOrders.length)}
+                        </p>
+                        <span className="text-[10px] font-semibold text-purple-500 bg-purple-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
+                          Held bills
+                        </span>
+                      </div>
+                      <Sparkline points={stats?.sparklines?.pending || [4, 8, 3, 10, 5, 8, 7, 9]} strokeColor="#a855f7" />
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800/80 bg-[#0c101b]/60 backdrop-blur-md p-4 flex items-center justify-between shadow-xl">
+                      <div>
+                        <p className="text-xs font-semibold text-slate-400">Today's Sales</p>
+                        <p className="text-2xl font-black text-white mt-1">
+                          ${((stats?.todaySales !== undefined ? stats.todaySales : 4850.50) + subtotal).toFixed(2)}
+                        </p>
+                        <span className="text-[10px] font-semibold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded mt-1 inline-block">
+                          +12% yesterday
+                        </span>
+                      </div>
+                      <Sparkline points={stats?.sparklines?.sales || [1500, 2500, 1800, 3400, 2600, 4200, 4850.5]} strokeColor="#10b981" />
+                    </div>
+
+                  </div>
+                </div>
+
+                {/* C. SALES ANALYTICS PLOTS ROW */}
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3.5">
+                    Sales Analytics
+                  </h2>
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    
+                    {/* Daily Sales Curve (7 columns) */}
+                    <div className="lg:col-span-7 rounded-2xl border border-slate-800/80 bg-[#0c101b]/60 backdrop-blur-md p-4 shadow-xl">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-bold text-white">Daily Sales Trend</h3>
+                        <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-1">
+                          <Clock className="h-3 w-3 text-[#f59e0b]" /> Refresh interval 10m
+                        </span>
+                      </div>
+                      <DailySalesTrendChart data={stats?.salesTrend} />
+                    </div>
+
+                    {/* Category Sales Donut (5 columns) */}
+                    <div className="lg:col-span-5 rounded-2xl border border-slate-800/80 bg-[#0c101b]/60 backdrop-blur-md p-4 shadow-xl flex flex-col justify-between">
+                      <h3 className="text-sm font-bold text-white mb-3">Category Sales</h3>
+                      <CategorySalesChart data={stats?.categorySales} totalSales={stats?.todaySales} />
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
       </div>
 
       {/* 3. ACTIVE CART & RECEIPT SIDE PANEL (RIGHT SIDEBAR) */}
-      <POSCart
-        cart={cart}
-        selectedTable={selectedTable}
-        tables={tables}
-        session={session}
-        subtotal={subtotal}
-        discount={discount}
-        discountRate={discountRate}
-        discountAmount={discountAmount}
-        taxRate={taxRate}
-        tax={tax}
-        total={total}
-        splitCount={splitCount}
-        recentOrder={recentOrder}
-        clearCart={handleClearCart}
-        removeFromCart={removeFromCart}
-        updateQuantity={updateQuantity}
-        setActiveModal={setActiveModal}
-        allItems={allItems}
-        onOrderTypeClick={() => setViewMode('order_type')}
-        orderType={orderType}
-        customerName={customerName}
-        cartRef={cartRef}
-      />
+      <div className="hidden lg:flex shrink-0">
+        <POSCart
+          cart={cart}
+          selectedTable={selectedTable}
+          tables={tables}
+          session={session}
+          subtotal={subtotal}
+          discount={discount}
+          discountRate={discountRate}
+          discountAmount={discountAmount}
+          taxRate={taxRate}
+          tax={tax}
+          total={total}
+          splitCount={splitCount}
+          recentOrder={recentOrder}
+          clearCart={handleClearCart}
+          removeFromCart={removeFromCart}
+          updateQuantity={updateQuantity}
+          setActiveModal={setActiveModal}
+          allItems={allItems}
+          onOrderTypeClick={() => setViewMode('order_type')}
+          orderType={orderType}
+          customerName={customerName}
+          cartRef={cartRef}
+        />
+      </div>
+
+      {/* Mobile Cart Overlay Drawer */}
+      {isMobileCartOpen && (
+        <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/80 backdrop-blur-sm lg:hidden">
+          <div className="w-full max-w-md h-full flex flex-col bg-[#0c101b] border-l border-slate-800 animate-fade-in">
+            <POSCart
+              cart={cart}
+              selectedTable={selectedTable}
+              tables={tables}
+              session={session}
+              subtotal={subtotal}
+              discount={discount}
+              discountRate={discountRate}
+              discountAmount={discountAmount}
+              taxRate={taxRate}
+              tax={tax}
+              total={total}
+              splitCount={splitCount}
+              recentOrder={recentOrder}
+              clearCart={handleClearCart}
+              removeFromCart={removeFromCart}
+              updateQuantity={updateQuantity}
+              setActiveModal={setActiveModal}
+              allItems={allItems}
+              onOrderTypeClick={() => setViewMode('order_type')}
+              orderType={orderType}
+              customerName={customerName}
+              cartRef={cartRef}
+              onClose={() => setIsMobileCartOpen(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* DIALOG MODALS POPUPS */}
@@ -840,6 +930,79 @@ export default function POSPage() {
         setHoldNotes={setHoldNotes}
         fetchTables={fetchTables}
       />
+
+      {/* Mobile Bottom Navigation Bar (hidden on md and larger) */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-30 h-16 bg-[#0c101b] border-t border-[#1e293b]/60 flex items-center justify-around px-4">
+        <button
+          type="button"
+          onClick={() => {
+            setPosTab('tables');
+            setViewMode('menu');
+          }}
+          className={`flex flex-col items-center justify-center py-1 transition ${
+            posTab === 'tables' ? 'text-[#f59e0b]' : 'text-slate-400'
+          }`}
+        >
+          <LayoutGrid className="h-5 w-5" />
+          <span className="text-[9px] font-bold mt-1">Tables</span>
+        </button>
+        
+        <button
+          type="button"
+          onClick={() => {
+            setPosTab('menu');
+            setViewMode('menu');
+          }}
+          className={`flex flex-col items-center justify-center py-1 transition ${
+            posTab === 'menu' ? 'text-[#f59e0b]' : 'text-slate-400'
+          }`}
+        >
+          <Utensils className="h-5 w-5" />
+          <span className="text-[9px] font-bold mt-1">Menu</span>
+        </button>
+
+        {/* Floating Mobile Cart trigger button */}
+        <button
+          type="button"
+          onClick={() => setIsMobileCartOpen(true)}
+          className="relative flex flex-col items-center justify-center py-1 text-slate-400"
+        >
+          <div className="relative">
+            <ShoppingBag className="h-5 w-5" />
+            {cart.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#f59e0b] text-[8.5px] font-black text-slate-950 animate-pulse">
+                {cart.reduce((sum, item) => sum + item.quantity, 0)}
+              </span>
+            )}
+          </div>
+          <span className="text-[9px] font-bold mt-1">Cart</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push('/pos/drafts')}
+          className="flex flex-col items-center justify-center py-1 text-slate-400"
+        >
+          <div className="relative">
+            <FolderOpen className="h-5 w-5" />
+            {heldOrders.length > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#f59e0b] text-[8.5px] font-black text-slate-950">
+                {heldOrders.length}
+              </span>
+            )}
+          </div>
+          <span className="text-[9px] font-bold mt-1">Drafts</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveModal('settings')}
+          className="flex flex-col items-center justify-center py-1 text-slate-400"
+        >
+          <Settings className="h-5 w-5" />
+          <span className="text-[9px] font-bold mt-1">Settings</span>
+        </button>
+      </div>
 
     </div>
   );

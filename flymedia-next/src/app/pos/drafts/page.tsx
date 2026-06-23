@@ -96,7 +96,7 @@ export default function POSDraftsPage() {
 
   if (status === 'loading') {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#080b11]">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-[#070b12] via-[#080d16] to-[#0c1220]">
         <div className="text-center">
           <div className="h-10 w-10 animate-spin rounded-full border-t-2 border-[#f59e0b] mx-auto"></div>
           <p className="mt-4 text-slate-400 font-semibold tracking-wider">Syncing Drafts Dashboard...</p>
@@ -277,7 +277,7 @@ export default function POSDraftsPage() {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-[#080b11] font-sans text-slate-100 overflow-hidden select-none">
+    <div className="flex h-screen w-screen bg-gradient-to-br from-[#070b12] via-[#080d16] to-[#0c1220] font-sans text-slate-100 overflow-hidden select-none">
       {/* 1. LEFT SIDEBAR NAVIGATION */}
       <POSSidebar
         session={session}
@@ -289,7 +289,7 @@ export default function POSDraftsPage() {
       <div className="flex-1 flex overflow-hidden">
         
         {/* LEFT COLUMN: Drafts List */}
-        <div className="flex-1 flex flex-col min-w-0 border-r border-[#1e293b]/60 bg-[#080b11]">
+        <div className="flex-1 flex flex-col min-w-0 border-r border-slate-800 bg-transparent">
           {/* Header */}
           <div className="p-6 border-b border-[#1e293b]/60 bg-[#0f1524]/20 flex justify-between items-center">
             <div>
@@ -430,7 +430,7 @@ export default function POSDraftsPage() {
         </div>
 
         {/* RIGHT COLUMN: Detail Drawer / Action Panel */}
-        <div className="w-96 shrink-0 bg-[#0c101b] border-l border-[#1e293b]/60 flex flex-col justify-between overflow-hidden shadow-2xl">
+        <div className="w-96 shrink-0 bg-[#0c101b]/40 backdrop-blur-md border-l border-slate-800 flex flex-col justify-between overflow-hidden shadow-2xl">
           {selectedDraft ? (
             <div className="flex-1 flex flex-col justify-between overflow-hidden">
               {/* Detail Header */}

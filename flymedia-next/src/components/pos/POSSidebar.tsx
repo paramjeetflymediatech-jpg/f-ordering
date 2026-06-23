@@ -31,7 +31,7 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab
   };
 
   return (
-    <aside className="w-20 shrink-0 border-r border-[#1e293b]/60 bg-[#0c101b] flex flex-col justify-between items-center py-5">
+    <aside className="hidden md:flex w-20 shrink-0 border-r border-[#1e293b]/60 bg-[#0c101b] flex-col justify-between items-center py-5">
       {/* Brand Logo */}
       <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => router.push('/pos')}>
         <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#ea580c] shadow-lg shadow-[#f59e0b]/20">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Plus, Minus, X, Check } from 'lucide-react';
+import { Search, Plus, Minus, X, Check, Utensils } from 'lucide-react';
 
 interface POSMenuGridProps {
   categories: any[];
@@ -161,13 +161,13 @@ export function POSMenuGrid({
 
   return (
     <>
-      <div className="xl:col-span-7 rounded-2xl border border-[#1e293b]/60 bg-[#0c101b] p-4 flex flex-col h-[385px] justify-between shadow-xl">
+      <div className="w-full rounded-2xl border border-slate-800/80 bg-[#0c101b]/60 backdrop-blur-md p-6 flex flex-col min-h-[calc(100vh-180px)] justify-between shadow-xl">
         {/* Category tabs & Search bar row */}
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between mb-3.5">
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex overflow-x-auto scrollbar-none whitespace-nowrap gap-1.5 max-w-full pb-1.5">
             <button
               onClick={() => setSelectedCategoryId('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 ${
                 selectedCategoryId === 'all'
                   ? 'bg-[#f59e0b] text-slate-950 shadow-md shadow-[#f59e0b]/15'
                   : 'bg-slate-900 text-slate-400 hover:text-white'
@@ -179,7 +179,7 @@ export function POSMenuGrid({
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategoryId(cat.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 ${
                   selectedCategoryId === cat.id
                     ? 'bg-[#f59e0b] text-slate-950 shadow-md shadow-[#f59e0b]/15'
                     : 'bg-slate-900 text-slate-400 hover:text-white'
@@ -204,7 +204,7 @@ export function POSMenuGrid({
         </div>
 
         {/* Grid lists */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 flex-1 overflow-y-auto pr-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-5 flex-1 overflow-y-auto pr-1">
           {filteredItems.map((item) => {
             const qtyInCart = getItemQtyAggregated(item.id);
 
@@ -212,77 +212,106 @@ export function POSMenuGrid({
               <div
                 key={item.id}
                 onClick={() => handleItemClick(item)}
-                className="group flex flex-col justify-between overflow-hidden rounded-xl border border-[#1e293b]/60 bg-[#0f1524] p-2.5 transition duration-150 hover:border-[#f59e0b]/40 hover:-translate-y-0.5 cursor-pointer shadow-md"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-800/60 bg-gradient-to-b from-[#0e1422]/90 to-[#070b13]/95 p-4.5 transition-all duration-300 hover:border-amber-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/5 cursor-pointer h-[340px]"
               >
-                {item.image_url ? (
-                  <img
-                    src={item.image_url}
-                    alt={item.name}
-                    className="h-16 w-full rounded-lg object-cover"
-                  />
-                ) : (
-                  <div className="flex h-16 w-full items-center justify-center rounded-lg bg-slate-800 text-[10px] text-slate-600 font-bold">
-                    No Image
+                {/* Image / Icon container */}
+                <div className="relative h-36 w-full rounded-xl overflow-hidden bg-slate-950 shrink-0">
+                  {item.image_url ? (
+                    <img
+                      src={item.image_url}
+                      alt={item.name}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 text-slate-650">
+                      <Utensils className="h-8 w-8 opacity-45 mb-1" />
+                      <span className="text-[10px] font-black uppercase tracking-wider opacity-45">
+                        {item.categoryName || 'Dishes'}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Category overlay */}
+                  <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-sm border border-slate-900/60 text-[9.5px] font-bold text-slate-400 shadow-sm">
+                    {item.categoryName || 'Menu'}
                   </div>
-                )}
 
-                <div className="mt-2 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h4 className="text-[11.5px] font-bold text-white group-hover:text-[#f59e0b] transition leading-tight truncate">
+                  {/* Customization label overlay if present */}
+                  {hasCustomization(item) && (
+                    <div className="absolute top-2 right-2 px-2.5 py-0.5 rounded-md bg-[#f59e0b] text-slate-950 text-[9.5px] font-black uppercase tracking-wider shadow-sm">
+                      Custom
+                    </div>
+                  )}
+                </div>
+
+                {/* Content Section */}
+                <div className="mt-3 flex-1 flex flex-col justify-between min-h-0">
+                  <div className="space-y-1">
+                    <h4 className="text-[14px] sm:text-[15px] font-black text-white group-hover:text-amber-400 transition-colors leading-snug line-clamp-1">
                       {item.name}
                     </h4>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-[10px] font-black text-[#f59e0b]">${parseFloat(item.price).toFixed(2)}</p>
-                      {hasCustomization(item) && (
-                        <span className="text-[8px] font-extrabold text-[#f59e0b] bg-[#f59e0b]/10 px-1 py-0.5 rounded border border-[#f59e0b]/20">
-                          Custom
-                        </span>
-                      )}
-                    </div>
-                    {item.variants && item.variants.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1.5">
-                        {item.variants.map((v: any) => (
-                          <span key={v.id} className="text-[8px] font-bold px-1.5 py-0.5 bg-slate-950 text-slate-400 rounded border border-[#1e293b]/60">
-                            {v.name}
-                          </span>
-                        ))}
-                      </div>
+                    {item.description ? (
+                      <p className="text-[11.5px] sm:text-[12px] text-slate-400 line-clamp-2 leading-relaxed">
+                        {item.description}
+                      </p>
+                    ) : (
+                      <p className="text-[11.5px] text-slate-650 italic">
+                        Delicious signature dish.
+                      </p>
                     )}
                   </div>
 
-                  {qtyInCart === 0 ? (
-                    <div className="flex items-center justify-between mt-2.5 bg-slate-950/40 p-1 rounded-md border border-slate-900">
-                      <button
-                        disabled
-                        className="p-0.5 text-slate-600 cursor-not-allowed"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </button>
-                      <span className="text-[10px] font-extrabold text-slate-600">0</span>
-                      <button
-                        onClick={(e) => handleQtyIncrement(e, item)}
-                        className="p-0.5 text-[#f59e0b] hover:text-white transition"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </button>
+                  {/* Price & Action Row */}
+                  <div className="space-y-2.5 mt-2.5">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm sm:text-[15px] font-black text-amber-400">
+                        ${parseFloat(item.price).toFixed(2)}
+                      </p>
+                      {item.variants && item.variants.length > 0 && (
+                        <span className="text-[9.5px] font-bold text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-900">
+                          {item.variants.length} options
+                        </span>
+                      )}
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-between mt-2.5 bg-[#f59e0b]/10 p-1 rounded-md border border-[#f59e0b]/30">
-                      <button
-                        onClick={(e) => handleQtyDecrement(e, item)}
-                        className="p-0.5 text-[#f59e0b] hover:text-white transition"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </button>
-                      <span className="text-[10px] font-extrabold text-white">{qtyInCart}</span>
-                      <button
-                        onClick={(e) => handleQtyIncrement(e, item)}
-                        className="p-0.5 text-[#f59e0b] hover:text-white transition"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </button>
+
+                    {/* Add Button or Stepper */}
+                    <div>
+                      {qtyInCart === 0 ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleItemClick(item);
+                          }}
+                          className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl border border-slate-800 bg-slate-950/40 hover:bg-[#f59e0b] hover:text-slate-950 hover:border-transparent transition-all duration-300 font-extrabold text-[12px] text-slate-200 group-hover:border-amber-500/25"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Add
+                        </button>
+                      ) : (
+                        <div className="flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/25 p-0.5 rounded-xl shadow-inner shadow-black/10">
+                          <button
+                            type="button"
+                            onClick={(e) => handleQtyDecrement(e, item)}
+                            className="flex items-center justify-center h-7 w-7 rounded-lg bg-slate-950 hover:bg-slate-900 border border-slate-800 text-[#f59e0b] active:scale-95 transition-all"
+                          >
+                            <Minus className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="text-[12.5px] font-black text-white px-2">
+                            {qtyInCart}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={(e) => handleQtyIncrement(e, item)}
+                            className="flex items-center justify-center h-7 w-7 rounded-lg bg-slate-950 hover:bg-slate-900 border border-slate-800 text-[#f59e0b] active:scale-95 transition-all"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
+
                 </div>
               </div>
             );

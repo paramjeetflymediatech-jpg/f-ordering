@@ -1,5 +1,6 @@
 import express from 'express';
 import http from 'http';
+import path from 'path';
 import { Server as SocketIOServer } from 'socket.io';
 import next from 'next';
 import { Queue, Worker } from 'bullmq';
@@ -93,6 +94,9 @@ app.prepare().then(() => {
     req.printQueue = printQueue;
     nextHook();
   });
+
+  // Serve dynamic uploads folder directly via express to avoid Next.js startup static caching issues
+  expressApp.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
 
   // Next.js Route handlers
   expressApp.all('*', (req, res) => {

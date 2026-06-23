@@ -730,61 +730,87 @@ export default function ManageMenuPage() {
                   {activeItems.map((item: any) => (
                     <div
                       key={item.id}
-                      className={`rounded-xl border border-slate-800 bg-slate-950/40 p-4 space-y-4 flex flex-col justify-between ${
-                        !item.is_available ? 'opacity-60 border-slate-900' : ''
+                      className={`group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-b from-[#0e1422]/90 to-[#070b13]/95 p-5 transition-all duration-300 hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-500/5 ${
+                        !item.is_available ? 'opacity-65 border-slate-900' : ''
                       }`}
                     >
-                      <div className="space-y-3">
-                        {item.image_url ? (
-                          <img
-                            src={item.image_url}
-                            alt={item.name}
-                            className="h-32 w-full rounded-lg object-cover"
-                          />
-                        ) : (
-                          <div className="h-32 w-full rounded-lg bg-slate-900 flex items-center justify-center text-xs font-bold text-slate-700">
-                            No Image
+                      <div className="space-y-4">
+                        {/* Image/Placeholder section */}
+                        <div className="relative h-36 w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-900 shrink-0">
+                          {item.image_url ? (
+                            <img
+                              src={item.image_url}
+                              alt={item.name}
+                              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 text-slate-600">
+                              <Utensils className="h-7 w-7 opacity-40 mb-1" />
+                              <span className="text-[10px] font-black uppercase tracking-wider opacity-40">
+                                No Image Provided
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Availability Badge */}
+                          <div className={`absolute top-2 left-2 px-2.5 py-0.5 rounded-md text-[9.5px] font-black uppercase tracking-wider shadow-sm backdrop-blur-sm ${
+                            item.is_available 
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
+                              : 'bg-slate-950/80 text-slate-400 border border-slate-800'
+                          }`}>
+                            {item.is_available ? 'Available' : 'Hidden'}
                           </div>
-                        )}
+                        </div>
+
+                        {/* Text and Details */}
                         <div>
-                          <div className="flex justify-between items-start">
-                            <h3 className="font-extrabold text-sm text-white line-clamp-1">{item.name}</h3>
-                            <span className="text-xs font-black text-white">${parseFloat(item.price).toFixed(2)}</span>
+                          <div className="flex justify-between items-start gap-2">
+                            <h3 className="font-black text-base text-white group-hover:text-amber-400 transition-colors line-clamp-1">{item.name}</h3>
+                            <span className="text-sm sm:text-[15px] font-black text-amber-400 shrink-0">${parseFloat(item.price).toFixed(2)}</span>
                           </div>
-                          <p className="text-xs text-slate-500 mt-1 line-clamp-2 min-h-[2rem]">
+                          
+                          <p className="text-xs sm:text-[13px] text-slate-400 mt-1.5 line-clamp-2 leading-relaxed min-h-[2.5rem]">
                             {item.description || 'No description provided.'}
                           </p>
-                          <div className="flex gap-2 flex-wrap mt-2">
+
+                          <div className="flex gap-2 flex-wrap mt-3">
                             {item.sku && (
-                              <span className="text-[9px] bg-slate-900 border border-slate-800 rounded px-1.5 py-0.5 text-slate-400 font-mono">
+                              <span className="text-[10px] bg-slate-950 border border-slate-900 rounded-md px-2 py-0.5 text-slate-400 font-mono">
                                 SKU: {item.sku}
                               </span>
                             )}
-                            <span className={`text-[9px] border rounded px-1.5 py-0.5 font-bold ${item.stock_count > 0 ? 'bg-emerald-950/30 border-emerald-800 text-emerald-400' : 'bg-red-950/30 border-red-900/50 text-red-400'}`}>
+                            <span className={`text-[10px] border rounded-md px-2 py-0.5 font-bold ${
+                              item.stock_count > 0 
+                                ? 'bg-emerald-950/20 border-emerald-900/60 text-emerald-400' 
+                                : 'bg-red-950/20 border-red-900/40 text-red-400'
+                            }`}>
                               Stock: {item.stock_count} {item.unit}
                             </span>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center pt-3 border-t border-slate-900 text-xs font-bold">
-                        <span className={`flex items-center gap-1 ${item.is_available ? 'text-emerald-400' : 'text-slate-500'}`}>
-                          {item.is_available ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
-                          {item.is_available ? 'Available' : 'Hidden'}
+                      {/* Actions footer */}
+                      <div className="flex justify-between items-center pt-4 mt-4 border-t border-slate-900 text-xs font-bold">
+                        <span className={`flex items-center gap-1.5 ${item.is_available ? 'text-emerald-400' : 'text-slate-500'}`}>
+                          {item.is_available ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+                          {item.is_available ? 'Active' : 'Hidden'}
                         </span>
                         
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-2">
                           <button
                             onClick={() => handleEditItemClick(item)}
-                            className="rounded-lg bg-slate-900 p-2 text-slate-400 hover:text-white border border-slate-800"
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-900 p-2 text-slate-400 hover:text-white border border-slate-800 transition"
                           >
                             <Edit2 className="h-3.5 w-3.5" />
+                            <span>Edit</span>
                           </button>
                           <button
                             onClick={() => handleDeleteItem(item.id)}
-                            className="rounded-lg bg-red-950/40 p-2 text-red-400 hover:bg-red-900/40 border border-red-950/50"
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-950/45 p-2 text-red-400 hover:bg-red-900/35 border border-red-950/50 transition"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
+                            <span>Delete</span>
                           </button>
                         </div>
                       </div>
