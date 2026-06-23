@@ -19,6 +19,9 @@ import {
   Save,
   CheckCircle,
   HelpCircle,
+  Upload,
+  Link,
+  Loader2,
 } from 'lucide-react';
 
 export default function ManageMenuPage() {
@@ -43,6 +46,46 @@ export default function ManageMenuPage() {
   const [itemPrice, setItemPrice] = useState('');
   const [itemDesc, setItemDesc] = useState('');
   const [itemImage, setItemImage] = useState('');
+  const [imageMode, setImageMode] = useState<'upload' | 'url'>('upload');
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError('File is too large. Max size is 5MB.');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      setUploadError(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/dashboard/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Failed to upload image');
+      }
+
+      setItemImage(data.url);
+      triggerAlert('Image uploaded successfully!');
+    } catch (err: any) {
+      console.error(err);
+      setUploadError(err.message || 'Something went wrong during upload.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
   const [itemAvailable, setItemAvailable] = useState(true);
   const [itemBarcode, setItemBarcode] = useState('');
   const [itemSku, setItemSku] = useState('');
@@ -234,6 +277,11 @@ export default function ManageMenuPage() {
     setItemPrice(item.price);
     setItemDesc(item.description || '');
     setItemImage(item.image_url || '');
+    
+    const isUploaded = item.image_url?.startsWith('/uploads/');
+    setImageMode(isUploaded ? 'upload' : 'url');
+    setUploadError(null);
+
     setItemAvailable(item.is_available);
     setItemBarcode(item.barcode || '');
     setItemSku(item.sku || '');
@@ -384,6 +432,8 @@ export default function ManageMenuPage() {
     setItemPrice('');
     setItemDesc('');
     setItemImage('');
+    setImageMode('upload');
+    setUploadError(null);
     setItemAvailable(true);
     setItemBarcode('');
     setItemSku('');
@@ -1177,14 +1227,118 @@ export default function ManageMenuPage() {
               </div>
 
               <div>
-                <label className="text-slate-400 font-bold uppercase tracking-wide">Image URL</label>
-                <input
-                  type="text"
-                  placeholder="https://images.unsplash.com/..."
-                  value={itemImage}
-                  onChange={(e) => setItemImage(e.target.value)}
-                  className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-orange-500 transition"
-                />
+                <label className="text-slate-400 font-bold uppercase tracking-wide block mb-2">Dish Image</label>
+                
+                {/* Tabs */}
+                <div className="flex border-b border-slate-800 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setImageMode('upload')}
+                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold transition border-b-2 -mb-[2px] ${
+                      imageMode === 'upload'
+                        ? 'border-orange-500 text-white'
+                        : 'border-transparent text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    <Upload className="h-3.5 w-3.5" />
+                    Upload Image
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setImageMode('url')}
+                    className={`flex items-center gap-1.5 px-4 py-2 text-xs font-bold transition border-b-2 -mb-[2px] ${
+                      imageMode === 'url'
+                        ? 'border-orange-500 text-white'
+                        : 'border-transparent text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    <Link className="h-3.5 w-3.5" />
+                    Image Link
+                  </button>
+                </div>
+
+                {/* Content */}
+                {imageMode === 'upload' ? (
+                  <div className="space-y-3">
+                    <div
+                      className={`relative border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center transition cursor-pointer ${
+                        isUploading
+                          ? 'border-slate-800 bg-slate-950/20 pointer-events-none'
+                          : 'border-slate-800 bg-slate-950 hover:border-orange-500/50 hover:bg-slate-900/10'
+                      }`}
+                      onClick={() => {
+                        document.getElementById('image-file-input')?.click();
+                      }}
+                    >
+                      <input
+                        id="image-file-input"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageUpload}
+                      />
+                      
+                      {isUploading ? (
+                        <div className="flex flex-col items-center py-4">
+                          <Loader2 className="h-8 w-8 text-orange-500 animate-spin mb-2" />
+                          <p className="text-xs text-slate-400 font-medium">Uploading image...</p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center py-3 text-center animate-fade-in">
+                          <Upload className="h-8 w-8 text-slate-600 mb-2 group-hover:text-orange-500 transition" />
+                          <p className="text-xs text-slate-400 font-bold">
+                            Click or drag to upload image
+                          </p>
+                          <p className="text-[10px] text-slate-600 mt-1">
+                            PNG, JPG, JPEG up to 5MB
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    {uploadError && (
+                      <p className="text-[11px] font-semibold text-red-400">{uploadError}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <input
+                      type="text"
+                      placeholder="https://images.unsplash.com/..."
+                      value={itemImage}
+                      onChange={(e) => setItemImage(e.target.value)}
+                      className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                    />
+                  </div>
+                )}
+
+                {/* Preview block if itemImage is set */}
+                {itemImage && (
+                  <div className="mt-3 relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950/30 p-2 flex items-center gap-3 animate-fade-in">
+                    <img
+                      src={itemImage}
+                      alt="Preview"
+                      className="h-12 w-16 object-cover rounded-lg bg-slate-900 border border-slate-800 animate-pulse"
+                      onError={(e) => {
+                        (e.target as any).src = 'https://placehold.co/100x100?text=Invalid+Image';
+                      }}
+                      onLoad={(e) => {
+                        (e.target as HTMLImageElement).classList.remove('animate-pulse');
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Image Loaded</p>
+                      <p className="text-[11px] text-slate-500 truncate font-mono mt-0.5">{itemImage}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setItemImage('')}
+                      className="rounded-lg bg-red-950/40 p-1.5 text-red-400 hover:bg-red-900/40 border border-red-950/50 hover:text-white transition"
+                      title="Remove image"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div>
