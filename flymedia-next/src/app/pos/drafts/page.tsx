@@ -39,6 +39,7 @@ export default function POSDraftsPage() {
   const [selectedType, setSelectedType] = useState<'all' | 'dine_in' | 'takeaway' | 'delivery'>('all');
   const [selectedDraft, setSelectedDraft] = useState<any | null>(null);
   const [checkedDraftIds, setCheckedDraftIds] = useState<string[]>([]);
+  const [logoUrl, setLogoUrl] = useState<string>('');
 
   const fetchDrafts = async () => {
     setLoading(true);
@@ -91,6 +92,14 @@ export default function POSDraftsPage() {
   useEffect(() => {
     if (status === 'authenticated') {
       fetchDrafts();
+      fetch('/api/dashboard/profile')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setLogoUrl(data.organization?.logo || '');
+          }
+        })
+        .catch((err) => console.error('Error fetching drafts profile logo:', err));
     }
   }, [status]);
 
@@ -283,6 +292,7 @@ export default function POSDraftsPage() {
         session={session}
         heldOrdersCount={drafts.length}
         activeTab="drafts"
+        logoUrl={logoUrl}
       />
 
       {/* 2. MAIN WORKSPACE AREA */}

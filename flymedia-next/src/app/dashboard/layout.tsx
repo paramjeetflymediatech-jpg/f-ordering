@@ -106,6 +106,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const handleProfileUpdate = () => {
+      fetch('/api/dashboard/profile')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setLogoUrl(data.organization?.logo || null);
+            setCompanyName(data.organization?.name || null);
+          }
+        })
+        .catch((err) => console.error('Error fetching layout profile details:', err));
+    };
+
+    if (status === 'authenticated') {
+      handleProfileUpdate();
+      window.addEventListener('profileUpdated', handleProfileUpdate);
+    }
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
+  }, [status]);
 
   // Redirect if not authenticated
   React.useEffect(() => {
@@ -136,12 +160,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex flex-col flex-1 h-0 overflow-hidden">
           {/* Logo block */}
           <div className="h-16 flex items-center gap-3 px-6 border-b border-[#1e293b]/60 bg-[#0c101b] cursor-pointer shrink-0">
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#ea580c] shadow-md shadow-[#f59e0b]/10">
-              <span className="text-sm font-black text-white italic">T</span>
-              <span className="absolute -bottom-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
-            </div>
-            <span className="text-base font-black tracking-wider text-white">
-              F-Ordering <span className="text-[#f59e0b]">HQ</span>
+            {logoUrl ? (
+              <div className="relative h-12 w-12 rounded-lg overflow-hidden border border-[#1e293b]/60 bg-[#0c101b] shrink-0">
+                <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
+              </div>
+            ) : (
+              <div className="relative flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#ea580c] shadow-md shadow-[#f59e0b]/10">
+                <span className="text-xl font-black text-white italic">T</span>
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400"></span>
+              </div>
+            )}
+            <span className="text-base font-black tracking-wider text-white truncate max-w-[140px]">
+              {companyName ? (
+                <>
+                  {companyName} <span className="text-[#f59e0b]">HQ</span>
+                </>
+              ) : (
+                <>
+                  F-Ordering <span className="text-[#f59e0b]">HQ</span>
+                </>
+              )}
             </span>
           </div>
 
@@ -189,11 +227,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* MOBILE HEADER BAR */}
         <header className="flex h-16 items-center justify-between border-b border-[#1e293b]/60 bg-[#0c101b] px-6 md:hidden shrink-0">
           <div className="flex items-center gap-2">
-            <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#ea580c] shadow-sm">
-              <span className="text-xs font-black text-white italic">T</span>
-            </div>
-            <span className="text-sm font-black text-white tracking-wider">
-              F-Ordering <span className="text-[#f59e0b]">HQ</span>
+            {logoUrl ? (
+              <div className="relative h-11 w-11 rounded-lg overflow-hidden border border-[#1e293b]/60 bg-[#0c101b] shrink-0">
+                <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
+              </div>
+            ) : (
+              <div className="relative flex h-11 w-11 items-center justify-center rounded-lg bg-gradient-to-br from-[#f59e0b] to-[#ea580c] shadow-sm">
+                <span className="text-xs font-black text-white italic">T</span>
+              </div>
+            )}
+            <span className="text-sm font-black text-white tracking-wider truncate max-w-[140px]">
+              {companyName ? `${companyName} HQ` : 'F-Ordering HQ'}
             </span>
           </div>
           
@@ -217,7 +261,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="w-64 bg-[#0c101b] border-r border-[#1e293b]/60 flex flex-col h-full justify-between">
             <div className="flex flex-col flex-1 h-0 overflow-hidden">
               <div className="h-16 flex items-center justify-between px-6 border-b border-[#1e293b]/60 bg-[#0c101b] shrink-0">
-                <span className="text-sm font-black text-white tracking-wider">F-Ordering HQ</span>
+                <div className="flex items-center gap-2">
+                  {logoUrl ? (
+                    <div className="relative h-11 w-11 rounded-md overflow-hidden border border-[#1e293b]/60 bg-[#0c101b] shrink-0">
+                      <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
+                    </div>
+                  ) : null}
+                  <span className="text-sm font-black text-white tracking-wider truncate max-w-[140px]">
+                    {companyName ? `${companyName} HQ` : 'F-Ordering HQ'}
+                  </span>
+                </div>
                 <button
                   onClick={() => setMobileOpen(false)}
                   className="p-1 text-slate-400 hover:text-white"

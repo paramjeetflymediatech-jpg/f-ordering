@@ -31,6 +31,7 @@ import {
   ShieldCheck,
   UserX,
   UserPlus,
+  Upload,
 } from 'lucide-react';
 
 export default function BusinessProfilePage() {
@@ -87,6 +88,80 @@ export default function BusinessProfilePage() {
   });
 
   const [editMode, setEditMode] = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [logoUploadError, setLogoUploadError] = useState<string | null>(null);
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setLogoUploadError('File is too large. Max size is 5MB.');
+      return;
+    }
+
+    try {
+      setLogoUploading(true);
+      setLogoUploadError(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'logo');
+
+      const res = await fetch('/api/dashboard/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to upload logo');
+      }
+
+      setFormData((prev) => ({ ...prev, logo: data.url }));
+    } catch (err: any) {
+      setLogoUploadError(err.message || 'Something went wrong during upload.');
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+  const [bannerUploading, setBannerUploading] = useState(false);
+  const [bannerUploadError, setBannerUploadError] = useState<string | null>(null);
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setBannerUploadError('File is too large. Max size is 5MB.');
+      return;
+    }
+
+    try {
+      setBannerUploading(true);
+      setBannerUploadError(null);
+
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'banner');
+
+      const res = await fetch('/api/dashboard/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to upload banner');
+      }
+
+      setFormData((prev) => ({ ...prev, banner: data.url }));
+    } catch (err: any) {
+      setBannerUploadError(err.message || 'Something went wrong during upload.');
+    } finally {
+      setBannerUploading(false);
+    }
+  };
 
   // Load Profile Data
   const fetchProfile = async () => {
@@ -272,6 +347,9 @@ export default function BusinessProfilePage() {
         setOrganization(data.organization);
         setSuccess('Business profile updated successfully!');
         setEditMode(false);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('profileUpdated'));
+        }
       } else {
         setError(data.error || 'Failed to update profile.');
       }
@@ -400,20 +478,42 @@ export default function BusinessProfilePage() {
                   <img
                     src={formData.banner}
                     alt="Store Banner"
-                    className="w-full h-full object-cover opacity-80"
+                    className="w-full h-full  opacity-80"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0c101b] via-[#0c101b]/20 to-transparent"></div>
                   {editMode && (
-                    <div className="absolute top-4 right-4 bg-slate-950/85 backdrop-blur-sm border border-[#1e293b] rounded-xl p-2 max-w-xs transition shadow-lg">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Banner URL</p>
-                      <input
-                        type="text"
-                        name="banner"
-                        value={formData.banner}
-                        onChange={handleInputChange}
-                        placeholder="Banner Image URL"
-                        className="w-full bg-[#080b11] border border-[#1e293b] text-slate-100 rounded-lg px-2.5 py-1 text-xs focus:border-[#f59e0b] outline-none"
-                      />
+                    <div className="absolute top-4 right-4 bg-slate-950/85 backdrop-blur-sm border border-[#1e293b] rounded-xl p-3 max-w-xs transition shadow-lg flex flex-col gap-2">
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Upload Banner Image</p>
+                        <label className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1e293b] bg-[#080b11] hover:bg-slate-900 text-slate-200 hover:text-white cursor-pointer transition text-xs font-semibold">
+                          <Upload className={`h-3.5 w-3.5 text-[#f59e0b] ${bannerUploading ? 'animate-bounce' : ''}`} />
+                          <span>{bannerUploading ? 'Uploading...' : 'Choose Image'}</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleBannerUpload}
+                            disabled={bannerUploading}
+                            className="hidden"
+                          />
+                        </label>
+                        {bannerUploadError && (
+                          <p className="text-[9px] font-semibold text-red-400 mt-1 max-w-[180px]">
+                            {bannerUploadError}
+                          </p>
+                        )}
+                      </div>
+                      <div className="border-t border-[#1e293b]/60 my-0.5"></div>
+                      <div>
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Or Banner URL</p>
+                        <input
+                          type="text"
+                          name="banner"
+                          value={formData.banner}
+                          onChange={handleInputChange}
+                          placeholder="Banner Image URL"
+                          className="w-full bg-[#080b11] border border-[#1e293b] text-slate-100 rounded-lg px-2.5 py-1 text-xs focus:border-[#f59e0b] outline-none"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -422,26 +522,35 @@ export default function BusinessProfilePage() {
                 <div className="relative px-6 pb-6 border-b border-[#1e293b]/60">
                   <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 -mt-16 sm:-mt-20">
                     {/* Logo wrapper */}
-                    <div className="relative h-28 w-28 md:h-32 md:w-32 rounded-2xl overflow-hidden border-4 border-[#0c101b] bg-[#0c101b] shadow-xl shrink-0 group">
+                    <div className="relative h-28 w-28 md:h-32 md:w-32 rounded-2xl overflow-hidden border-4 border-[#0c101b] bg-[#0c101b] shadow-xl shrink-0 group flex flex-col items-center justify-center">
                       <img
                         src={formData.logo}
                         alt="Store Logo"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                       {editMode && (
-                        <div className="absolute inset-0 bg-slate-950/75 flex flex-col items-center justify-center p-2 text-center">
-                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">Logo URL</p>
-                          <input
-                            type="text"
-                            name="logo"
-                            value={formData.logo}
-                            onChange={handleInputChange}
-                            placeholder="Logo URL"
-                            className="w-full bg-[#080b11] border border-[#1e293b] text-slate-100 rounded-lg px-1.5 py-0.5 text-[10px] focus:border-[#f59e0b] outline-none text-center"
-                          />
+                        <div className="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-2 text-center transition hover:bg-slate-950/90">
+                          <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+                            <Upload className={`h-5 w-5 text-[#f59e0b] mb-1 ${logoUploading ? 'animate-bounce' : 'animate-pulse'}`} />
+                            <span className="text-[9px] font-bold text-white uppercase tracking-wider">
+                              {logoUploading ? 'Uploading...' : 'Upload Logo'}
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleLogoUpload}
+                              disabled={logoUploading}
+                              className="hidden"
+                            />
+                          </label>
                         </div>
                       )}
                     </div>
+                    {editMode && logoUploadError && (
+                      <p className="text-[10px] font-semibold text-red-400 mt-1 max-w-[120px] text-center">
+                        {logoUploadError}
+                      </p>
+                    )}
 
                     <div className="text-center sm:text-left flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">

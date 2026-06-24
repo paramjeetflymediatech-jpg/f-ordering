@@ -75,6 +75,8 @@ export default function POSPage() {
   const [deliveryZip, setDeliveryZip] = useState('');
   const [deliveryState, setDeliveryState] = useState('NSW');
   const [deliveryCountry, setDeliveryCountry] = useState('Australia');
+  const [logoUrl, setLogoUrl] = useState<string>('');
+  const [companyName, setCompanyName] = useState<string>('');
   
   // Track active cart state for each table dynamically
   const [tableCarts, setTableCarts] = useState<Record<string, any[]>>({});
@@ -328,6 +330,16 @@ export default function POSPage() {
       fetchTables();
       fetchStats();
       fetchHeldOrders();
+
+      fetch('/api/dashboard/profile')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setLogoUrl(data.organization?.logo || '');
+            setCompanyName(data.organization?.name || '');
+          }
+        })
+        .catch((err) => console.error('Error fetching POS profile logo:', err));
     }
   }, [status]);
 
@@ -609,13 +621,14 @@ export default function POSPage() {
         session={session}
         heldOrdersCount={heldOrders.length}
         setActiveModal={setActiveModal}
+        logoUrl={logoUrl}
       />
 
       {/* 2. MIDDLE DASHBOARD CONTENT CONTAINER */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-transparent pb-16 md:pb-0">
         
         {/* TOP ROW HEADER */}
-        <POSHeader session={session} />
+        <POSHeader session={session} logoUrl={logoUrl} companyName={companyName} />
 
         {viewMode === 'order_type' ? (
           <POSOrderTypePanel

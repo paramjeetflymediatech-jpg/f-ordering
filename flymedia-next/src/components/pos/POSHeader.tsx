@@ -3,16 +3,23 @@ import { Bell } from 'lucide-react';
 
 interface POSHeaderProps {
   session: any;
+  logoUrl?: string;
+  companyName?: string;
 }
 
-export function POSHeader({ session }: POSHeaderProps) {
+export function POSHeader({ session, logoUrl, companyName }: POSHeaderProps) {
   return (
-    <header className="flex h-16 items-center justify-between px-6 border-b border-slate-850 bg-gradient-to-r from-[#0a0f1d]/90 via-[#080b11]/90 to-[#0c1222]/90 backdrop-blur-xl sticky top-0 z-10 shrink-0 shadow-lg shadow-slate-950/20">
+    <header className="flex h-20 items-center justify-between px-6 border-b border-slate-850 bg-gradient-to-r from-[#0a0f1d]/90 via-[#080b11]/90 to-[#0c1222]/90 backdrop-blur-xl sticky top-0 z-10 shrink-0 shadow-lg shadow-slate-950/20">
       <div className="flex items-center gap-3">
         <div className="relative">
-          <h1 className="text-sm font-black tracking-widest text-white uppercase flex items-center gap-1.5">
-            <span className="text-[#f59e0b]">TableTaste</span>
-            <span className="text-slate-400 font-light">POS</span>
+          <h1 className="flex items-center gap-2">
+            {logoUrl ? (
+              <img src={logoUrl} alt={companyName || 'Logo'} className="h-16 max-w-[240px] object-contain shrink-0" />
+            ) : (
+              <span className="text-sm font-black tracking-widest text-[#f59e0b] uppercase truncate max-w-[150px]">
+                {companyName || 'TableTaste'}
+              </span>
+            )}
           </h1>
         </div>
         <div className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 px-2.5 py-0.5 text-[9px] font-bold text-emerald-400 uppercase tracking-wider">

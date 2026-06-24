@@ -22,20 +22,27 @@ export async function POST(request: Request) {
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    // Save to public/uploads/menu
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'menu');
+    const type = formData.get('type') as string | null;
+    const isLogo = type === 'logo';
+    const isBanner = type === 'banner';
+
+    // Save to public/uploads/logo, public/uploads/banner or public/uploads/menu
+    const subFolder = isLogo ? 'logo' : isBanner ? 'banner' : 'menu';
+    const prefix = isLogo ? 'logo' : isBanner ? 'banner' : 'menu-item';
+
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads', subFolder);
     await mkdir(uploadDir, { recursive: true });
 
     // Extract file extension cleanly
     const originalName = file.name || 'image.png';
     const ext = path.extname(originalName) || '.png';
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const filename = `menu-item-${uniqueSuffix}${ext}`;
+    const filename = `${prefix}-${uniqueSuffix}${ext}`;
     const filePath = path.join(uploadDir, filename);
 
     await writeFile(filePath, buffer);
 
-    const relativeUrl = `/uploads/menu/${filename}`;
+    const relativeUrl = `/uploads/${subFolder}/${filename}`;
 
     return NextResponse.json({ success: true, url: relativeUrl });
   } catch (error: any) {

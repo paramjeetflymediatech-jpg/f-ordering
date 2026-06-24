@@ -17,9 +17,10 @@ interface POSSidebarProps {
   heldOrdersCount: number;
   setActiveModal?: (modal: any) => void;
   activeTab?: 'pos' | 'drafts';
+  logoUrl?: string;
 }
 
-export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab = 'pos' }: POSSidebarProps) {
+export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab = 'pos', logoUrl }: POSSidebarProps) {
   const router = useRouter();
 
   const handleModalClick = (modalName: string) => {
@@ -34,10 +35,17 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab
     <aside className="hidden md:flex w-20 shrink-0 border-r border-[#1e293b]/60 bg-[#0c101b] flex-col justify-between items-center py-5">
       {/* Brand Logo */}
       <div className="flex flex-col items-center gap-1 cursor-pointer" onClick={() => router.push('/pos')}>
-        <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#ea580c] shadow-lg shadow-[#f59e0b]/20">
-          <span className="text-xl font-black text-white italic">T</span>
-          <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border border-[#0c101b] bg-emerald-400"></span>
-        </div>
+        {logoUrl ? (
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-xl overflow-hidden border border-[#1e293b]/60 bg-[#0c101b] shadow-lg">
+            <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
+            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border border-[#0c101b] bg-emerald-400"></span>
+          </div>
+        ) : (
+          <div className="relative flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-[#f59e0b] to-[#ea580c] shadow-lg shadow-[#f59e0b]/20">
+            <span className="text-2xl font-black text-white italic">T</span>
+            <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border border-[#0c101b] bg-emerald-400"></span>
+          </div>
+        )}
       </div>
 
       {/* Navigation items */}
