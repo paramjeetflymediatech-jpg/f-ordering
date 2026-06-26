@@ -19,6 +19,11 @@ export class Store extends Model {
   declare city: string | null;
   declare description: string | null;
   declare banner: string | null;
+  declare theme_primary_color: string | null;
+  declare theme_accent_color: string | null;
+  declare theme_bg_color: string | null;
+  declare theme_layout: 'classic' | 'modern_dark' | 'grid_minimal' | null;
+  declare theme_font: 'serif' | 'sans' | 'playfair' | null;
 }
 
 Store.init(
@@ -94,6 +99,31 @@ Store.init(
     banner: {
       type: DataTypes.STRING,
       allowNull: true,
+    },
+    theme_primary_color: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: '#2A0E07',
+    },
+    theme_accent_color: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: '#C39A3C',
+    },
+    theme_bg_color: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue: '#F9F6F0',
+    },
+    theme_layout: {
+      type: DataTypes.ENUM('classic', 'modern_dark', 'grid_minimal'),
+      allowNull: true,
+      defaultValue: 'classic',
+    },
+    theme_font: {
+      type: DataTypes.ENUM('serif', 'sans', 'playfair'),
+      allowNull: true,
+      defaultValue: 'serif',
     },
   },
   {

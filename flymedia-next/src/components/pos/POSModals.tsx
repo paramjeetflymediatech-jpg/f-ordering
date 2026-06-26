@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   X,
   Clock,
@@ -8,15 +8,102 @@ import {
   DollarSign,
   AlertCircle,
 } from 'lucide-react';
+import {
+  Elements,
+  CardElement,
+  useStripe,
+  useElements,
+} from '@stripe/react-stripe-js';
+
+// ─── POS Stripe Card Component ──────────────────────────────────────────────
+function POSStripeCard({
+  storeId,
+  amount,
+  onSuccess,
+  onError,
+  submitting,
+  setSubmitting,
+}: {
+  storeId: string;
+  amount: number;
+  onSuccess: (intentId: string) => void;
+  onError: (msg: string) => void;
+  submitting: boolean;
+  setSubmitting: (v: boolean) => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+
+  const handleCardPay = async () => {
+    if (!stripe || !elements) return;
+    setSubmitting(true);
+    onError('');
+    try {
+      const res = await fetch('/api/public/stripe/create-intent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ storeId, amount, currency: 'aud' }),
+      });
+      const data = await res.json();
+      if (!data.clientSecret) {
+        onError(data.error || 'Could not initiate payment.');
+        setSubmitting(false);
+        return;
+      }
+      const cardElement = elements.getElement(CardElement);
+      if (!cardElement) { setSubmitting(false); return; }
+
+      const { error, paymentIntent } = await stripe.confirmCardPayment(data.clientSecret, {
+        payment_method: { card: cardElement },
+      });
+
+      if (error) {
+        onError(error.message || 'Card declined.');
+        setSubmitting(false);
+        return;
+      }
+      if (paymentIntent?.status === 'succeeded') {
+        onSuccess(paymentIntent.id);
+      }
+    } catch {
+      onError('Network error. Please try again.');
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="rounded-xl border border-[#1e293b] bg-slate-950 p-3">
+        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-2">Card Details</p>
+        <CardElement
+          options={{
+            style: {
+              base: { fontSize: '14px', color: '#ffffff', fontFamily: 'system-ui, sans-serif', '::placeholder': { color: '#475569' } },
+              invalid: { color: '#f87171' },
+            },
+          }}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={handleCardPay}
+        disabled={submitting || !stripe}
+        className="w-full rounded-xl bg-gradient-to-r from-[#635BFF] to-[#7C73FF] py-3 text-xs font-extrabold text-white hover:opacity-90 transition shadow-lg disabled:opacity-50"
+      >
+        {submitting ? 'Processing...' : `Charge $${amount.toFixed(2)} to Card`}
+      </button>
+    </div>
+  );
+}
 
 interface POSModalsProps {
   activeModal: 'checkout' | 'hold' | 'resume' | 'split' | 'receipt' | 'table' | 'inventory' | 'settings' | null;
   setActiveModal: (modal: any) => void;
-  selectedPayment: 'cash' | 'card' | 'upi' | 'wallet';
+  selectedPayment: 'cash' | 'card' | 'upi';
   setSelectedPayment: (mode: any) => void;
   checkoutNotes: string;
   setCheckoutNotes: (notes: string) => void;
-  handleCheckoutSubmit: () => void;
+  handleCheckoutSubmit: (stripePaymentIntentId?: string) => void;
   total: number;
   subtotal: number;
   discount: number;
@@ -42,6 +129,14 @@ interface POSModalsProps {
   holdNotes: string;
   setHoldNotes: (notes: string) => void;
   fetchTables?: () => void;
+  // Stripe
+  stripeEnabled?: boolean;
+  stripePromise?: ReturnType<typeof import('@stripe/stripe-js').loadStripe> | null;
+  stripeStoreId?: string | null;
+  posCardError?: string | null;
+  setPosCardError?: (msg: string | null) => void;
+  posStripeSubmitting?: boolean;
+  setPosStripeSubmitting?: (v: boolean) => void;
 }
 
 export function POSModals({
@@ -77,6 +172,13 @@ export function POSModals({
   holdNotes,
   setHoldNotes,
   fetchTables,
+  stripeEnabled,
+  stripePromise,
+  stripeStoreId,
+  posCardError,
+  setPosCardError,
+  posStripeSubmitting,
+  setPosStripeSubmitting,
 }: POSModalsProps) {
   const getDummyTableBill = (table: any) => {
     if (table.status !== 'occupied' && table.status !== 'reserved') return null;
@@ -105,17 +207,20 @@ export function POSModals({
 
             <div className="mt-4 space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                {(['cash', 'card', 'upi', 'wallet'] as const).map((mode) => (
+                {(['cash', 'card', 'upi'] as const).map((mode) => (
                   <button
                     key={mode}
-                    onClick={() => setSelectedPayment(mode)}
+                    onClick={() => {
+                      setSelectedPayment(mode);
+                      if (setPosCardError) setPosCardError(null);
+                    }}
                     className={`rounded-xl border p-3.5 text-xs font-bold capitalize transition duration-150 ${
                       selectedPayment === mode
                         ? 'border-[#f59e0b] bg-[#f59e0b]/10 text-white shadow-md shadow-[#f59e0b]/5'
                         : 'border-[#1e293b] bg-slate-950 text-slate-400 hover:bg-slate-900/50'
                     }`}
                   >
-                    {mode} Payment
+                    {mode === 'card' && stripeEnabled ? '💳 Card (Stripe)' : `${mode} Payment`}
                   </button>
                 ))}
               </div>
@@ -147,12 +252,31 @@ export function POSModals({
                 </div>
               </div>
 
-              <button
-                onClick={handleCheckoutSubmit}
-                className="w-full mt-6 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#f59e0b]/90 hover:to-[#ea580c]/90 py-3 text-xs font-extrabold text-slate-950 shadow-md shadow-[#f59e0b]/10 transition"
-              >
-                Finalize & Print Receipt
-              </button>
+              {/* Stripe Card Element — shown when card is selected and Stripe is enabled */}
+              {selectedPayment === 'card' && stripeEnabled && stripePromise && stripeStoreId ? (
+                <Elements stripe={stripePromise}>
+                  <POSStripeCard
+                    storeId={stripeStoreId}
+                    amount={total}
+                    onSuccess={(intentId) => {
+                      handleCheckoutSubmit(intentId);
+                    }}
+                    onError={(msg) => { if (setPosCardError) setPosCardError(msg); }}
+                    submitting={posStripeSubmitting ?? false}
+                    setSubmitting={(v) => { if (setPosStripeSubmitting) setPosStripeSubmitting(v); }}
+                  />
+                  {posCardError && (
+                    <p className="text-xs text-red-400 font-medium">⚠️ {posCardError}</p>
+                  )}
+                </Elements>
+              ) : (
+                <button
+                  onClick={() => handleCheckoutSubmit()}
+                  className="w-full mt-6 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#f59e0b]/90 hover:to-[#ea580c]/90 py-3 text-xs font-extrabold text-slate-950 shadow-md shadow-[#f59e0b]/10 transition"
+                >
+                  Finalize & Print Receipt
+                </button>
+              )}
             </div>
           </div>
         </div>

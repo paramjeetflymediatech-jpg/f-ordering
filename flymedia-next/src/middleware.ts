@@ -28,25 +28,61 @@ export function middleware(request: NextRequest) {
   // Identify root hosts that should not be parsed for subdomains
   const rootHosts = [
     getHostOnly(process.env.NEXT_PUBLIC_APP_URL) || 'localhost:3000',
-    getHostOnly(process.env.NEXT_PUBLIC_APP_URL_WITH_WWW) || 'www.localhost:3000'
+    getHostOnly(process.env.NEXT_PUBLIC_APP_URL_WITH_WWW) || 'www.localhost:3000',
   ];
   const isRootHost = rootHosts.includes(hostname.toLowerCase());
 
+  // ─── ROOT HOST: Redirect /order-online/{slug}/menu → {slug}.localhost:3000/menu ───
+  if (isRootHost) {
+    // Match /order-online/{slug}/menu
+    const menuMatch = url.pathname.match(/^\/order-online\/([^/]+)\/menu$/);
+    if (menuMatch) {
+      const slug = menuMatch[1];
+      const port = hostname.split(':')[1] || '3000';
+      const redirectUrl = `http://${slug}.localhost:${port}/menu`;
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Match /order-online/{slug}/book
+    const bookMatch = url.pathname.match(/^\/order-online\/([^/]+)\/book$/);
+    if (bookMatch) {
+      const slug = bookMatch[1];
+      const port = hostname.split(':')[1] || '3000';
+      const redirectUrl = `http://${slug}.localhost:${port}/book`;
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    // Match /order-online/{slug} (no trailing page)
+    const slugOnly = url.pathname.match(/^\/order-online\/([^/]+)\/?$/);
+    if (slugOnly) {
+      const slug = slugOnly[1];
+      const port = hostname.split(':')[1] || '3000';
+      const redirectUrl = `http://${slug}.localhost:${port}/menu`;
+      return NextResponse.redirect(redirectUrl);
+    }
+  }
+
+  // ─── SUBDOMAIN HOST: Rewrite /menu and /book → /order-online/{slug}/... ───
   if (!isRootHost) {
-    // Extract the subdomain (first part of the host)
     const parts = hostname.split('.');
     const subdomain = parts[0];
 
     if (subdomain && subdomain !== 'www') {
-      // Rewrite customer order page
-      if (url.pathname === '/order-online/menu') {
+      // Rewrite: {slug}.localhost:3000/menu → /order-online/{slug}/menu
+      if (url.pathname === '/menu') {
         url.pathname = `/order-online/${subdomain}/menu`;
         return NextResponse.rewrite(url);
       }
-      
-      // Rewrite table booking page
-      if (url.pathname === '/order-online/book') {
+
+      // Rewrite: {slug}.localhost:3000/book → /order-online/{slug}/book
+      if (url.pathname === '/book') {
         url.pathname = `/order-online/${subdomain}/book`;
+        return NextResponse.rewrite(url);
+      }
+
+      // Rewrite root path: {slug}.localhost:3000/ → /order-online/{slug}/menu
+      if (url.pathname === '/') {
+        url.pathname = `/order-online/${subdomain}/menu`;
         return NextResponse.rewrite(url);
       }
     }
@@ -57,7 +93,12 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/order-online/menu',
-    '/order-online/book',
+    '/menu',
+    '/book',
+    '/',
+    // Catch all /order-online/* paths to redirect to subdomain
+    '/order-online/:slug*/menu',
+    '/order-online/:slug*/book',
+    '/order-online/:slug*',
   ],
 };

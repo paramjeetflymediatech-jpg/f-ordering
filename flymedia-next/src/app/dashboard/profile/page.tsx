@@ -32,10 +32,11 @@ import {
   UserX,
   UserPlus,
   Upload,
+  Palette,
 } from 'lucide-react';
 
 export default function BusinessProfilePage() {
-  const [activeTab, setActiveTab] = useState<'profile' | 'dashboard' | 'info' | 'reservations' | 'eod' | 'delegated' | 'campaigns'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'dashboard' | 'info' | 'reservations' | 'eod' | 'delegated' | 'campaigns' | 'styling'>('profile');
 
   // Staff / Delegated Accounts State
   const [staff, setStaff] = useState<any[]>([]);
@@ -85,6 +86,11 @@ export default function BusinessProfilePage() {
     banner: '',
     companyName: '',
     logo: '',
+    themePrimaryColor: '#2A0E07',
+    themeAccentColor: '#C39A3C',
+    themeBgColor: '#F9F6F0',
+    themeLayout: 'classic',
+    themeFont: 'serif',
   });
 
   const [editMode, setEditMode] = useState(false);
@@ -192,6 +198,11 @@ export default function BusinessProfilePage() {
           banner: data.store.banner || 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&q=80&w=1200',
           companyName: data.organization?.name || '',
           logo: data.organization?.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=300',
+          themePrimaryColor: data.store.theme_primary_color || '#2A0E07',
+          themeAccentColor: data.store.theme_accent_color || '#C39A3C',
+          themeBgColor: data.store.theme_bg_color || '#F9F6F0',
+          themeLayout: data.store.theme_layout || 'classic',
+          themeFont: data.store.theme_font || 'serif',
         });
       } else {
         setError(data.error || 'Failed to fetch business profile.');
@@ -379,6 +390,11 @@ export default function BusinessProfilePage() {
         banner: store.banner || 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&q=80&w=1200',
         companyName: organization.name || '',
         logo: organization.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=300',
+        themePrimaryColor: store.theme_primary_color || '#2A0E07',
+        themeAccentColor: store.theme_accent_color || '#C39A3C',
+        themeBgColor: store.theme_bg_color || '#F9F6F0',
+        themeLayout: store.theme_layout || 'classic',
+        themeFont: store.theme_font || 'serif',
       });
     }
     setEditMode(false);
@@ -389,6 +405,7 @@ export default function BusinessProfilePage() {
   const tabsList = [
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'profile', name: 'View Profile', icon: Building },
+    { id: 'styling', name: 'Menu Card Styling', icon: Palette },
     { id: 'info', name: 'Additional Business Info.', icon: Info },
     { id: 'reservations', name: 'Current Reservations', icon: Calendar },
     { id: 'eod', name: 'EoD Report.', icon: FileText },
@@ -475,11 +492,13 @@ export default function BusinessProfilePage() {
               <div>
                 {/* Banner Preview Block */}
                 <div className="relative h-44 md:h-56 bg-slate-900 overflow-hidden group">
-                  <img
-                    src={formData.banner}
-                    alt="Store Banner"
-                    className="w-full h-full  opacity-80"
-                  />
+                  {formData.banner && (
+                    <img
+                      src={formData.banner}
+                      alt="Store Banner"
+                      className="w-full h-full  opacity-80"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-[#0c101b] via-[#0c101b]/20 to-transparent"></div>
                   {editMode && (
                     <div className="absolute top-4 right-4 bg-slate-950/85 backdrop-blur-sm border border-[#1e293b] rounded-xl p-3 max-w-xs transition shadow-lg flex flex-col gap-2">
@@ -523,11 +542,13 @@ export default function BusinessProfilePage() {
                   <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 -mt-16 sm:-mt-20">
                     {/* Logo wrapper */}
                     <div className="relative h-28 w-28 md:h-32 md:w-32 rounded-2xl overflow-hidden border-4 border-[#0c101b] bg-[#0c101b] shadow-xl shrink-0 group flex flex-col items-center justify-center">
-                      <img
-                        src={formData.logo}
-                        alt="Store Logo"
-                        className="w-full h-full object-contain"
-                      />
+                      {formData.logo && (
+                        <img
+                          src={formData.logo}
+                          alt="Store Logo"
+                          className="w-full h-full object-contain"
+                        />
+                      )}
                       {editMode && (
                         <div className="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-2 text-center transition hover:bg-slate-950/90">
                           <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
@@ -938,6 +959,261 @@ export default function BusinessProfilePage() {
                     </div>
                   )}
                 </form>
+              </div>
+            )}
+
+            {/* Menu Card Styling Tab */}
+            {activeTab === 'styling' && (
+              <div className="p-6 md:p-8 space-y-6">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#1e293b]/60 pb-4">
+                  <div>
+                    <h2 className="text-lg font-black tracking-wide text-white">ONLINE MENU CARD STYLING</h2>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Customize how your public customer-facing menu card looks. Choose a layout, font, and brand colors.
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#d97706] hover:to-[#dd571c] text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow-lg shadow-[#f59e0b]/10 disabled:opacity-50"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    {saving ? 'Saving...' : 'Save Theme'}
+                  </button>
+                </div>
+
+                {/* Theme Preset cards */}
+                <div>
+                  <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Quick Style Presets</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          themePrimaryColor: '#2A0E07',
+                          themeAccentColor: '#C39A3C',
+                          themeBgColor: '#F9F6F0',
+                          themeLayout: 'classic',
+                          themeFont: 'serif',
+                        }));
+                      }}
+                      className="border border-[#1e293b] hover:border-[#f59e0b]/40 bg-slate-950 p-4 rounded-2xl text-left transition space-y-2 hover:bg-slate-900/50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white">Classic Warm</span>
+                        <span className="rounded bg-[#C39A3C]/10 border border-[#C39A3C]/20 px-1.5 py-0.5 text-[9px] text-[#C39A3C] font-bold">Serif</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <span className="w-5 h-5 rounded-full border border-slate-700 bg-[#2A0E07]" title="Primary"></span>
+                        <span className="w-5 h-5 rounded-full border border-slate-700 bg-[#C39A3C]" title="Accent"></span>
+                        <span className="w-5 h-5 rounded-full border border-slate-700 bg-[#F9F6F0]" title="Background"></span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">Elegant deep warm colors perfect for classic dining experience.</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          themePrimaryColor: '#0c101b',
+                          themeAccentColor: '#f59e0b',
+                          themeBgColor: '#05070c',
+                          themeLayout: 'modern_dark',
+                          themeFont: 'sans',
+                        }));
+                      }}
+                      className="border border-[#1e293b] hover:border-[#f59e0b]/40 bg-slate-950 p-4 rounded-2xl text-left transition space-y-2 hover:bg-slate-900/50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white">Cyber Dark</span>
+                        <span className="rounded bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 text-[9px] text-amber-400 font-bold">Sans</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <span className="w-5 h-5 rounded-full border border-slate-700 bg-[#0c101b]" title="Primary"></span>
+                        <span className="w-5 h-5 rounded-full border border-slate-700 bg-[#f59e0b]" title="Accent"></span>
+                        <span className="w-5 h-5 rounded-full border border-slate-700 bg-[#05070c]" title="Background"></span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">Sleek dark-mode aesthetic with neon highlights for night venues.</p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          themePrimaryColor: '#18181b',
+                          themeAccentColor: '#06b6d4',
+                          themeBgColor: '#fafafa',
+                          themeLayout: 'grid_minimal',
+                          themeFont: 'sans',
+                        }));
+                      }}
+                      className="border border-[#1e293b] hover:border-[#f59e0b]/40 bg-slate-950 p-4 rounded-2xl text-left transition space-y-2 hover:bg-slate-900/50"
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-white">Clean Minimal</span>
+                        <span className="rounded bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 text-[9px] text-cyan-400 font-bold">Sans</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <span className="w-5 h-5 rounded-full border border-slate-700 bg-[#18181b]" title="Primary"></span>
+                        <span className="w-5 h-5 rounded-full border border-slate-700 bg-[#06b6d4]" title="Accent"></span>
+                        <span className="w-5 h-5 rounded-full border border-slate-700 bg-[#fafafa]" title="Background"></span>
+                      </div>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">Clean, flat, high-contrast style suited for cafes, bakeries, or bistros.</p>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Configuration form fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-[#080b11]/30 p-5 rounded-2xl border border-[#1e293b]">
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-bold text-[#f59e0b] uppercase tracking-wider mb-2">Layout & Typography</h4>
+                    
+                    <div>
+                      <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                        Layout Style
+                      </label>
+                      <select
+                        name="themeLayout"
+                        value={formData.themeLayout}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#080b11] border border-[#1e293b] text-white focus:border-[#f59e0b] rounded-xl px-4 py-2.5 text-xs font-semibold outline-none transition"
+                      >
+                        <option value="classic">Classic (Sidebar + Category Headers)</option>
+                        <option value="modern_dark">Modern Dark (Glassmorphic Grids)</option>
+                        <option value="grid_minimal">Grid Minimal (Modern Flat Cards)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                        Typography (Font)
+                      </label>
+                      <select
+                        name="themeFont"
+                        value={formData.themeFont}
+                        onChange={handleInputChange}
+                        className="w-full bg-[#080b11] border border-[#1e293b] text-white focus:border-[#f59e0b] rounded-xl px-4 py-2.5 text-xs font-semibold outline-none transition"
+                      >
+                        <option value="serif">Elegant Serif (Classic restaurant feeling)</option>
+                        <option value="sans">Clean Sans-Serif (Standard modern interface)</option>
+                        <option value="playfair">Playfair Display (Premium Luxury styling)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-bold text-[#f59e0b] uppercase tracking-wider mb-2">Brand Theme Colors</h4>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                          Primary Color
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            name="themePrimaryColor"
+                            value={formData.themePrimaryColor}
+                            onChange={handleInputChange}
+                            className="h-10 w-10 shrink-0 rounded-lg bg-transparent border-0 cursor-pointer outline-none font-sans"
+                          />
+                          <input
+                            type="text"
+                            name="themePrimaryColor"
+                            value={formData.themePrimaryColor}
+                            onChange={handleInputChange}
+                            placeholder="#000000"
+                            className="w-full bg-[#080b11] border border-[#1e293b] text-white focus:border-[#f59e0b] rounded-xl px-2.5 text-[10px] font-mono outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                          Accent Color
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            name="themeAccentColor"
+                            value={formData.themeAccentColor}
+                            onChange={handleInputChange}
+                            className="h-10 w-10 shrink-0 rounded-lg bg-transparent border-0 cursor-pointer outline-none font-sans"
+                          />
+                          <input
+                            type="text"
+                            name="themeAccentColor"
+                            value={formData.themeAccentColor}
+                            onChange={handleInputChange}
+                            placeholder="#000000"
+                            className="w-full bg-[#080b11] border border-[#1e293b] text-white focus:border-[#f59e0b] rounded-xl px-2.5 text-[10px] font-mono outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                          Page Background
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            name="themeBgColor"
+                            value={formData.themeBgColor}
+                            onChange={handleInputChange}
+                            className="h-10 w-10 shrink-0 rounded-lg bg-transparent border-0 cursor-pointer outline-none font-sans"
+                          />
+                          <input
+                            type="text"
+                            name="themeBgColor"
+                            value={formData.themeBgColor}
+                            onChange={handleInputChange}
+                            placeholder="#000000"
+                            className="w-full bg-[#080b11] border border-[#1e293b] text-white focus:border-[#f59e0b] rounded-xl px-2.5 text-[10px] font-mono outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Theme Live Preview Banner (Simulated) */}
+                <div className="rounded-2xl border border-[#1e293b] p-5 shadow-inner flex flex-col items-center justify-center space-y-4" style={{ backgroundColor: formData.themeBgColor }}>
+                  <span className="text-[9px] font-bold text-slate-400 bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-full self-start">Live Theme Style Preview</span>
+                  <div className="w-full max-w-lg rounded-xl overflow-hidden shadow-xl border border-slate-200/20 bg-white" style={{ fontFamily: formData.themeFont === 'serif' ? 'Georgia, serif' : formData.themeFont === 'playfair' ? 'Times New Roman, serif' : 'system-ui, sans-serif' }}>
+                    
+                    {/* Header */}
+                    <div className="px-4 py-3 flex items-center justify-between" style={{ backgroundColor: formData.themePrimaryColor, color: '#ffffff' }}>
+                      <span className="text-xs font-black uppercase tracking-wider">{formData.profileName || 'Restaurant Name'}</span>
+                      <span className="text-[10px] font-bold" style={{ color: formData.themeAccentColor }}>Menu Card</span>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-4 space-y-3" style={{ backgroundColor: formData.themeBgColor, color: '#1e293b' }}>
+                      <div className="h-2 w-1/4 rounded" style={{ backgroundColor: formData.themePrimaryColor, opacity: 0.15 }}></div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="border border-slate-200 bg-white p-3 rounded-lg flex items-center justify-between">
+                          <div>
+                            <div className="h-3 w-2/3 rounded mb-1" style={{ backgroundColor: formData.themePrimaryColor }}></div>
+                            <div className="h-2 w-1/2 rounded" style={{ backgroundColor: formData.themePrimaryColor, opacity: 0.4 }}></div>
+                          </div>
+                          <span className="text-xs font-black" style={{ color: formData.themeAccentColor }}>$12.50</span>
+                        </div>
+                        <div className="border border-slate-200 bg-white p-3 rounded-lg flex items-center justify-between">
+                          <div>
+                            <div className="h-3 w-3/4 rounded mb-1" style={{ backgroundColor: formData.themePrimaryColor }}></div>
+                            <div className="h-2 w-1/3 rounded" style={{ backgroundColor: formData.themePrimaryColor, opacity: 0.4 }}></div>
+                          </div>
+                          <span className="text-xs font-black" style={{ color: formData.themeAccentColor }}>$18.00</span>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
               </div>
             )}
 

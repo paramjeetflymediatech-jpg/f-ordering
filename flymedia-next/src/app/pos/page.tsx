@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { usePOSStore } from '../../lib/store';
@@ -98,10 +99,17 @@ export default function POSPage() {
 
   // Custom states for newly added features
   const [activeModal, setActiveModal] = useState<'checkout' | 'hold' | 'resume' | 'split' | 'receipt' | 'table' | 'inventory' | 'settings' | null>(null);
-  const [selectedPayment, setSelectedPayment] = useState<'cash' | 'card' | 'upi' | 'wallet'>('cash');
+  const [selectedPayment, setSelectedPayment] = useState<'cash' | 'card' | 'upi'>('cash');
   const [checkoutNotes, setCheckoutNotes] = useState('');
   const [holdNotes, setHoldNotes] = useState('');
   const [recentOrder, setRecentOrder] = useState<any>(null);
+
+  // Stripe state for POS card payments
+  const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
+  const [stripeStoreId, setStripeStoreId] = useState<string | null>(null);
+  const [posCardError, setPosCardError] = useState<string | null>(null);
+  const [posStripeSubmitting, setPosStripeSubmitting] = useState(false);
 
   // Seed default settings modifiers
   const [inputTaxRate, setInputTaxRate] = useState<number>(taxRate);
@@ -340,6 +348,20 @@ export default function POSPage() {
           }
         })
         .catch((err) => console.error('Error fetching POS profile logo:', err));
+
+      // Fetch Stripe config for POS card payments
+      fetch('/api/pos/stripe-config')
+        .then((r) => r.json())
+        .then((cfg) => {
+          if (cfg.enabled && cfg.publishableKey) {
+            setStripeEnabled(true);
+            setStripePromise(loadStripe(cfg.publishableKey));
+            // Capture store_id from session for PaymentIntent creation
+            const storeId = (session?.user as any)?.store_id;
+            if (storeId) setStripeStoreId(storeId);
+          }
+        })
+        .catch(() => {}); // Stripe not configured — silently skip
     }
   }, [status]);
 
@@ -390,7 +412,7 @@ export default function POSPage() {
   };
 
   // Checkout handling
-  const handleCheckoutSubmit = async () => {
+  const handleCheckoutSubmit = async (stripePaymentIntentId?: string) => {
     try {
       const res = await fetch('/api/orders', {
         method: 'POST',
@@ -413,6 +435,7 @@ export default function POSPage() {
           deliveryAddress: deliveryAddress ? `${deliveryAddress}${deliveryAddress2 ? `, ${deliveryAddress2}` : ''}, ${deliveryCity}, ${deliveryZip}, ${deliveryState}, ${deliveryCountry}` : undefined,
           cartRef,
           readyBy: readyDate && readyTime ? `${readyDate} ${readyTime}` : undefined,
+          stripePaymentIntentId: stripePaymentIntentId || undefined,
         }),
       });
 
@@ -943,6 +966,13 @@ export default function POSPage() {
         holdNotes={holdNotes}
         setHoldNotes={setHoldNotes}
         fetchTables={fetchTables}
+        stripeEnabled={stripeEnabled}
+        stripePromise={stripePromise}
+        stripeStoreId={stripeStoreId}
+        posCardError={posCardError}
+        setPosCardError={setPosCardError}
+        posStripeSubmitting={posStripeSubmitting}
+        setPosStripeSubmitting={setPosStripeSubmitting}
       />
 
       {/* Mobile Bottom Navigation Bar (hidden on md and larger) */}

@@ -78,6 +78,7 @@ export async function POST(request: Request) {
       deliveryAddress,
       cartRef,
       readyBy,
+      stripePaymentIntentId,
     } = body;
 
     if (!items || items.length === 0) {
@@ -207,7 +208,7 @@ export async function POST(request: Request) {
           payment_method: paymentMethod,
           amount: total,
           transaction_status: 'success',
-          transaction_reference: `POS-TX-${Date.now()}`,
+          transaction_reference: stripePaymentIntentId || `POS-TX-${Date.now()}`,
         },
         { transaction }
       );

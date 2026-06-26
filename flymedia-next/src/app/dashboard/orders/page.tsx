@@ -34,7 +34,36 @@ export default function OrderHistoryPage() {
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'completed' | 'active' | 'on_hold' | 'cancelled'>('all');
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
   const itemsPerPage = 10;
+
+  const handleStatusChange = async (orderId: string, newStatus: string) => {
+    setUpdatingStatus(orderId);
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOrders((prev: any[]) =>
+          prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+        );
+        setSelectedOrder((prev: any) => (prev && prev.id === orderId ? { ...prev, status: newStatus } : prev));
+      } else {
+        alert(data.error || 'Failed to update order status');
+      }
+    } catch (err) {
+      console.error('Failed to update status:', err);
+      alert('Error updating order status');
+    } finally {
+      setUpdatingStatus(null);
+    }
+  };
+
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -410,6 +439,36 @@ export default function OrderHistoryPage() {
 
               <div className="text-center mt-5 pt-3.5 border-t border-dashed border-black text-[9px]">
                 Powered by TableTaste POS HQ
+              </div>
+            </div>
+
+            {/* Update Status Control */}
+            <div className="mt-5 rounded-xl border border-[#1e293b] bg-slate-950/40 p-3.5 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Update Order Status
+                </span>
+                {updatingStatus === selectedOrder.id && (
+                  <span className="text-[10px] text-[#f59e0b] animate-pulse font-bold">
+                    Saving...
+                  </span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <select
+                  value={selectedOrder.status}
+                  disabled={updatingStatus === selectedOrder.id}
+                  onChange={(e) => handleStatusChange(selectedOrder.id, e.target.value)}
+                  className="w-full rounded-xl border border-[#1e293b] bg-slate-950/80 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition disabled:opacity-50"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="accepted">Accepted</option>
+                  <option value="preparing">Preparing</option>
+                  <option value="ready">Ready</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                  <option value="on_hold">On Hold</option>
+                </select>
               </div>
             </div>
 

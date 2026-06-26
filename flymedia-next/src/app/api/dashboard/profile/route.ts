@@ -16,7 +16,13 @@ export async function GET() {
     const organization = await Organization.findByPk(organization_id);
 
     if (!store) {
-      return NextResponse.json({ error: 'Store not found' }, { status: 404 });
+      // Return a successful response with empty store data instead of 404 to avoid breaking the dashboard
+      return NextResponse.json({
+        success: false,
+        message: 'Store not found',
+        store: null,
+        organization,
+      });
     }
 
     return NextResponse.json({
@@ -71,6 +77,11 @@ export async function PUT(request: Request) {
     if (body.website !== undefined) storeUpdates.website = body.website;
     if (body.description !== undefined) storeUpdates.description = body.description;
     if (body.banner !== undefined) storeUpdates.banner = body.banner;
+    if (body.themePrimaryColor !== undefined) storeUpdates.theme_primary_color = body.themePrimaryColor;
+    if (body.themeAccentColor !== undefined) storeUpdates.theme_accent_color = body.themeAccentColor;
+    if (body.themeBgColor !== undefined) storeUpdates.theme_bg_color = body.themeBgColor;
+    if (body.themeLayout !== undefined) storeUpdates.theme_layout = body.themeLayout;
+    if (body.themeFont !== undefined) storeUpdates.theme_font = body.themeFont;
 
     if (Object.keys(storeUpdates).length > 0) {
       await store.update(storeUpdates);

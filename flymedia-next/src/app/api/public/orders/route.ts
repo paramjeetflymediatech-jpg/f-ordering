@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server';
-import { sequelize, Store, Customer, Order, OrderItem, Payment, RestaurantTable } from '../../../../models';
+import { sequelize, Store, Customer, Order, OrderItem, Payment, RestaurantTable, User, Role } from '../../../../models';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import { sendEmailReceipt } from '../../../../lib/email';
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'supersecretposplatformkeychangeinprod';
+
+/** Generate a short, readable temp password like "ord-4f2a" */
+function generateTempPassword(): string {
+  return 'ord-' + Math.random().toString(36).slice(2, 6);
+}
 
 export async function POST(request: Request) {
   const transaction = await sequelize.transaction();
@@ -22,6 +28,7 @@ export async function POST(request: Request) {
       paymentMethod = 'cash',
       deliveryAddress,
       notes,
+      stripePaymentIntentId,
     } = body;
 
     // 1. Validations
@@ -55,8 +62,10 @@ export async function POST(request: Request) {
     }
 
     let customer = loggedInCustomer;
+    let guestTempPassword: string | null = null;
+
     if (!customer) {
-      const [guestCustomer] = await Customer.findOrCreate({
+      const [guestCustomer, wasCreated] = await Customer.findOrCreate({
         where: { phone: customerPhone },
         defaults: {
           name: customerName,
@@ -67,8 +76,15 @@ export async function POST(request: Request) {
       });
       customer = guestCustomer;
 
+      // Update email if missing
       if (customerEmail && !customer.email) {
         customer.email = customerEmail;
+      }
+
+      // Auto-create account: if newly created OR existing guest with no password, set a temp password
+      if (!customer.password) {
+        guestTempPassword = generateTempPassword();
+        customer.password = await bcrypt.hash(guestTempPassword, 10);
         await customer.save({ transaction });
       }
     }
@@ -131,8 +147,12 @@ export async function POST(request: Request) {
         order_id: order.id,
         payment_method: paymentMethod,
         amount: total,
-        transaction_status: paymentMethod === 'cash' ? 'pending' : 'success',
-        transaction_reference: `ONL-TX-${Date.now()}`,
+        transaction_status: stripePaymentIntentId
+          ? 'success'
+          : paymentMethod === 'cash'
+          ? 'pending'
+          : 'success',
+        transaction_reference: stripePaymentIntentId || `ONL-TX-${Date.now()}`,
       },
       { transaction }
     );
@@ -148,7 +168,6 @@ export async function POST(request: Request) {
     // Lookup Restaurant Owner email
     let adminEmail = 'admin@fordering.com';
     try {
-      const { User, Role } = require('../../../../models');
       const ownerUser = await User.findOne({
         where: { organization_id: store.organization_id },
         include: [
@@ -218,6 +237,14 @@ export async function POST(request: Request) {
         total: order.total_amount,
         status: order.status,
       },
+      // Returned only for guest orders that just got an account auto-created
+      newAccount: guestTempPassword
+        ? {
+            phone: customer.phone,
+            tempPassword: guestTempPassword,
+            message: 'Account auto-created! Use your phone number and this temporary password to log in.',
+          }
+        : null,
     });
   } catch (error: any) {
     await transaction.rollback();

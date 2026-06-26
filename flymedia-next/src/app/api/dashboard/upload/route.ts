@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const subFolder = isLogo ? 'logo' : isBanner ? 'banner' : 'menu';
     const prefix = isLogo ? 'logo' : isBanner ? 'banner' : 'menu-item';
 
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads', subFolder);
+    const uploadDir = path.join(process.cwd(), 'uploads', subFolder);
     await mkdir(uploadDir, { recursive: true });
 
     // Extract file extension cleanly

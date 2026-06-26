@@ -220,10 +220,10 @@ function DashboardSalesChart({ data, range }: { data: AnalyticsData; range: Char
         </defs>
 
         {/* Grid lines */}
-        {gridLevels.map((level) => {
+        {gridLevels.map((level, i) => {
           const y = height - (level / rangeVal) * (height - 45) - 25;
           return (
-            <g key={level}>
+            <g key={i}>
               <line x1="25" y1={y} x2={width - 25} y2={y} stroke="#1e293b" strokeWidth="0.75" strokeDasharray="4 4" />
               <text x="2" y={y + 3} fill="#475569" fontSize="7" fontWeight="600">
                 {formatCurrency(level)}
@@ -240,7 +240,7 @@ function DashboardSalesChart({ data, range }: { data: AnalyticsData; range: Char
 
         {/* Dots */}
         {coords.map((c, i) => (
-          <g key={i} className="group/dot cursor-pointer">
+          <g key={`dot-${i}`} className="group/dot cursor-pointer">
             <circle cx={c.x} cy={c.y} r="3.5" fill="#0f172a" stroke="#f59e0b" strokeWidth="1.5" />
             <title>{`${labels[i]}: ${formatCurrency(c.val)}`}</title>
           </g>
@@ -250,7 +250,7 @@ function DashboardSalesChart({ data, range }: { data: AnalyticsData; range: Char
         {coords.map((c, i) => {
           if (i % labelInterval !== 0 && i !== coords.length - 1) return null;
           return (
-            <text key={i} x={c.x} y={height - 2} textAnchor="middle" fill="#64748b" fontSize="7" fontWeight="600">
+            <text key={`label-${i}`} x={c.x} y={height - 2} textAnchor="middle" fill="#64748b" fontSize="7" fontWeight="600">
               {labels[i]}
             </text>
           );

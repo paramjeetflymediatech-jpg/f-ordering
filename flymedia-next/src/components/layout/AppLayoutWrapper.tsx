@@ -7,9 +7,18 @@ import Footer from './Footer';
 
 export default function AppLayoutWrapper({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+
+  // All order-online pages (menu, login, register, profile…) have their own UI — no global header/footer
+  const isOrderOnlinePage = pathname?.startsWith('/order-online') || pathname?.startsWith('/menu') || pathname?.startsWith('/book');
+
+  // Internal app pages use the dark app shell
   const isAppPage = ['/pos', '/dashboard', '/login', '/register'].some(
     (path) => pathname?.startsWith(path)
   );
+
+  if (isOrderOnlinePage) {
+    return <>{children}</>;
+  }
 
   if (isAppPage) {
     return <div className="app-container min-h-screen bg-slate-950 text-slate-100">{children}</div>;

@@ -60,7 +60,7 @@ export function DailySalesTrendChart({ data }: { data?: SalesTrendPoint[] }) {
   const height = 140;
   const max = Math.max(...points, 100);
   const min = 0;
-  const range = max - min || 1;
+  const range = max - min || 1; 
 
   const coords = points.map((p, i) => {
     const x = (i / (points.length - 1)) * (width - 40) + 20;
@@ -113,7 +113,7 @@ export function DailySalesTrendChart({ data }: { data?: SalesTrendPoint[] }) {
 
         {/* Interaction Points */}
         {coords.map((c, i) => (
-          <g key={i} className="group/dot cursor-pointer">
+          <g key={`dot-${i}`} className="group/dot cursor-pointer">
             <circle
               cx={c.x}
               cy={c.y}
@@ -130,7 +130,7 @@ export function DailySalesTrendChart({ data }: { data?: SalesTrendPoint[] }) {
         {/* Day Labels */}
         {coords.map((c, i) => (
           <text
-            key={i}
+            key={`label-${i}`}
             x={c.x}
             y={height - 2}
             textAnchor="middle"

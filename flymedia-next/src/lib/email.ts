@@ -278,10 +278,141 @@ ${etherealUrl ? `- Ethereal Preview URL: ${etherealUrl}` : ''}
 
   } catch (error) {
     console.error('[EMAIL DISPATCH] Failed to send email receipts using Nodemailer:', error);
-    
-    // Fail-safe fallback: just log to file
     const logFilePath = path.join(process.cwd(), 'simulated_emails.log');
     fs.appendFileSync(logFilePath, textBody + `\nDISPATCH FAILURE ERROR: ${error}\n\n`, 'utf8');
+    return false;
+  }
+}
+
+// ─── Order Status Change Email ─────────────────────────────────────────────
+
+const STATUS_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
+  pending:   { label: 'Pending',   emoji: '⏳', color: '#f59e0b' },
+  accepted:  { label: 'Accepted',  emoji: '✅', color: '#10b981' },
+  preparing: { label: 'Preparing', emoji: '🍳', color: '#3b82f6' },
+  ready:     { label: 'Ready',     emoji: '🛎', color: '#8b5cf6' },
+  completed: { label: 'Completed', emoji: '🎉', color: '#059669' },
+  cancelled: { label: 'Cancelled', emoji: '❌', color: '#ef4444' },
+  on_hold:   { label: 'On Hold',   emoji: '⏸', color: '#64748b' },
+};
+
+export async function sendOrderStatusEmail(params: {
+  storeName: string;
+  adminEmail: string;
+  customer: { name: string; phone: string; email: string | null };
+  order: { orderNumber: string; total: number; orderType: string };
+  newStatus: string;
+  oldStatus: string;
+}) {
+  const { storeName, adminEmail, customer, order, newStatus, oldStatus } = params;
+  const timestamp = new Date().toLocaleString();
+  const statusInfo = STATUS_LABELS[newStatus] || { label: newStatus, emoji: '📋', color: '#64748b' };
+
+  const htmlBody = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; color: #1e293b;">
+      <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
+        <h2 style="color: #0062ff; margin: 0; font-weight: 900;">${storeName}</h2>
+        <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">Order Status Update</p>
+      </div>
+
+      <div style="text-align: center; margin: 30px 0;">
+        <div style="font-size: 48px; margin-bottom: 12px;">${statusInfo.emoji}</div>
+        <h1 style="margin: 0; font-size: 22px; color: ${statusInfo.color};">${statusInfo.label.toUpperCase()}</h1>
+        <p style="color: #64748b; font-size: 13px; margin-top: 6px;">Your order status has been updated</p>
+      </div>
+
+      <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="margin: 0 0 12px 0; font-size: 13px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Order Summary</h3>
+        <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+          <tr><td style="padding: 6px 0; color: #64748b;">Order Number</td><td style="text-align: right; font-weight: bold; color: #1e293b;">${order.orderNumber}</td></tr>
+          <tr><td style="padding: 6px 0; color: #64748b;">Order Type</td><td style="text-align: right; font-weight: bold; color: #1e293b;">${order.orderType.replace('_', ' ').toUpperCase()}</td></tr>
+          <tr><td style="padding: 6px 0; color: #64748b;">Total Amount</td><td style="text-align: right; font-weight: bold; color: #0062ff;">$${order.total.toFixed(2)}</td></tr>
+          <tr><td style="padding: 6px 0; color: #64748b;">Previous Status</td><td style="text-align: right; color: #94a3b8;">${(STATUS_LABELS[oldStatus]?.label || oldStatus).toUpperCase()}</td></tr>
+          <tr><td style="padding: 6px 0; color: #64748b;">New Status</td><td style="text-align: right; font-weight: bold; color: ${statusInfo.color}; padding: 2px 8px;">${statusInfo.label.toUpperCase()}</td></tr>
+        </table>
+      </div>
+
+      <div style="background: #f1f5f9; border-radius: 12px; padding: 16px; font-size: 13px;">
+        <h3 style="margin: 0 0 8px 0; font-size: 13px; text-transform: uppercase; color: #64748b;">Customer</h3>
+        <p style="margin: 2px 0;"><strong>Name:</strong> ${customer.name}</p>
+        <p style="margin: 2px 0;"><strong>Phone:</strong> ${customer.phone}</p>
+      </div>
+
+      <div style="margin-top: 24px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+        <p>Updated at ${timestamp} &middot; Automated notification by F-Ordering POS</p>
+      </div>
+    </div>
+  `;
+
+  const textBody = `
+Order Status Update - ${storeName}
+Order: ${order.orderNumber}
+Status changed: ${oldStatus.toUpperCase()} -> ${newStatus.toUpperCase()}
+Total: $${order.total.toFixed(2)}
+Customer: ${customer.name} (${customer.phone})
+Time: ${timestamp}
+`;
+
+  try {
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+    const smtpFrom = process.env.SMTP_FROM || `"F-Ordering" <${smtpUser || 'notify@fordering.com'}>`;
+
+    let transporter: nodemailer.Transporter;
+    if (smtpHost && smtpUser && smtpPass) {
+      transporter = nodemailer.createTransport({
+        host: smtpHost, port: smtpPort, secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+    } else {
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: testAccount.smtp.host, port: testAccount.smtp.port, secure: testAccount.smtp.secure,
+        auth: { user: testAccount.user, pass: testAccount.pass },
+      });
+    }
+
+    const sends: Promise<any>[] = [];
+
+    // Notify customer if they have an email
+    if (customer.email) {
+      sends.push(transporter.sendMail({
+        from: smtpFrom,
+        to: customer.email,
+        subject: `${statusInfo.emoji} Your order ${order.orderNumber} is now ${statusInfo.label} — ${storeName}`,
+        text: textBody,
+        html: htmlBody,
+      }));
+    }
+
+    // Always notify admin
+    sends.push(transporter.sendMail({
+      from: smtpFrom,
+      to: adminEmail,
+      subject: `[Status Update] ${order.orderNumber}: ${oldStatus.toUpperCase()} -> ${newStatus.toUpperCase()} — ${storeName}`,
+      text: textBody,
+      html: htmlBody,
+    }));
+
+    const results = await Promise.all(sends);
+
+    // Log to file
+    const logFilePath = path.join(process.cwd(), 'simulated_emails.log');
+    const previewUrl = !smtpHost && results.length > 0 ? nodemailer.getTestMessageUrl(results[0]) : '';
+    fs.appendFileSync(logFilePath, `
+[STATUS UPDATE] ${order.orderNumber}: ${oldStatus} -> ${newStatus} at ${timestamp}
+  Customer: ${customer.name} (${customer.email || 'no email'})
+  Admin notified: ${adminEmail}
+  ${previewUrl ? `Preview: ${previewUrl}` : ''}
+
+`, 'utf8');
+
+    console.log(`[EMAIL STATUS] Sent status update for ${order.orderNumber}: ${oldStatus} -> ${newStatus}`);
+    return true;
+  } catch (err) {
+    console.error('[EMAIL STATUS] Failed to send status update email:', err);
     return false;
   }
 }

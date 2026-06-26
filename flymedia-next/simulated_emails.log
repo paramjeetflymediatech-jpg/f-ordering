@@ -243,3 +243,365 @@ SIMULATED DISPATCH DETAIL:
 ========================================================================
 
 
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/26/2026, 11:40:33 AM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00006
+Order Type: TAKEAWAY
+Timestamp: 6/26/2026, 11:40:33 AM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Guest QA Tester
+Phone: 0411222333
+Email: guest.qa@example.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Double Patty] @ $18.49 each = $18.49
+
+Subtotal: $18.49
+Tax: $1.53
+Total Amount: $20.02
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $20.02
+Transaction Reference: ONL-TX-1782454233813
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: guest.qa@example.com
+- Sent to Restaurant Admin Email: admin@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/26/2026, 5:18:36 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00010
+Order Type: TAKEAWAY
+Timestamp: 6/26/2026, 5:18:36 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Double Patty] @ $23.49 each = $23.49
+    + Add-ons: Bacon Stripe (+$2.00), Fried Egg (+$1.50), Extra Cheese (+$1.50)
+
+Subtotal: $23.49
+Tax: $1.94
+Total Amount: $25.43
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $25.43
+Transaction Reference: ONL-TX-1782474516699
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: admin@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/26/2026, 5:41:31 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00011
+Order Type: TAKEAWAY
+Timestamp: 6/26/2026, 5:41:31 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Double Patty] @ $21.99 each = $21.99
+    + Add-ons: Bacon Stripe (+$2.00), Fried Egg (+$1.50)
+
+Subtotal: $21.99
+Tax: $1.81
+Total Amount: $23.80
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CARD
+Amount Paid: $23.80
+Transaction Reference: pi_3TmYbW2NxSGni9xK0zTuodTe
+Payment Status: SUCCESS
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: admin@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/26/2026, 6:12:46 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00012
+Order Type: TAKEAWAY
+Timestamp: 6/26/2026, 6:12:46 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Double Patty] @ $18.49 each = $18.49
+
+Subtotal: $18.49
+Tax: $1.53
+Total Amount: $20.02
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $20.02
+Transaction Reference: ONL-TX-1782477766630
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: admin@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/26/2026, 6:15:08 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00013
+Order Type: TAKEAWAY
+Timestamp: 6/26/2026, 6:15:08 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Triple Patty] @ $20.99 each = $20.99
+
+Subtotal: $20.99
+Tax: $1.73
+Total Amount: $22.72
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $22.72
+Transaction Reference: ONL-TX-1782477908955
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/26/2026, 6:16:31 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00014
+Order Type: TAKEAWAY
+Timestamp: 6/26/2026, 6:16:31 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Triple Patty] @ $20.99 each = $20.99
+
+Subtotal: $20.99
+Tax: $1.73
+Total Amount: $22.72
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $22.72
+Transaction Reference: ONL-TX-1782477991291
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/26/2026, 6:20:28 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00015
+Order Type: TAKEAWAY
+Timestamp: 6/26/2026, 6:20:28 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Truffle Parmesan Fries @ $9.50 each = $9.50
+
+Subtotal: $9.50
+Tax: $0.78
+Total Amount: $10.28
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $10.28
+Transaction Reference: ONL-TX-1782478228348
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/26/2026, 6:21:45 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00016
+Order Type: TAKEAWAY
+Timestamp: 6/26/2026, 6:21:45 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Truffle Parmesan Fries @ $9.50 each = $9.50
+
+Subtotal: $9.50
+Tax: $0.78
+Total Amount: $10.28
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $10.28
+Transaction Reference: ONL-TX-1782478305892
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/26/2026, 6:24:38 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00017
+Order Type: TAKEAWAY
+Timestamp: 6/26/2026, 6:24:38 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Fresh Mint Lime Soda [Variant: Large] @ $6.00 each = $6.00
+
+Subtotal: $6.00
+Tax: $0.49
+Total Amount: $6.50
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $6.50
+Transaction Reference: ONL-TX-1782478478865
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 6/26/2026, 6:25:30 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00018
+Order Type: TAKEAWAY
+Timestamp: 6/26/2026, 6:25:30 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221103
+Email: demo1@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Double Patty] @ $18.49 each = $18.49
+
+Subtotal: $18.49
+Tax: $1.53
+Total Amount: $20.02
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $20.02
+Transaction Reference: ONL-TX-1782478530740
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: demo1@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+

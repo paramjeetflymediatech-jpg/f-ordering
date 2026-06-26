@@ -19,103 +19,106 @@ import { Service } from './Service';
 import { Package } from './Package';
 import { DeliveryZone } from './DeliveryZone';
 import { DeliveryRule } from './DeliveryRule';
+import { StorePaymentConfig } from './StorePaymentConfig';
 
 // Define Associations
 
-if (!User.associations || Object.keys(User.associations).length === 0) {
-  // Org & Stores
-  Organization.hasMany(Store, { foreignKey: 'organization_id', onDelete: 'CASCADE' });
-  Store.belongsTo(Organization, { foreignKey: 'organization_id' });
+// Org & Stores
+Organization.hasMany(Store, { foreignKey: 'organization_id', onDelete: 'CASCADE' });
+Store.belongsTo(Organization, { foreignKey: 'organization_id' });
 
-  // Org & Users
-  Organization.hasMany(User, { foreignKey: 'organization_id', onDelete: 'CASCADE' });
-  User.belongsTo(Organization, { foreignKey: 'organization_id', constraints: false });
+// Org & Users
+Organization.hasMany(User, { foreignKey: 'organization_id', onDelete: 'CASCADE' });
+User.belongsTo(Organization, { foreignKey: 'organization_id', constraints: false });
 
-  // Stores & Users
-  Store.hasMany(User, { foreignKey: 'store_id', onDelete: 'SET NULL' });
-  User.belongsTo(Store, { foreignKey: 'store_id', constraints: false });
+// Stores & Users
+Store.hasMany(User, { foreignKey: 'store_id', onDelete: 'SET NULL' });
+User.belongsTo(Store, { foreignKey: 'store_id', constraints: false });
 
-  // Users, Roles & Permissions (RBAC)
-  User.belongsToMany(Role, { through: 'user_roles', foreignKey: 'user_id', otherKey: 'role_id', onDelete: 'CASCADE' });
-  Role.belongsToMany(User, { through: 'user_roles', foreignKey: 'role_id', otherKey: 'user_id', onDelete: 'CASCADE' });
+// Users, Roles & Permissions (RBAC)
+User.belongsToMany(Role, { through: 'user_roles', foreignKey: 'user_id', otherKey: 'role_id', onDelete: 'CASCADE' });
+Role.belongsToMany(User, { through: 'user_roles', foreignKey: 'role_id', otherKey: 'user_id', onDelete: 'CASCADE' });
 
-  Role.belongsToMany(Permission, { through: 'role_permissions', foreignKey: 'role_id', otherKey: 'permission_id', onDelete: 'CASCADE' });
-  Permission.belongsToMany(Role, { through: 'role_permissions', foreignKey: 'permission_id', otherKey: 'role_id', onDelete: 'CASCADE' });
+Role.belongsToMany(Permission, { through: 'role_permissions', foreignKey: 'role_id', otherKey: 'permission_id', onDelete: 'CASCADE' });
+Permission.belongsToMany(Role, { through: 'role_permissions', foreignKey: 'permission_id', otherKey: 'role_id', onDelete: 'CASCADE' });
 
-  // Menu Category & Items
-  Store.hasMany(MenuCategory, { foreignKey: 'store_id', onDelete: 'CASCADE' });
-  MenuCategory.belongsTo(Store, { foreignKey: 'store_id' });
+// Menu Category & Items
+Store.hasMany(MenuCategory, { foreignKey: 'store_id', onDelete: 'CASCADE' });
+MenuCategory.belongsTo(Store, { foreignKey: 'store_id' });
 
-  MenuCategory.hasMany(MenuItem, { foreignKey: 'category_id', onDelete: 'CASCADE' });
-  MenuItem.belongsTo(MenuCategory, { foreignKey: 'category_id' });
+MenuCategory.hasMany(MenuItem, { foreignKey: 'category_id', onDelete: 'CASCADE' });
+MenuItem.belongsTo(MenuCategory, { foreignKey: 'category_id' });
 
-  // Recursive category hierarchy
-  MenuCategory.hasMany(MenuCategory, { as: 'subcategories', foreignKey: 'parent_id', onDelete: 'CASCADE', constraints: false });
-  MenuCategory.belongsTo(MenuCategory, { as: 'parent', foreignKey: 'parent_id', constraints: false });
+// Recursive category hierarchy
+MenuCategory.hasMany(MenuCategory, { as: 'subcategories', foreignKey: 'parent_id', onDelete: 'CASCADE', constraints: false });
+MenuCategory.belongsTo(MenuCategory, { as: 'parent', foreignKey: 'parent_id', constraints: false });
 
-  // Menu Items, Variants, and Addons
-  MenuItem.hasMany(MenuVariant, { foreignKey: 'menu_item_id', as: 'variants', onDelete: 'CASCADE' });
-  MenuVariant.belongsTo(MenuItem, { foreignKey: 'menu_item_id' });
+// Menu Items, Variants, and Addons
+MenuItem.hasMany(MenuVariant, { foreignKey: 'menu_item_id', as: 'variants', onDelete: 'CASCADE' });
+MenuVariant.belongsTo(MenuItem, { foreignKey: 'menu_item_id' });
 
-  MenuItem.hasMany(MenuAddon, { foreignKey: 'menu_item_id', as: 'addons', onDelete: 'CASCADE' });
-  MenuAddon.belongsTo(MenuItem, { foreignKey: 'menu_item_id' });
+MenuItem.hasMany(MenuAddon, { foreignKey: 'menu_item_id', as: 'addons', onDelete: 'CASCADE' });
+MenuAddon.belongsTo(MenuItem, { foreignKey: 'menu_item_id' });
 
-  // Tables & Stores
-  Store.hasMany(RestaurantTable, { foreignKey: 'store_id', onDelete: 'CASCADE' });
-  RestaurantTable.belongsTo(Store, { foreignKey: 'store_id' });
+// Tables & Stores
+Store.hasMany(RestaurantTable, { foreignKey: 'store_id', onDelete: 'CASCADE' });
+RestaurantTable.belongsTo(Store, { foreignKey: 'store_id' });
 
-  // Orders & Stores/Tables/Cashiers
-  Store.hasMany(Order, { foreignKey: 'store_id', onDelete: 'CASCADE' });
-  Order.belongsTo(Store, { foreignKey: 'store_id' });
+// Orders & Stores/Tables/Cashiers
+Store.hasMany(Order, { foreignKey: 'store_id', onDelete: 'CASCADE' });
+Order.belongsTo(Store, { foreignKey: 'store_id' });
 
-  RestaurantTable.hasMany(Order, { foreignKey: 'table_id', onDelete: 'SET NULL' });
-  Order.belongsTo(RestaurantTable, { foreignKey: 'table_id', constraints: false });
+RestaurantTable.hasMany(Order, { foreignKey: 'table_id', onDelete: 'SET NULL' });
+Order.belongsTo(RestaurantTable, { foreignKey: 'table_id', constraints: false });
 
-  User.hasMany(Order, { foreignKey: 'cashier_id' });
-  Order.belongsTo(User, { foreignKey: 'cashier_id', as: 'cashier' });
+User.hasMany(Order, { foreignKey: 'cashier_id' });
+Order.belongsTo(User, { foreignKey: 'cashier_id', as: 'cashier' });
 
-  // Orders & Items
-  Order.hasMany(OrderItem, { foreignKey: 'order_id', as: 'items', onDelete: 'CASCADE' });
-  OrderItem.belongsTo(Order, { foreignKey: 'order_id' });
+// Orders & Items
+Order.hasMany(OrderItem, { foreignKey: 'order_id', as: 'items', onDelete: 'CASCADE' });
+OrderItem.belongsTo(Order, { foreignKey: 'order_id' });
 
-  MenuItem.hasMany(OrderItem, { foreignKey: 'menu_item_id' });
-  OrderItem.belongsTo(MenuItem, { foreignKey: 'menu_item_id' });
+MenuItem.hasMany(OrderItem, { foreignKey: 'menu_item_id' });
+OrderItem.belongsTo(MenuItem, { foreignKey: 'menu_item_id' });
 
-  // Orders & Payments
-  Order.hasMany(Payment, { foreignKey: 'order_id', as: 'payments', onDelete: 'CASCADE' });
-  Payment.belongsTo(Order, { foreignKey: 'order_id' });
+// Orders & Payments
+Order.hasMany(Payment, { foreignKey: 'order_id', as: 'payments', onDelete: 'CASCADE' });
+Payment.belongsTo(Order, { foreignKey: 'order_id' });
 
-  // Customer, Orders & Reservations
-  Customer.belongsTo(Organization, { foreignKey: 'organization_id', constraints: false });
-  Organization.hasMany(Customer, { foreignKey: 'organization_id' });
+// Customer, Orders & Reservations
+Customer.belongsTo(Organization, { foreignKey: 'organization_id', constraints: false });
+Organization.hasMany(Customer, { foreignKey: 'organization_id' });
 
-  Customer.hasMany(Order, { foreignKey: 'customer_id' });
-  Order.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer', constraints: false });
+Customer.hasMany(Order, { foreignKey: 'customer_id' });
+Order.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer', constraints: false });
 
-  Store.hasMany(Reservation, { foreignKey: 'store_id', onDelete: 'CASCADE' });
-  Reservation.belongsTo(Store, { foreignKey: 'store_id' });
+Store.hasMany(Reservation, { foreignKey: 'store_id', onDelete: 'CASCADE' });
+Reservation.belongsTo(Store, { foreignKey: 'store_id' });
 
-  Customer.hasMany(Reservation, { foreignKey: 'customer_id', onDelete: 'CASCADE' });
-  Reservation.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
+Customer.hasMany(Reservation, { foreignKey: 'customer_id', onDelete: 'CASCADE' });
+Reservation.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
 
-  RestaurantTable.hasMany(Reservation, { foreignKey: 'table_id', onDelete: 'SET NULL' });
-  Reservation.belongsTo(RestaurantTable, { foreignKey: 'table_id', constraints: false });
+RestaurantTable.hasMany(Reservation, { foreignKey: 'table_id', onDelete: 'SET NULL' });
+Reservation.belongsTo(RestaurantTable, { foreignKey: 'table_id', constraints: false });
 
-  Store.hasMany(Coupon, { foreignKey: 'store_id', onDelete: 'CASCADE' });
-  Coupon.belongsTo(Store, { foreignKey: 'store_id' });
+Store.hasMany(Coupon, { foreignKey: 'store_id', onDelete: 'CASCADE' });
+Coupon.belongsTo(Store, { foreignKey: 'store_id' });
 
-  // Service & Package
-  Service.hasMany(Package, { foreignKey: 'service_id', as: 'packages', onDelete: 'SET NULL' });
-  Package.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
+// Service & Package
+Service.hasMany(Package, { foreignKey: 'service_id', as: 'packages', onDelete: 'SET NULL' });
+Package.belongsTo(Service, { foreignKey: 'service_id', as: 'service' });
 
-  // Delivery Zones & Rules
-  Store.hasMany(DeliveryZone, { foreignKey: 'store_id', onDelete: 'CASCADE' });
-  DeliveryZone.belongsTo(Store, { foreignKey: 'store_id' });
-  DeliveryZone.hasMany(DeliveryRule, { foreignKey: 'delivery_zone_id', as: 'rules', onDelete: 'CASCADE' });
-  DeliveryRule.belongsTo(DeliveryZone, { foreignKey: 'delivery_zone_id' });
+// Delivery Zones & Rules
+Store.hasMany(DeliveryZone, { foreignKey: 'store_id', onDelete: 'CASCADE' });
+DeliveryZone.belongsTo(Store, { foreignKey: 'store_id' });
+DeliveryZone.hasMany(DeliveryRule, { foreignKey: 'delivery_zone_id', as: 'rules', onDelete: 'CASCADE' });
+DeliveryRule.belongsTo(DeliveryZone, { foreignKey: 'delivery_zone_id' });
 
-  (global as any).associationsLoaded = true;
-}
+// Payment Config per Organization
+Organization.hasOne(StorePaymentConfig, { foreignKey: 'organization_id', as: 'paymentConfig', onDelete: 'CASCADE' });
+StorePaymentConfig.belongsTo(Organization, { foreignKey: 'organization_id' });
+
+(global as any).associationsLoaded = true;
 
 export {
   sequelize,
@@ -139,4 +142,5 @@ export {
   Package,
   DeliveryZone,
   DeliveryRule,
+  StorePaymentConfig,
 };

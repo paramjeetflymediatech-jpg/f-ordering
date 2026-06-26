@@ -60,6 +60,7 @@ function NavigationItems({
         { name: 'Loyalty Rewards', href: '/dashboard/loyalty', icon: Gift },
         { name: 'Advance Setup', href: '/dashboard/operations', icon: MonitorPlay },
         { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
+        { name: 'Payment Settings', href: '/dashboard/settings/payment', icon: CreditCard },
         { name: 'Taxes & Fees', href: '/dashboard/taxes', icon: Percent },
       ];
 
