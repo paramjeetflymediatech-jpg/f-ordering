@@ -301,4 +301,78 @@ export async function provisionTenantDatabase(slug: string): Promise<void> {
 
     console.log(`[TenantDB] Default roles & permissions seeded for '${dbName}'.`);
   }
+
+  // 4. Sync Store(s), User(s) and their Role mappings from Central Database
+  try {
+    const { 
+      Organization: CentralOrg, 
+      Store: CentralStore, 
+      User: CentralUser 
+    } = require('../models');
+
+    const centralOrg = await CentralOrg.findOne({ where: { slug } });
+    if (centralOrg) {
+      console.log(`[TenantDB] Copying Store and Users from central DB to '${dbName}'...`);
+      
+      // Copy Stores
+      const stores = await CentralStore.findAll({ where: { organization_id: centralOrg.id } });
+      for (const st of stores) {
+        await models.Store.findOrCreate({
+          where: { id: st.id },
+          defaults: {
+            id: st.id,
+            organization_id: st.organization_id,
+            name: st.name,
+            category: st.category,
+            address: st.address,
+            zip_code: st.zip_code,
+            state: st.state,
+            city: st.city,
+            country: st.country,
+            phone: st.phone,
+            email: st.email,
+            currency: st.currency,
+            website: st.website,
+            description: st.description,
+            tax_rate: st.tax_rate,
+            business_hours: st.business_hours,
+          }
+        });
+      }
+
+      // Copy Users and their roles
+      const users = await CentralUser.findAll({ where: { organization_id: centralOrg.id } });
+      for (const u of users) {
+        const [tenantUser] = await models.User.findOrCreate({
+          where: { id: u.id },
+          defaults: {
+            id: u.id,
+            organization_id: u.organization_id,
+            store_id: u.store_id,
+            name: u.name,
+            email: u.email,
+            password: u.password,
+            phone: u.phone,
+            status: u.status,
+          }
+        });
+
+        // Copy Roles
+        const userRoles = await u.getRoles();
+        if (userRoles && userRoles.length > 0) {
+          const tenantRoles = [];
+          for (const r of userRoles) {
+            const tr = await models.Role.findOne({ where: { name: r.name } });
+            if (tr) tenantRoles.push(tr);
+          }
+          if (tenantRoles.length > 0) {
+            await tenantUser.setRoles(tenantRoles);
+          }
+        }
+      }
+      console.log(`[TenantDB] Completed Store and User synchronization for '${dbName}'.`);
+    }
+  } catch (err: any) {
+    console.error(`[TenantDB] Warning: Failed to sync Store and Users for '${dbName}':`, err.message);
+  }
 }

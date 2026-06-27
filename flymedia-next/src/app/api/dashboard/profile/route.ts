@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
 import { Store, Organization } from '../../../../models';
+import mysql from 'mysql2/promise';
 
 export async function GET() {
   try {
@@ -36,6 +37,55 @@ export async function GET() {
   }
 }
 
+async function renameTenantDatabase(oldSlug: string, newSlug: string) {
+  const oldDbName = `tenant_${oldSlug.replace(/-/g, '_')}`;
+  const newDbName = `tenant_${newSlug.replace(/-/g, '_')}`;
+  
+  if (oldDbName === newDbName) return;
+
+  const DB_HOST = process.env.DB_HOST || '127.0.0.1';
+  const DB_PORT = parseInt(process.env.DB_PORT || '3306');
+  const DB_USER = process.env.DB_USER || 'root';
+  const DB_PASS = process.env.DB_PASSWORD || '';
+
+  const conn = await mysql.createConnection({
+    host: DB_HOST,
+    port: DB_PORT,
+    user: DB_USER,
+    password: DB_PASS,
+  });
+
+  try {
+    // Check if old database exists
+    const [dbs]: any = await conn.query('SHOW DATABASES LIKE ?', [oldDbName]);
+    if (dbs.length === 0) {
+      console.log(`[RenameDB] Old database ${oldDbName} does not exist. Skipping rename.`);
+      return;
+    }
+
+    // Create the new database
+    await conn.query(`CREATE DATABASE IF NOT EXISTS \`${newDbName}\`;`);
+
+    // Get all tables from the old database
+    const [tables]: any = await conn.query(`SHOW TABLES FROM \`${oldDbName}\`;`);
+    
+    for (const row of tables) {
+      const tableName = Object.values(row)[0] as string;
+      // Rename table from old database to new database
+      await conn.query(`RENAME TABLE \`${oldDbName}\`.\`${tableName}\` TO \`${newDbName}\`.\`${tableName}\`;`);
+    }
+
+    // Drop the old database
+    await conn.query(`DROP DATABASE IF EXISTS \`${oldDbName}\`;`);
+    console.log(`[RenameDB] Successfully renamed database ${oldDbName} to ${newDbName}.`);
+  } catch (err: any) {
+    console.error(`[RenameDB] Failed to rename database:`, err.message);
+    throw new Error(`Database migration failed: ${err.message}`);
+  } finally {
+    await conn.end();
+  }
+}
+
 export async function PUT(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -57,6 +107,24 @@ export async function PUT(request: Request) {
     const orgUpdates: any = {};
     if (body.companyName !== undefined) orgUpdates.name = body.companyName;
     if (body.logo !== undefined) orgUpdates.logo = body.logo;
+
+    // Handle Subdomain Slug Change
+    if (body.slug !== undefined && body.slug !== organization.slug) {
+      const cleanSlug = body.slug.trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/(^-|-$)/g, '');
+      if (!cleanSlug) {
+        return NextResponse.json({ error: 'Subdomain slug cannot be empty.' }, { status: 400 });
+      }
+
+      // Check if slug is taken by another organization
+      const existingOrg = await Organization.findOne({ where: { slug: cleanSlug } });
+      if (existingOrg && existingOrg.id !== organization.id) {
+        return NextResponse.json({ error: 'This subdomain slug is already in use.' }, { status: 409 });
+      }
+
+      // Rename MySQL tenant database table by table
+      await renameTenantDatabase(organization.slug, cleanSlug);
+      orgUpdates.slug = cleanSlug;
+    }
     
     if (Object.keys(orgUpdates).length > 0) {
       await organization.update(orgUpdates);

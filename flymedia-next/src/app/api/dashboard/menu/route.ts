@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { MenuCategory, MenuItem, MenuVariant, MenuAddon } from '../../../../models';
+import { MenuCategory, MenuItem, MenuVariant, MenuAddon, Organization } from '../../../../models';
+import { getTenantModels } from '../../../../lib/tenant-db';
 
 export async function POST(request: Request) {
   try {
@@ -76,6 +77,53 @@ export async function POST(request: Request) {
         }
       }
 
+      // Sync to tenant database
+      try {
+        const org = await Organization.findByPk(organization_id);
+        if (org) {
+          const tenantModels = await getTenantModels(org.slug);
+          
+          await tenantModels.MenuCategory.create({
+            id: mainCategory.id,
+            organization_id,
+            store_id,
+            name,
+            sort_order: count + 1,
+            is_active: true,
+            parent_id: parentId || null,
+            printer_category: printerCategory || null,
+          });
+
+          if (level1Category) {
+            await tenantModels.MenuCategory.create({
+              id: level1Category.id,
+              organization_id,
+              store_id,
+              name: categoryName.trim(),
+              sort_order: 1,
+              is_active: true,
+              parent_id: mainCategory.id,
+              printer_category: printerCategory || null,
+            });
+          }
+
+          if (level2Category) {
+            await tenantModels.MenuCategory.create({
+              id: level2Category.id,
+              organization_id,
+              store_id,
+              name: subcategoryName.trim(),
+              sort_order: 1,
+              is_active: true,
+              parent_id: level1Category!.id,
+              printer_category: printerCategory || null,
+            });
+          }
+        }
+      } catch (err: any) {
+        console.error('Failed to sync created category to tenant DB:', err.message);
+      }
+
       return NextResponse.json({ 
         success: true, 
         category: mainCategory,
@@ -103,6 +151,31 @@ export async function POST(request: Request) {
         stock_count: stockCount !== undefined ? parseInt(stockCount) : 0,
         unit: unit || 'pcs',
       });
+
+      // Sync to tenant database
+      try {
+        const org = await Organization.findByPk(organization_id);
+        if (org) {
+          const tenantModels = await getTenantModels(org.slug);
+          await tenantModels.MenuItem.create({
+            id: item.id,
+            organization_id,
+            store_id,
+            category_id: categoryId || 'uncategorized',
+            name,
+            description: description || '',
+            price: parseFloat(price),
+            image_url: imageUrl || null,
+            is_available: true,
+            barcode: barcode || null,
+            sku: sku || null,
+            stock_count: stockCount !== undefined ? parseInt(stockCount) : 0,
+            unit: unit || 'pcs',
+          });
+        }
+      } catch (err: any) {
+        console.error('Failed to sync created menu item to tenant DB:', err.message);
+      }
 
       return NextResponse.json({ success: true, item });
     }
@@ -156,12 +229,30 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
+    const { organization_id } = session.user as any;
+
     if (type === 'category') {
       await MenuCategory.update({ 
         name,
         parent_id: parentId !== undefined ? parentId : undefined,
         printer_category: printerCategory !== undefined ? printerCategory : undefined,
       }, { where: { id } });
+
+      // Sync to tenant database
+      try {
+        const org = await Organization.findByPk(organization_id);
+        if (org) {
+          const tenantModels = await getTenantModels(org.slug);
+          await tenantModels.MenuCategory.update({ 
+            name,
+            parent_id: parentId !== undefined ? parentId : undefined,
+            printer_category: printerCategory !== undefined ? printerCategory : undefined,
+          }, { where: { id } });
+        }
+      } catch (err: any) {
+        console.error('Failed to sync updated category to tenant DB:', err.message);
+      }
+
       return NextResponse.json({ success: true });
     }
 
@@ -181,6 +272,32 @@ export async function PUT(request: Request) {
         },
         { where: { id } }
       );
+
+      // Sync to tenant database
+      try {
+        const org = await Organization.findByPk(organization_id);
+        if (org) {
+          const tenantModels = await getTenantModels(org.slug);
+          await tenantModels.MenuItem.update(
+            {
+              name,
+              description,
+              price: price !== undefined ? parseFloat(price) : undefined,
+              image_url: imageUrl,
+              is_available: isAvailable,
+              barcode: barcode !== undefined ? barcode : undefined,
+              sku: sku !== undefined ? sku : undefined,
+              stock_count: stockCount !== undefined ? parseInt(stockCount) : undefined,
+              unit: unit !== undefined ? unit : undefined,
+              category_id: categoryId !== undefined ? categoryId : undefined,
+            },
+            { where: { id } }
+          );
+        }
+      } catch (err: any) {
+        console.error('Failed to sync updated menu item to tenant DB:', err.message);
+      }
+
       return NextResponse.json({ success: true });
     }
 
@@ -206,13 +323,39 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID and Type are required' }, { status: 400 });
     }
 
+    const { organization_id } = session.user as any;
+
     if (type === 'category') {
       await MenuCategory.destroy({ where: { id } });
+
+      // Sync to tenant database
+      try {
+        const org = await Organization.findByPk(organization_id);
+        if (org) {
+          const tenantModels = await getTenantModels(org.slug);
+          await tenantModels.MenuCategory.destroy({ where: { id } });
+        }
+      } catch (err: any) {
+        console.error('Failed to sync deleted category to tenant DB:', err.message);
+      }
+
       return NextResponse.json({ success: true });
     }
 
     if (type === 'item') {
       await MenuItem.destroy({ where: { id } });
+
+      // Sync to tenant database
+      try {
+        const org = await Organization.findByPk(organization_id);
+        if (org) {
+          const tenantModels = await getTenantModels(org.slug);
+          await tenantModels.MenuItem.destroy({ where: { id } });
+        }
+      } catch (err: any) {
+        console.error('Failed to sync deleted menu item to tenant DB:', err.message);
+      }
+
       return NextResponse.json({ success: true });
     }
 

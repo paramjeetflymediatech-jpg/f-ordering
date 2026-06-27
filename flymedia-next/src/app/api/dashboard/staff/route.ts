@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { User, Role } from '../../../../models';
+import { User, Role, Organization } from '../../../../models';
+import { getTenantModels } from '../../../../lib/tenant-db';
 import bcrypt from 'bcryptjs';
 
 // GET - list all staff belonging to the current restaurant only
@@ -73,6 +74,31 @@ export async function POST(request: Request) {
       if (role) await (newUser as any).addRole(role);
     }
 
+    // Sync to tenant database
+    try {
+      const org = await Organization.findByPk(organization_id);
+      if (org) {
+        const tenantModels = await getTenantModels(org.slug);
+        const tenantUser = await tenantModels.User.create({
+          id: newUser.id,
+          organization_id,
+          store_id,
+          name,
+          email,
+          phone: phone || null,
+          password: hashedPassword,
+          status: 'active',
+        });
+        
+        if (roleName) {
+          const tenantRole = await tenantModels.Role.findOne({ where: { name: roleName } });
+          if (tenantRole) await (tenantUser as any).addRole(tenantRole);
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to sync created staff to tenant DB:', err.message);
+    }
+
     return NextResponse.json({
       success: true,
       message: `Staff account for "${name}" created successfully.`,
@@ -136,6 +162,25 @@ export async function PUT(request: Request) {
       if (newRole) await (user as any).setRoles([newRole]);
     }
 
+    // Sync to tenant database
+    try {
+      const org = await Organization.findByPk(organization_id);
+      if (org) {
+        const tenantModels = await getTenantModels(org.slug);
+        await tenantModels.User.update(updates, { where: { id } });
+        
+        if (roleName) {
+          const tenantUser = await tenantModels.User.findByPk(id);
+          const tenantRole = await tenantModels.Role.findOne({ where: { name: roleName } });
+          if (tenantUser && tenantRole) {
+            await (tenantUser as any).setRoles([tenantRole]);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('Failed to sync updated staff to tenant DB:', err.message);
+    }
+
     return NextResponse.json({
       success: true,
       message: `Staff account "${name || user.name}" updated successfully.`,
@@ -177,6 +222,17 @@ export async function DELETE(request: Request) {
     }
 
     await user.destroy();
+
+    // Sync to tenant database
+    try {
+      const org = await Organization.findByPk(organization_id);
+      if (org) {
+        const tenantModels = await getTenantModels(org.slug);
+        await tenantModels.User.destroy({ where: { id: userId } });
+      }
+    } catch (err: any) {
+      console.error('Failed to sync deleted staff to tenant DB:', err.message);
+    }
 
     return NextResponse.json({ success: true, message: `Staff account "${user.name}" has been removed.` });
   } catch (error: any) {

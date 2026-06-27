@@ -86,6 +86,7 @@ export default function BusinessProfilePage() {
     banner: '',
     companyName: '',
     logo: '',
+    slug: '',
     themePrimaryColor: '#2A0E07',
     themeAccentColor: '#C39A3C',
     themeBgColor: '#F9F6F0',
@@ -198,6 +199,7 @@ export default function BusinessProfilePage() {
           banner: data.store.banner || 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&q=80&w=1200',
           companyName: data.organization?.name || '',
           logo: data.organization?.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=300',
+          slug: data.organization?.slug || '',
           themePrimaryColor: data.store.theme_primary_color || '#2A0E07',
           themeAccentColor: data.store.theme_accent_color || '#C39A3C',
           themeBgColor: data.store.theme_bg_color || '#F9F6F0',
@@ -390,6 +392,7 @@ export default function BusinessProfilePage() {
         banner: store.banner || 'https://images.unsplash.com/photo-1552566626-52f8b828add9?auto=format&fit=crop&q=80&w=1200',
         companyName: organization.name || '',
         logo: organization.logo || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&q=80&w=300',
+        slug: organization.slug || '',
         themePrimaryColor: store.theme_primary_color || '#2A0E07',
         themeAccentColor: store.theme_accent_color || '#C39A3C',
         themeBgColor: store.theme_bg_color || '#F9F6F0',
@@ -708,6 +711,33 @@ export default function BusinessProfilePage() {
                             editMode ? 'border-[#f59e0b]/60 text-white focus:border-[#f59e0b]' : 'border-[#1e293b] text-slate-300'
                           } rounded-xl px-4 py-2.5 text-xs font-semibold outline-none transition`}
                         />
+                      </div>
+
+                      {/* Store Subdomain Slug */}
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                          Store Subdomain Slug <span className="text-[#ea580c]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="slug"
+                          value={formData.slug}
+                          onChange={(e) => {
+                            const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+                            setFormData((prev) => ({ ...prev, slug: val }));
+                          }}
+                          disabled={!editMode}
+                          required
+                          placeholder="e.g. mitrandadhaba"
+                          className={`w-full bg-[#080b11] border ${
+                            editMode ? 'border-[#f59e0b]/60 text-white focus:border-[#f59e0b]' : 'border-[#1e293b] text-slate-300'
+                          } rounded-xl px-4 py-2.5 text-xs font-semibold outline-none transition`}
+                        />
+                        {editMode && (
+                          <p className="text-[9px] text-[#f59e0b]/80 mt-1">
+                            Live URL: <strong className="text-white">{formData.slug || 'slug'}.fly-pos.com</strong>
+                          </p>
+                        )}
                       </div>
 
                       {/* Currency */}
