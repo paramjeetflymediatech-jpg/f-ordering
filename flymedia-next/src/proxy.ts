@@ -29,8 +29,10 @@ export function proxy(request: NextRequest) {
   const rootHosts = [
     getHostOnly(process.env.NEXT_PUBLIC_APP_URL) || 'localhost:3000',
     getHostOnly(process.env.NEXT_PUBLIC_APP_URL_WITH_WWW) || 'www.localhost:3000',
+    'fly-pos.com',
+    'www.fly-pos.com',
   ];
-  const isRootHost = rootHosts.includes(hostname.toLowerCase());
+  const isRootHost = rootHosts.includes(hostname.split(':')[0].toLowerCase());
 
   // ─── ROOT HOST: Redirect /order-online/{slug}/menu → {slug}.localhost:3000/menu ───
   if (isRootHost) {
