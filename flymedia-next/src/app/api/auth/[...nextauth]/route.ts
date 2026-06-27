@@ -20,15 +20,34 @@ async function handler(request: NextRequest, context: any) {
     nodeEnv: process.env.NODE_ENV
   });
 
-  // Clone headers and explicitly set x-forwarded-proto to prevent Nginx header override issues
+  // 1. Force headers to trust HTTPS
   const newHeaders = new Headers(request.headers);
   newHeaders.set('x-forwarded-proto', proto);
-  
-  const modifiedRequest = new NextRequest(request, {
-    headers: newHeaders,
+  Object.defineProperty(request, 'headers', {
+    value: newHeaders,
+    configurable: true,
+    writable: false
   });
   
-  return NextAuth(authOptions)(modifiedRequest, context);
+  // 2. Force request.url to use HTTPS scheme to prevent NextAuth from redirecting internally
+  const requestUrl = new URL(request.url);
+  requestUrl.protocol = proto + ':';
+  Object.defineProperty(request, 'url', {
+    value: requestUrl.toString(),
+    configurable: true,
+    writable: false
+  });
+  
+  // 3. Force request.nextUrl protocol
+  if (request.nextUrl) {
+    try {
+      request.nextUrl.protocol = proto + ':';
+    } catch (e) {
+      // Safe fallback
+    }
+  }
+
+  return NextAuth(authOptions)(request, context);
 }
 
 export { handler as GET, handler as POST };
