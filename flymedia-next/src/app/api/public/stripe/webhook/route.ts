@@ -2,10 +2,6 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { Store, StorePaymentConfig, Order, Payment } from '../../../../../models';
 
-// Disable body parsing — Stripe requires the raw body for signature verification
-export const config = {
-  api: { bodyParser: false },
-};
 
 export async function POST(request: Request) {
   const rawBody = await request.text();
