@@ -13,6 +13,39 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [orgInfo, setOrgInfo] = useState<{ name: string; logo: string | null } | null>(null);
+
+  // Load organization details from subdomain slug if available
+  useEffect(() => {
+    const fetchOrgDetails = async () => {
+      if (typeof window === 'undefined') return;
+
+      const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      let slug = '';
+
+      if (parts.length > 1 && parts[0] !== 'www') {
+        slug = parts[0];
+      }
+
+      if (slug) {
+        try {
+          const res = await fetch(`/api/public/store?orgSlug=${slug}`);
+          const data = await res.json();
+          if (data.success && data.store?.Organization) {
+            setOrgInfo({
+              name: data.store.Organization.name,
+              logo: data.store.Organization.logo,
+            });
+          }
+        } catch (err) {
+          console.error('Failed to fetch store details for subdomain logo:', err);
+        }
+      }
+    };
+
+    fetchOrgDetails();
+  }, []);
 
   // Auto redirect if already logged in
   useEffect(() => {
@@ -80,15 +113,41 @@ export default function LoginPage() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(249,115,22,0.15),transparent_40%),radial-gradient(circle_at_70%_80%,rgba(59,130,246,0.15),transparent_40%)]" />
       
       <div className="relative z-10 w-full max-w-md space-y-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-8 backdrop-blur-xl shadow-2xl">
-        <div className="text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl">
-            <span className="bg-gradient-to-r from-orange-500 to-amber-400 bg-clip-text text-transparent">
-              F-Ordering
-            </span>
-            <span className="text-slate-300 font-light"> POS</span>
+        <div className="text-center flex flex-col items-center">
+          {orgInfo?.logo ? (
+            <div className="h-20 w-20 rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 p-2 flex items-center justify-center mb-4 shadow-xl shadow-orange-500/5">
+              <img
+                src={orgInfo.logo}
+                alt={`${orgInfo.name} Logo`}
+                className="max-h-full max-w-full object-contain"
+              />
+            </div>
+          ) : (
+            <div className="h-16 w-16 rounded-2xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center font-bold text-orange-400 text-xl mb-4">
+              F
+            </div>
+          )}
+          
+          <h1 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            {orgInfo ? (
+              <span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent capitalize">
+                {orgInfo.name}
+              </span>
+            ) : (
+              <>
+                <span className="bg-gradient-to-r from-orange-500 to-amber-400 bg-clip-text text-transparent">
+                  F-Ordering
+                </span>
+                <span className="text-slate-300 font-light"> POS</span>
+              </>
+            )}
           </h1>
+          
           <p className="mt-3 text-sm text-slate-400">
-            Sign in to access your terminal or management console
+            {orgInfo 
+              ? `Sign in to access ${orgInfo.name}'s console`
+              : 'Sign in to access your terminal or management console'
+            }
           </p>
         </div>
 
