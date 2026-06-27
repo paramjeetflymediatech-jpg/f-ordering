@@ -80,9 +80,8 @@ export const authOptions: NextAuthOptions = {
           return url;
         }
 
-        // If there is a mismatch (e.g., server baseUrl is localhost:3000 but user is on live domain),
-        // convert the absolute URL into a relative path so the browser stays on the live domain.
-        return `${parsedUrl.pathname}${parsedUrl.search}${parsedUrl.hash}`;
+        // Return the absolute URL directly to keep the browser on the live domain and prevent client-side crash
+        return url;
       } catch (e) {
         // Safe fallback
       }
