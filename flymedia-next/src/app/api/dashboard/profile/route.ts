@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
 import { Store, Organization } from '../../../../models';
+import { deleteUploadedFile } from '../../../../lib/file-utils';
 import mysql from 'mysql2/promise';
 
 export async function GET() {
@@ -106,7 +107,10 @@ export async function PUT(request: Request) {
     // Update Organization fields if provided
     const orgUpdates: any = {};
     if (body.companyName !== undefined) orgUpdates.name = body.companyName;
-    if (body.logo !== undefined) orgUpdates.logo = body.logo;
+    if (body.logo !== undefined && body.logo !== organization.logo) {
+      await deleteUploadedFile(organization.logo);
+      orgUpdates.logo = body.logo;
+    }
 
     // Handle Subdomain Slug Change
     if (body.slug !== undefined && body.slug !== organization.slug) {
@@ -144,7 +148,10 @@ export async function PUT(request: Request) {
     if (body.currency !== undefined) storeUpdates.currency = body.currency;
     if (body.website !== undefined) storeUpdates.website = body.website;
     if (body.description !== undefined) storeUpdates.description = body.description;
-    if (body.banner !== undefined) storeUpdates.banner = body.banner;
+    if (body.banner !== undefined && body.banner !== store.banner) {
+      await deleteUploadedFile(store.banner);
+      storeUpdates.banner = body.banner;
+    }
     if (body.themePrimaryColor !== undefined) storeUpdates.theme_primary_color = body.themePrimaryColor;
     if (body.themeAccentColor !== undefined) storeUpdates.theme_accent_color = body.themeAccentColor;
     if (body.themeBgColor !== undefined) storeUpdates.theme_bg_color = body.themeBgColor;

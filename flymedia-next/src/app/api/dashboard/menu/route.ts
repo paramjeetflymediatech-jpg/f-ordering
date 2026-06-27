@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
 import { MenuCategory, MenuItem, MenuVariant, MenuAddon, Organization } from '../../../../models';
 import { getTenantModels } from '../../../../lib/tenant-db';
+import { deleteUploadedFile } from '../../../../lib/file-utils';
+
 
 export async function POST(request: Request) {
   try {
@@ -257,6 +259,11 @@ export async function PUT(request: Request) {
     }
 
     if (type === 'item') {
+      const oldItem = await MenuItem.findByPk(id);
+      if (imageUrl !== undefined && oldItem && oldItem.image_url && oldItem.image_url !== imageUrl) {
+        await deleteUploadedFile(oldItem.image_url);
+      }
+
       await MenuItem.update(
         {
           name,
@@ -343,6 +350,11 @@ export async function DELETE(request: Request) {
     }
 
     if (type === 'item') {
+      const item = await MenuItem.findByPk(id);
+      if (item && item.image_url) {
+        await deleteUploadedFile(item.image_url);
+      }
+
       await MenuItem.destroy({ where: { id } });
 
       // Sync to tenant database

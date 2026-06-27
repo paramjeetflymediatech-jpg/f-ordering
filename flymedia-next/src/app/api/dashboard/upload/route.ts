@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
+import { Organization } from '../../../../models';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 
@@ -11,12 +12,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { organization_id } = session.user as any;
     const formData = await request.formData();
     const file = formData.get('file') as File | null;
 
     if (!file) {
       return NextResponse.json({ error: 'No file uploaded' }, { status: 400 });
     }
+
+    // Fetch organization slug
+    const org = await Organization.findByPk(organization_id);
+    const slug = org ? org.slug : 'default';
 
     // Convert file to buffer
     const bytes = await file.arrayBuffer();
@@ -26,11 +32,11 @@ export async function POST(request: Request) {
     const isLogo = type === 'logo';
     const isBanner = type === 'banner';
 
-    // Save to public/uploads/logo, public/uploads/banner or public/uploads/menu
+    // Save to uploads/{slug}/logo, uploads/{slug}/banner or uploads/{slug}/menu
     const subFolder = isLogo ? 'logo' : isBanner ? 'banner' : 'menu';
     const prefix = isLogo ? 'logo' : isBanner ? 'banner' : 'menu-item';
 
-    const uploadDir = path.join(process.cwd(), 'uploads', subFolder);
+    const uploadDir = path.join(process.cwd(), 'uploads', slug, subFolder);
     await mkdir(uploadDir, { recursive: true });
 
     // Extract file extension cleanly
@@ -42,7 +48,7 @@ export async function POST(request: Request) {
 
     await writeFile(filePath, buffer);
 
-    const relativeUrl = `/uploads/${subFolder}/${filename}`;
+    const relativeUrl = `/uploads/${slug}/${subFolder}/${filename}`;
 
     return NextResponse.json({ success: true, url: relativeUrl });
   } catch (error: any) {

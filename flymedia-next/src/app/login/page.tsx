@@ -44,13 +44,16 @@ export default function LoginPage() {
       });
 
       if (res?.error) {
+        console.log(res?.error,'res?.error');
         setError(res.error || 'Invalid credentials');
         setLoading(false);
       } else {
         // Redirect logic will trigger via the useEffect
+        console.log('inside else');
         router.refresh();
       }
     } catch (err: any) {
+      console.log(err,'err unexcepted');
       setError('An unexpected error occurred. Please try again.');
       setLoading(false);
     }
