@@ -6,6 +6,40 @@ import { getTenantModels } from '../../../../lib/tenant-db';
 import { deleteUploadedFile } from '../../../../lib/file-utils';
 
 
+// Helper function to recursively ensure categories exist in the tenant database
+async function ensureCategorySynced(categoryId: string, organizationId: string, storeId: string, tenantModels: any) {
+  if (!categoryId || categoryId === 'uncategorized') return;
+
+  try {
+    // Check if category already exists in tenant DB
+    const tenantCat = await tenantModels.MenuCategory.findByPk(categoryId);
+    if (tenantCat) return; // Already exists
+
+    // Fetch from main DB
+    const mainCat = await MenuCategory.findByPk(categoryId);
+    if (!mainCat) return; // Doesn't exist in main DB either
+
+    // If this category has a parent, recursively sync the parent first
+    if (mainCat.parent_id) {
+      await ensureCategorySynced(mainCat.parent_id, organizationId, storeId, tenantModels);
+    }
+
+    // Create in tenant DB
+    await tenantModels.MenuCategory.create({
+      id: mainCat.id,
+      organization_id: mainCat.organization_id || organizationId,
+      store_id: mainCat.store_id || storeId,
+      name: mainCat.name,
+      sort_order: mainCat.sort_order,
+      is_active: mainCat.is_active,
+      parent_id: mainCat.parent_id,
+      printer_category: mainCat.printer_category,
+    });
+  } catch (err: any) {
+    console.error(`Failed to auto-sync category ${categoryId} to tenant DB:`, err.message);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -31,7 +65,9 @@ export async function POST(request: Request) {
       barcode,
       sku,
       stockCount,
-      unit
+      unit,
+      variants,
+      addons
     } = body;
 
     if (type === 'category') {
@@ -154,11 +190,39 @@ export async function POST(request: Request) {
         unit: unit || 'pcs',
       });
 
+      // Create Menu Variants (Main DB)
+      if (variants && Array.isArray(variants)) {
+        for (const v of variants) {
+          await MenuVariant.create({
+            menu_item_id: item.id,
+            name: v.name,
+            additional_price: parseFloat(v.additional_price) || 0.00,
+          });
+        }
+      }
+
+      // Create Menu Addons (Main DB)
+      if (addons && Array.isArray(addons)) {
+        for (const a of addons) {
+          await MenuAddon.create({
+            menu_item_id: item.id,
+            name: a.name,
+            price: parseFloat(a.price) || 0.00,
+          });
+        }
+      }
+
       // Sync to tenant database
       try {
         const org = await Organization.findByPk(organization_id);
         if (org) {
           const tenantModels = await getTenantModels(org.slug);
+          
+          // Auto-sync category if missing
+          if (categoryId) {
+            await ensureCategorySynced(categoryId, organization_id, store_id, tenantModels);
+          }
+
           await tenantModels.MenuItem.create({
             id: item.id,
             organization_id,
@@ -174,6 +238,28 @@ export async function POST(request: Request) {
             stock_count: stockCount !== undefined ? parseInt(stockCount) : 0,
             unit: unit || 'pcs',
           });
+
+          // Sync variants to tenant DB
+          if (variants && Array.isArray(variants)) {
+            for (const v of variants) {
+              await tenantModels.MenuVariant.create({
+                menu_item_id: item.id,
+                name: v.name,
+                additional_price: parseFloat(v.additional_price) || 0.00,
+              });
+            }
+          }
+
+          // Sync addons to tenant DB
+          if (addons && Array.isArray(addons)) {
+            for (const a of addons) {
+              await tenantModels.MenuAddon.create({
+                menu_item_id: item.id,
+                name: a.name,
+                price: parseFloat(a.price) || 0.00,
+              });
+            }
+          }
         }
       } catch (err: any) {
         console.error('Failed to sync created menu item to tenant DB:', err.message);
@@ -224,7 +310,9 @@ export async function PUT(request: Request) {
       sku,
       stockCount,
       unit,
-      categoryId
+      categoryId,
+      variants,
+      addons
     } = body;
 
     if (!id) {
@@ -280,11 +368,42 @@ export async function PUT(request: Request) {
         { where: { id } }
       );
 
+      // Save Variants & Addons (Main DB)
+      if (variants && Array.isArray(variants)) {
+        await MenuVariant.destroy({ where: { menu_item_id: id } });
+        for (const v of variants) {
+          await MenuVariant.create({
+            menu_item_id: id,
+            name: v.name,
+            additional_price: parseFloat(v.additional_price) || 0.00,
+          });
+        }
+      }
+
+      if (addons && Array.isArray(addons)) {
+        await MenuAddon.destroy({ where: { menu_item_id: id } });
+        for (const a of addons) {
+          await MenuAddon.create({
+            menu_item_id: id,
+            name: a.name,
+            price: parseFloat(a.price) || 0.00,
+          });
+        }
+      }
+
       // Sync to tenant database
       try {
         const org = await Organization.findByPk(organization_id);
         if (org) {
           const tenantModels = await getTenantModels(org.slug);
+
+          // Auto-sync category if missing
+          const targetCategoryId = categoryId !== undefined ? categoryId : (oldItem ? oldItem.category_id : null);
+          if (targetCategoryId) {
+            const storeId = oldItem ? oldItem.store_id : '';
+            await ensureCategorySynced(targetCategoryId, organization_id, storeId, tenantModels);
+          }
+
           await tenantModels.MenuItem.update(
             {
               name,
@@ -300,6 +419,30 @@ export async function PUT(request: Request) {
             },
             { where: { id } }
           );
+
+          // Sync variants to tenant DB (delete & recreate)
+          if (variants && Array.isArray(variants)) {
+            await tenantModels.MenuVariant.destroy({ where: { menu_item_id: id } });
+            for (const v of variants) {
+              await tenantModels.MenuVariant.create({
+                menu_item_id: id,
+                name: v.name,
+                additional_price: parseFloat(v.additional_price) || 0.00,
+              });
+            }
+          }
+
+          // Sync addons to tenant DB (delete & recreate)
+          if (addons && Array.isArray(addons)) {
+            await tenantModels.MenuAddon.destroy({ where: { menu_item_id: id } });
+            for (const a of addons) {
+              await tenantModels.MenuAddon.create({
+                menu_item_id: id,
+                name: a.name,
+                price: parseFloat(a.price) || 0.00,
+              });
+            }
+          }
         }
       } catch (err: any) {
         console.error('Failed to sync updated menu item to tenant DB:', err.message);

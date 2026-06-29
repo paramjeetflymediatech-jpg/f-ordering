@@ -61,6 +61,8 @@ export default function ManageItemPage() {
   const [itemUnit, setItemUnit] = useState('pcs');
   const [editingItem, setEditingItem] = useState<any>(null);
   const [showItemModal, setShowItemModal] = useState(false);
+  const [variants, setVariants] = useState<{ id?: string; name: string; additional_price: number }[]>([]);
+  const [addons, setAddons] = useState<{ id?: string; name: string; price: number }[]>([]);
 
   // Transfer states
   const [transferItemId, setTransferItemId] = useState('');
@@ -164,6 +166,8 @@ export default function ManageItemPage() {
           stockCount: parseInt(itemStock) || 0,
           unit: itemUnit || 'pcs',
           isAvailable: isEdit ? editingItem.is_available : true,
+          variants,
+          addons,
         }),
       });
 
@@ -211,6 +215,8 @@ export default function ManageItemPage() {
     setItemSku('');
     setItemStock('0');
     setItemUnit('pcs');
+    setVariants([]);
+    setAddons([]);
   };
 
   // CSV Exporter
@@ -803,6 +809,8 @@ export default function ManageItemPage() {
                                 setItemSku(item.sku || '');
                                 setItemStock(item.stock_count?.toString() || '0');
                                 setItemUnit(item.unit || 'pcs');
+                                setVariants(item.variants || []);
+                                setAddons(item.addons || []);
                                 setShowItemModal(true);
                               }}
                               className="rounded-lg bg-slate-900 p-2 text-slate-400 hover:text-white border border-slate-800"
@@ -1575,6 +1583,118 @@ export default function ManageItemPage() {
                   onChange={(e) => setItemDesc(e.target.value)}
                   className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-white h-20 outline-none resize-none"
                 />
+              </div>
+
+              {/* VARIANTS SECTION */}
+              <div className="border-t border-slate-800/60 pt-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-slate-400 font-bold uppercase tracking-wide">Variants (e.g. Sizes)</label>
+                  <button
+                    type="button"
+                    onClick={() => setVariants([...variants, { name: '', additional_price: 0 }])}
+                    className="text-[10px] bg-slate-800 text-orange-400 hover:text-orange-300 px-2 py-1 rounded font-bold border border-slate-700/60 transition"
+                  >
+                    + Add Variant
+                  </button>
+                </div>
+                {variants.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 italic">No variants defined (defaults to standard price).</p>
+                ) : (
+                  <div className="space-y-2">
+                    {variants.map((v, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Variant Name (e.g. Medium)"
+                          value={v.name}
+                          onChange={(e) => {
+                            const newVariants = [...variants];
+                            newVariants[index].name = e.target.value;
+                            setVariants(newVariants);
+                          }}
+                          className="flex-1 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                        />
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          placeholder="Price mod (+$)"
+                          value={v.additional_price}
+                          onChange={(e) => {
+                            const newVariants = [...variants];
+                            newVariants[index].additional_price = parseFloat(e.target.value) || 0;
+                            setVariants(newVariants);
+                          }}
+                          className="w-24 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setVariants(variants.filter((_, i) => i !== index))}
+                          className="text-red-400 hover:text-red-300 p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* ADDONS SECTION */}
+              <div className="border-t border-slate-800/60 pt-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-slate-400 font-bold uppercase tracking-wide">Add-ons (e.g. Toppings)</label>
+                  <button
+                    type="button"
+                    onClick={() => setAddons([...addons, { name: '', price: 0 }])}
+                    className="text-[10px] bg-slate-800 text-orange-400 hover:text-orange-300 px-2 py-1 rounded font-bold border border-slate-700/60 transition"
+                  >
+                    + Add Add-on
+                  </button>
+                </div>
+                {addons.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 italic">No add-ons defined.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {addons.map((a, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Add-on Name (e.g. Extra Cheese)"
+                          value={a.name}
+                          onChange={(e) => {
+                            const newAddons = [...addons];
+                            newAddons[index].name = e.target.value;
+                            setAddons(newAddons);
+                          }}
+                          className="flex-1 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                        />
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          placeholder="Price ($)"
+                          value={a.price}
+                          onChange={(e) => {
+                            const newAddons = [...addons];
+                            newAddons[index].price = parseFloat(e.target.value) || 0;
+                            setAddons(newAddons);
+                          }}
+                          className="w-24 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setAddons(addons.filter((_, i) => i !== index))}
+                          className="text-red-400 hover:text-red-300 p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <button

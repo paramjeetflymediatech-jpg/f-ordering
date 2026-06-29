@@ -1156,7 +1156,7 @@ export default function PublicOrderPage() {
                 <X className="h-4 w-4" />
               </button>
               {selectedItem.image_url ? (
-                <img src={selectedItem.image_url} alt="detail" className="w-full h-full object-cover" />
+                <img src={selectedItem.image_url} alt="detail" className="w-full h-full object-contain" />
               ) : (
                 <div className="text-slate-400 font-extrabold text-lg flex flex-col items-center gap-2">
                   <span className={`h-16 w-16 rounded-xl text-white font-extrabold flex items-center justify-center shadow-md ${getItemInitialsAndColor(selectedItem.name).color}`}>
