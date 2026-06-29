@@ -136,7 +136,7 @@ export default function LoginPage() {
             ) : (
               <>
                 <span className="bg-gradient-to-r from-orange-500 to-amber-400 bg-clip-text text-transparent">
-                  F-Ordering
+                  FLY -
                 </span>
                 <span className="text-slate-300 font-light"> POS</span>
               </>
