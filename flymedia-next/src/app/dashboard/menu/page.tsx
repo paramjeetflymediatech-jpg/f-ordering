@@ -57,7 +57,7 @@ export default function ManageMenuPage() {
     if (!files || files.length === 0) return;
 
     const file = files[0];
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 15 * 1024 * 1024) {
       setUploadError('File is too large. Max size is 5MB.');
       return;
     }
@@ -1326,7 +1326,7 @@ export default function ManageMenuPage() {
                             Click or drag to upload image
                           </p>
                           <p className="text-[10px] text-slate-600 mt-1">
-                            PNG, JPG, JPEG up to 5MB
+                            PNG, JPG, JPEG up to 15MB
                           </p>
                         </div>
                       )}

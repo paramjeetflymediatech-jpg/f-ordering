@@ -102,8 +102,8 @@ export default function BusinessProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      setLogoUploadError('File is too large. Max size is 5MB.');
+    if (file.size > 15 * 1024 * 1024) {
+      setLogoUploadError('File is too large. Max size is 15MB.');
       return;
     }
 
@@ -139,8 +139,8 @@ export default function BusinessProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 5 * 1024 * 1024) {
-      setBannerUploadError('File is too large. Max size is 5MB.');
+    if (file.size > 15 * 1024 * 1024) {
+      setBannerUploadError('File is too large. Max size is 15MB.');
       return;
     }
 
