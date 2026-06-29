@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { ArrowLeft, ShoppingBag, User } from 'lucide-react';
 
 interface RestaurantNavbarProps {
@@ -51,13 +50,11 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
           className="flex items-center gap-3 min-w-0"
         >
           {logoUrl ? (
-            <div className="h-10 w-10 rounded-xl overflow-hidden shrink-0 bg-white/10 ring-2 ring-white/20">
-              <Image
+            <div className="h-12 max-h-12 w-auto shrink-0 flex items-center">
+              <img
                 src={logoUrl}
                 alt={displayName}
-                width={40}
-                height={40}
-                className="object-cover h-full w-full"
+                className="h-full w-auto object-contain"
               />
             </div>
           ) : (
