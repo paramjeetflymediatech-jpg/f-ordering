@@ -126,7 +126,7 @@ export default function BookTablePage() {
       
       <header className="border-b border-slate-900 bg-slate-950 px-6 py-4 flex items-center justify-between">
         <Link
-          href={`/order-online/menu`}
+          href={`/menu`}
           className="inline-flex items-center gap-2 rounded-lg bg-slate-900 border border-slate-800 px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-white transition"
         >
           <ArrowLeft className="h-4 w-4" />

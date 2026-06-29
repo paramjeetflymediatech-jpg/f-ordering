@@ -13,9 +13,12 @@ interface RestaurantNavbarProps {
 
 interface StoreInfo {
   name: string;
-  logo_url: string | null;
-  primary_color: string;
-  accent_color: string;
+  theme_primary_color: string | null;
+  theme_accent_color: string | null;
+  Organization?: {
+    name: string;
+    logo: string | null;
+  };
 }
 
 export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavbarProps) {
@@ -31,8 +34,10 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
       .catch(() => {});
   }, [orgSlug]);
 
-  const primaryColor = store?.primary_color || '#1e293b';
-  const accentColor = store?.accent_color || '#f59e0b';
+  const primaryColor = store?.theme_primary_color || '#1e293b';
+  const accentColor = store?.theme_accent_color || '#f59e0b';
+  const logoUrl = store?.Organization?.logo || null;
+  const displayName = store?.Organization?.name || store?.name || orgSlug;
 
   return (
     <header
@@ -42,14 +47,14 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Left — Logo + Store Name */}
         <Link
-          href={`/order-online/${orgSlug}/menu`}
+          href={`/menu`}
           className="flex items-center gap-3 min-w-0"
         >
-          {store?.logo_url ? (
+          {logoUrl ? (
             <div className="h-10 w-10 rounded-xl overflow-hidden shrink-0 bg-white/10 ring-2 ring-white/20">
               <Image
-                src={store.logo_url}
-                alt={store.name}
+                src={logoUrl}
+                alt={displayName}
                 width={40}
                 height={40}
                 className="object-cover h-full w-full"
@@ -60,18 +65,18 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
               className="h-10 w-10 rounded-xl flex items-center justify-center font-black text-lg shrink-0"
               style={{ backgroundColor: accentColor }}
             >
-              {store?.name?.charAt(0) || '?'}
+              {displayName.charAt(0) || '?'}
             </div>
           )}
           <span className="text-white font-bold text-sm truncate">
-            {store?.name || orgSlug}
+            {displayName}
           </span>
         </Link>
 
         {/* Right — Navigation Links */}
         <nav className="flex items-center gap-1">
           <Link
-            href={`/order-online/${orgSlug}/menu`}
+            href={`/menu`}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
               activePage === 'menu'
                 ? 'bg-white/20 text-white'
