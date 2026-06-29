@@ -755,7 +755,7 @@ export default function PublicOrderPage() {
         {/* COLUMN 1: CATEGORY SIDEBAR (LEFT) */}
         <div className="w-64 shrink-0 hidden lg:block">
           <div
-            className={`sticky top-24 border rounded-2xl p-4 shadow-sm space-y-1 ${
+            className={`sticky top-24 border rounded-2xl p-4 shadow-sm space-y-1 overflow-y-auto max-h-[calc(100vh-140px)] custom-scrollbar ${
               layoutStyle === 'modern_dark'
                 ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
                 : 'bg-white border-slate-200 text-slate-800'
