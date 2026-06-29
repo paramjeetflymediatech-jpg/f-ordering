@@ -499,7 +499,7 @@ export default function PublicOrderPage() {
       case 'playfair':
         return '"Playfair Display", Georgia, serif';
       default:
-        return 'Georgia, ui-serif, serif';
+        return 'Poppins, Georgia, ui-serif, serif';
     }
   };
 
@@ -537,11 +537,11 @@ export default function PublicOrderPage() {
           {/* Nav Links */}
           <div className="flex items-center gap-6 text-sm font-semibold">
             {store.website ? (
-              <a href={store.website} className="text-slate-350 hover:text-white transition">
+              <a href={store.website} className="text-white transition">
                 Home
               </a>
             ) : (
-              <Link href="/" className="text-slate-350 hover:text-white transition">
+              <Link href="/" className="text-white transition">
                 Home
               </Link>
             )}
@@ -553,22 +553,22 @@ export default function PublicOrderPage() {
               Menu
             </Link>
             {store.website ? (
-              <a href={`${store.website.replace(/\/$/, '')}/#about`} className="text-slate-350 hover:text-white transition">
+              <a href={`${store.website.replace(/\/$/, '')}/#about`} className="text-white transition">
                 About Us
               </a>
             ) : (
-              <Link href= {store.website?(`${store.website.replace(/\/$/, '')}/about`) : "/about"} className="text-slate-350 hover:text-white transition">
+              <Link href= {store.website?(`${store.website.replace(/\/$/, '')}/about`) : "/about"} className="text-white transition">
                 About Us
               </Link>
             )}
-            <Link href={`/book`} className="text-slate-350 hover:text-white transition">
+            <Link href={`/book`} className="text-white transition">
               Book Table
             </Link>
             {customer ? (
               <>
                 <Link
                   href={`/order-online/${orgSlug}/customer/profile`}
-                  className="text-slate-350 hover:text-white transition flex items-center gap-1.5"
+                  className="text-white transition flex items-center gap-1.5"
                 >
                   <User className="h-4 w-4" /> Hi, {customer.name}
                 </Link>
@@ -590,7 +590,7 @@ export default function PublicOrderPage() {
               </>
             ) : (
               <>
-                <Link href={`/order-online/${orgSlug}/customer/login`} className="text-slate-350 hover:text-white transition flex items-center gap-1">
+                <Link href={`/order-online/${orgSlug}/customer/login`} className="text-white transition flex items-center gap-1">
                   <LogIn className="h-4 w-4" /> Login
                 </Link>
                 <Link
