@@ -85,15 +85,25 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
           </Link>
 
           <Link
-            href={`/order-online/${orgSlug}/customer/login`}
+            href={
+              activePage === 'login'
+                ? `/order-online/${orgSlug}/customer/register`
+                : activePage === 'profile'
+                ? `/order-online/${orgSlug}/customer/profile`
+                : `/order-online/${orgSlug}/customer/login`
+            }
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
-              activePage === 'login' || activePage === 'register'
+              activePage === 'login' || activePage === 'register' || activePage === 'profile'
                 ? 'bg-white/20 text-white'
                 : 'text-white/70 hover:text-white hover:bg-white/10'
             }`}
           >
             <User className="h-3.5 w-3.5" />
-            {activePage === 'profile' ? 'My Account' : 'Sign In'}
+            {activePage === 'profile'
+              ? 'My Account'
+              : activePage === 'login'
+              ? 'Sign Up'
+              : 'Sign In'}
           </Link>
         </nav>
       </div>

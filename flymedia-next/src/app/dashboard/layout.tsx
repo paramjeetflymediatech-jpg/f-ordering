@@ -23,6 +23,8 @@ import {
   Percent,
   Gift,
   Truck,
+  Sun,
+  Moon,
 } from 'lucide-react';
 
 function NavigationItems({
@@ -109,6 +111,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string | null>(null);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('dashboard-theme') as 'dark' | 'light';
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('dashboard-theme', nextTheme);
+  };
 
   React.useEffect(() => {
     const handleProfileUpdate = () => {
@@ -153,7 +169,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isSuperAdmin = (session?.user as any)?.roles?.includes('Super Admin');
 
   return (
-    <div className="flex min-h-screen bg-[#080b11] text-slate-100 font-sans px-4 sm:px-6">
+    <div className={`flex min-h-screen text-slate-100 font-sans px-4 sm:px-6 transition-colors duration-300 ${theme === 'light' ? 'light-theme bg-[#f8fafc]' : 'bg-[#080b11]'}`}>
       
       {/* 1. SIDEBAR (DESKTOP) */}
       <aside className="hidden md:flex w-64 flex-col h-screen max-h-screen sticky top-0 bg-[#0c101b] border-r border-[#1e293b]/60 shrink-0 justify-between self-start">
@@ -210,8 +226,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </nav>
         </div>
 
-        {/* Footer Logout action */}
-        <div className="p-4 border-t border-[#1e293b]/60 shrink-0">
+        {/* Footer actions */}
+        <div className="p-4 border-t border-[#1e293b]/60 shrink-0 space-y-2">
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900/40 border border-[#1e293b]/60 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-800/40 transition duration-150"
+          >
+            {theme === 'dark' ? (
+              <>
+                <Sun className="h-4 w-4 text-amber-500" />
+                Light Theme
+              </>
+            ) : (
+              <>
+                <Moon className="h-4 w-4 text-sky-400" />
+                Dark Theme
+              </>
+            )}
+          </button>
           <button
             onClick={() => signOut({ callbackUrl: '/login' })}
             className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400 hover:bg-red-950/45 transition duration-150"
@@ -241,13 +273,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {companyName ? `${companyName} HQ` : 'F-Ordering HQ'}
             </span>
           </div>
-          
-          <button
-            onClick={() => setMobileOpen(true)}
-            className="rounded-lg border border-[#1e293b] bg-slate-950 p-2 text-slate-300 hover:bg-slate-900 transition"
-          >
-            <MenuIcon className="h-4.5 w-4.5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className="rounded-lg border border-[#1e293b] bg-slate-950 p-2 text-slate-300 hover:bg-slate-900 transition shrink-0"
+            >
+              {theme === 'dark' ? <Sun className="h-4 w-4 text-amber-500" /> : <Moon className="h-4 w-4 text-sky-400" />}
+            </button>
+            <button
+              onClick={() => setMobileOpen(true)}
+              className="rounded-lg border border-[#1e293b] bg-slate-950 p-2 text-slate-300 hover:bg-slate-900 transition"
+            >
+              <MenuIcon className="h-4.5 w-4.5" />
+            </button>
+          </div>
         </header>
 
         {/* MAIN BODY PAGES OUTLET */}
@@ -287,7 +326,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </nav>
             </div>
 
-            <div className="p-4 border-t border-[#1e293b]/60 shrink-0">
+            <div className="p-4 border-t border-[#1e293b]/60 shrink-0 space-y-2">
+              <button
+                onClick={toggleTheme}
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900/40 border border-[#1e293b]/60 py-2.5 text-xs font-bold text-slate-300"
+              >
+                {theme === 'dark' ? (
+                  <>
+                    <Sun className="h-4 w-4 text-amber-500" />
+                    Light Theme
+                  </>
+                ) : (
+                  <>
+                    <Moon className="h-4 w-4 text-sky-400" />
+                    Dark Theme
+                  </>
+                )}
+              </button>
               <button
                 onClick={() => signOut({ callbackUrl: '/login' })}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400"

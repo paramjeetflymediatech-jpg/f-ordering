@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { Phone, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -15,6 +15,35 @@ export default function CustomerLoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [store, setStore] = useState<any>(null);
+
+  useEffect(() => {
+    if (!orgSlug) return;
+    fetch(`/api/public/store?orgSlug=${orgSlug}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.store) setStore(data.store);
+      })
+      .catch(() => {});
+  }, [orgSlug]);
+
+  const primaryColor = store?.theme_primary_color || '#2A0E07';
+  const accentColor = store?.theme_accent_color || '#C39A3C';
+  const bgColor = store?.theme_bg_color || '#F9F6F0';
+  const fontStyle = store?.theme_font || 'sans';
+
+  const getFontFamily = () => {
+    switch (fontStyle) {
+      case 'serif':
+        return 'Georgia, ui-serif, serif';
+      case 'sans':
+        return 'ui-sans-serif, system-ui, sans-serif';
+      case 'playfair':
+        return '"Playfair Display", Georgia, serif';
+      default:
+        return 'Poppins, Georgia, ui-serif, serif';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,13 +76,21 @@ export default function CustomerLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div 
+      className="min-h-screen flex flex-col font-sans transition-colors duration-350"
+      style={{ backgroundColor: bgColor, fontFamily: getFontFamily() }}
+    >
       <RestaurantNavbar orgSlug={orgSlug} activePage="login" />
 
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-black text-slate-800 tracking-tight">Welcome Back</h1>
+            <h1 
+              className="text-2xl font-black tracking-tight"
+              style={{ color: primaryColor }}
+            >
+              Welcome Back
+            </h1>
             <p className="text-sm text-slate-500 mt-1">Sign in to view your orders & earn loyalty points</p>
           </div>
 
@@ -110,7 +147,8 @@ export default function CustomerLoginPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full rounded-xl py-3 text-sm font-bold text-white bg-slate-800 hover:bg-slate-700 transition disabled:opacity-50 mt-2"
+                  className="w-full rounded-xl py-3 text-sm font-bold text-white transition disabled:opacity-50 mt-2"
+                  style={{ backgroundColor: primaryColor }}
                 >
                   {loading ? 'Signing in...' : 'Sign In'}
                 </button>
@@ -119,7 +157,11 @@ export default function CustomerLoginPage() {
 
             <div className="mt-5 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
               Don&apos;t have an account?{' '}
-              <Link href={`/order-online/${orgSlug}/customer/register`} className="font-bold text-slate-800 hover:underline">
+              <Link 
+                href={`/order-online/${orgSlug}/customer/register`} 
+                className="font-bold hover:underline"
+                style={{ color: accentColor }}
+              >
                 Sign Up
               </Link>
             </div>

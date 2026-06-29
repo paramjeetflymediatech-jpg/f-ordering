@@ -24,6 +24,7 @@ export default function ReservationsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all');
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [tablesList, setTablesList] = useState<any[]>([]);
 
   // Mock initial reservations to seed if none exist
   const seedMockReservations = () => {
@@ -38,27 +39,39 @@ export default function ReservationsPage() {
 
   useEffect(() => {
     if (!session || !(session.user as any)?.store_id) return;
-    const storeId = (session.user as any).store_id;
-    const reservationsKey = `reservationsConfig_${storeId}`;
 
     const fetchReservations = async () => {
       try {
         setLoading(true);
-        // Fallback to local storage
-        const saved = localStorage.getItem(reservationsKey);
-        if (saved) {
-          setReservations(JSON.parse(saved));
+        const res = await fetch('/api/dashboard/reservations');
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setReservations(data.reservations);
         } else {
-          setReservations([]);
-          localStorage.setItem(reservationsKey, JSON.stringify([]));
+          triggerAlert(data.error || 'Failed to load reservations.', true);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
+        triggerAlert('Error occurred loading reservations.', true);
       } finally {
         setLoading(false);
       }
     };
+
+    const fetchTables = async () => {
+      try {
+        const res = await fetch('/api/tables');
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setTablesList(data.tables || []);
+        }
+      } catch (err) {
+        console.error('Error fetching tables:', err);
+      }
+    };
+
     fetchReservations();
+    fetchTables();
   }, [session]);
 
   const triggerAlert = (msg: string, isError = false) => {
@@ -71,17 +84,55 @@ export default function ReservationsPage() {
     }
   };
 
-  const handleUpdateStatus = (id: string, newStatus: 'confirmed' | 'cancelled') => {
-    const updated = reservations.map(r => {
-      if (r.id === id) {
-        return { ...r, status: newStatus };
+  const handleUpdateStatus = async (id: string, newStatus: 'confirmed' | 'cancelled') => {
+    try {
+      const res = await fetch('/api/dashboard/reservations', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, status: newStatus }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setReservations(prev => 
+          prev.map(r => r.id === id ? { ...r, status: newStatus } : r)
+        );
+        triggerAlert(`Reservation marked as ${newStatus}.`);
+      } else {
+        triggerAlert(data.error || 'Failed to update status.', true);
       }
-      return r;
-    });
-    setReservations(updated);
-    const storeId = (session?.user as any)?.store_id || 'default';
-    localStorage.setItem(`reservationsConfig_${storeId}`, JSON.stringify(updated));
-    triggerAlert(`Reservation marked as ${newStatus}.`);
+    } catch (err: any) {
+      console.error(err);
+      triggerAlert('Network error updating status.', true);
+    }
+  };
+
+  const handleAssignTable = async (id: string, tableId: string) => {
+    try {
+      const res = await fetch('/api/dashboard/reservations', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, table_id: tableId }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        const selectedTable = tablesList.find(t => t.id === tableId);
+        setReservations(prev => 
+          prev.map(r => r.id === id ? { 
+            ...r, 
+            table_id: tableId, 
+            table_number: selectedTable ? selectedTable.table_number : 'Not Assigned' 
+          } : r)
+        );
+        triggerAlert('Table assigned successfully.');
+      } else {
+        triggerAlert(data.error || 'Failed to assign table.', true);
+      }
+    } catch (err: any) {
+      console.error(err);
+      triggerAlert('Network error assigning table.', true);
+    }
   };
 
   const filteredReservations = reservations.filter(r => {
@@ -225,11 +276,22 @@ export default function ReservationsPage() {
                         {r.party_size}
                       </span>
                     </td>
-                    <td className="p-4 text-center font-bold text-slate-400">
-                      <span className="inline-flex items-center gap-1 rounded bg-slate-950 px-2 py-1 text-slate-300">
-                        <Table className="h-3.5 w-3.5 text-sky-500" />
-                        T-{r.table_number}
-                      </span>
+                    <td className="p-4 text-center">
+                      <div className="inline-flex items-center gap-1.5 bg-slate-950 px-2 py-1.5 rounded-lg border border-slate-800 text-slate-300">
+                        <Table className="h-3.5 w-3.5 text-sky-500 shrink-0" />
+                        <select
+                          value={r.table_id || ''}
+                          onChange={(e) => handleAssignTable(r.id, e.target.value)}
+                          className="bg-transparent text-xs text-slate-300 font-bold focus:outline-none cursor-pointer border-none p-0 pr-2"
+                        >
+                          <option value="" className="bg-slate-950 text-slate-400">Not Assigned</option>
+                          {tablesList.map((table) => (
+                            <option key={table.id} value={table.id} className="bg-slate-950 text-slate-200">
+                              T-{table.table_number} ({table.seating_capacity} Seats)
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </td>
                     <td className="p-4 text-center">
                       <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase ${

@@ -35,6 +35,7 @@ export default function BookTablePage() {
   // UI state
   const [isSuccess, setIsSuccess] = useState(false);
   const [recentBooking, setRecentBooking] = useState<any>(null);
+  const [step, setStep] = useState(1);
 
   useEffect(() => {
     if (!orgSlug) return;
@@ -60,6 +61,15 @@ export default function BookTablePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (step === 1) {
+      if (!customerName || !customerPhone) {
+        alert('Please fill out all required fields.');
+        return;
+      }
+      setStep(2);
+      return;
+    }
 
     try {
       const reservationTimeISO = new Date(`${reservationDate}T${reservationTime}`).toISOString();
@@ -89,6 +99,24 @@ export default function BookTablePage() {
     } catch (err) {
       console.error(err);
       alert('Network error while booking table.');
+    }
+  };
+
+  const primaryColor = store?.theme_primary_color || '#2A0E07';
+  const accentColor = store?.theme_accent_color || '#C39A3C';
+  const bgColor = store?.theme_bg_color || '#F9F6F0';
+  const fontStyle = store?.theme_font || 'sans';
+
+  const getFontFamily = () => {
+    switch (fontStyle) {
+      case 'serif':
+        return 'Georgia, ui-serif, serif';
+      case 'sans':
+        return 'ui-sans-serif, system-ui, sans-serif';
+      case 'playfair':
+        return '"Playfair Display", Georgia, serif';
+      default:
+        return 'Poppins, Georgia, ui-serif, serif';
     }
   };
 
@@ -122,172 +150,242 @@ export default function BookTablePage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between">
+    <div 
+      className="min-h-screen flex flex-col justify-between transition-colors duration-350"
+      style={{ backgroundColor: bgColor, fontFamily: getFontFamily(), color: primaryColor }}
+    >
       
-      <header className="border-b border-slate-900 bg-slate-950 px-6 py-4 flex items-center justify-between">
+      <header 
+        className="border-b px-6 py-4 flex items-center justify-between shadow-sm"
+        style={{ backgroundColor: primaryColor, borderColor: `${primaryColor}1a` }}
+      >
         <Link
           href={`/menu`}
-          className="inline-flex items-center gap-2 rounded-lg bg-slate-900 border border-slate-800 px-4 py-2.5 text-xs font-bold text-slate-400 hover:text-white transition"
+          className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-bold transition border border-white/20 bg-white/10 text-white hover:bg-white/20"
         >
           <ArrowLeft className="h-4 w-4" />
           Back to Menu
         </Link>
-        <h2 className="text-sm font-black text-white uppercase tracking-wider">
-          {store.name}
+        <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-3">
+          {store.Organization?.logo ? (
+            <img
+              src={store.Organization.logo}
+              alt={store.Organization.name || store.name}
+              className="h-10 max-h-10 w-auto object-contain bg-white/10 p-1 rounded"
+            />
+          ) : (
+            store.Organization?.name || store.name
+          )}
         </h2>
       </header>
 
       <main className="flex-1 max-w-lg mx-auto w-full px-6 py-12">
         {!isSuccess ? (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl space-y-6">
+          <div 
+            className="rounded-2xl border bg-white p-8 shadow-2xl space-y-6"
+            style={{ borderColor: `${primaryColor}1a` }}
+          >
             <div className="space-y-1">
-              <h1 className="text-2xl font-black text-white">Book a Table</h1>
-              <p className="text-xs text-slate-400">
-                Reserve your table instantly. Fill out your details below and submit your request.
+              <div className="flex justify-between items-center">
+                <h1 className="text-2xl font-black" style={{ color: primaryColor }}>Book a Table</h1>
+                <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full" style={{ backgroundColor: `${accentColor}15`, color: accentColor }}>
+                  Step {step} of 2
+                </span>
+              </div>
+              <p className="text-xs text-slate-500">
+                {step === 1 
+                  ? 'Enter your contact details to start your booking.' 
+                  : 'Select your preferred date, time and details.'
+                }
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-4">
-                <div>
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Full Name *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Jane Doe"
-                    value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500 transition"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {step === 1 && (
+                <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Phone Number *</label>
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Full Name *</label>
                     <input
-                      type="tel"
+                      type="text"
                       required
-                      placeholder="+1 555-9876"
-                      value={customerPhone}
-                      onChange={(e) => setCustomerPhone(e.target.value)}
-                      className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500 transition"
+                      placeholder="Jane Doe"
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      className="w-full mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-slate-450 transition"
                     />
                   </div>
-                  <div>
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Email Address</label>
-                    <input
-                      type="email"
-                      placeholder="jane@example.com"
-                      value={customerEmail}
-                      onChange={(e) => setCustomerEmail(e.target.value)}
-                      className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500 transition"
-                    />
-                  </div>
-                </div>
-              </div>
 
-              <div className="border-t border-slate-800 pt-5 space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone Number *</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="+1 555-9876"
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                        className="w-full mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-slate-450 transition"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Email Address</label>
+                      <input
+                        type="email"
+                        placeholder="jane@example.com"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                        className="w-full mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-slate-450 transition"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full mt-6 rounded-xl py-3.5 text-sm font-extrabold text-white transition shadow-lg"
+                    style={{ 
+                      backgroundColor: primaryColor,
+                      boxShadow: `0 4px 14px 0 ${primaryColor}22`
+                    }}
+                  >
+                    Next: Choose Date & Time
+                  </button>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label 
+                        className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"
+                      >
+                        <Calendar className="h-4 w-4" style={{ color: accentColor }} />
+                        Booking Date *
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        min={new Date().toISOString().split('T')[0]}
+                        value={reservationDate}
+                        onChange={(e) => setReservationDate(e.target.value)}
+                        className="w-full mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-slate-450 transition"
+                      />
+                    </div>
+                    <div>
+                      <label 
+                        className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"
+                      >
+                        <Clock className="h-4 w-4" style={{ color: accentColor }} />
+                        Select Time *
+                      </label>
+                      <input
+                        type="time"
+                        required
+                        value={reservationTime}
+                        onChange={(e) => setReservationTime(e.target.value)}
+                        className="w-full mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-800 outline-none focus:border-slate-450 transition"
+                      />
+                    </div>
+                  </div>
+
                   <div>
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Calendar className="h-4 w-4 text-orange-500" />
-                      Booking Date *
+                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Users className="h-4 w-4" style={{ color: accentColor }} />
+                      Guest Count: {guestCount} Guests
                     </label>
                     <input
-                      type="date"
-                      required
-                      min={new Date().toISOString().split('T')[0]}
-                      value={reservationDate}
-                      onChange={(e) => setReservationDate(e.target.value)}
-                      className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500 transition"
+                      type="range"
+                      min="1"
+                      max="20"
+                      value={guestCount}
+                      onChange={(e) => setGuestCount(parseInt(e.target.value))}
+                      className="w-full mt-3 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
+                      style={{ accentColor: accentColor }}
                     />
+                    <div className="flex justify-between text-[10px] text-slate-400 font-bold px-1 mt-1">
+                      <span>1 Guest</span>
+                      <span>10 Guests</span>
+                      <span>20 Guests</span>
+                    </div>
                   </div>
+
                   <div>
-                    <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Clock className="h-4 w-4 text-orange-500" />
-                      Select Time *
+                    <label 
+                      className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"
+                    >
+                      <MessageSquare className="h-4 w-4" style={{ color: accentColor }} />
+                      Special Requests
                     </label>
-                    <input
-                      type="time"
-                      required
-                      value={reservationTime}
-                      onChange={(e) => setReservationTime(e.target.value)}
-                      className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-sm text-white outline-none focus:border-orange-500 transition"
+                    <textarea
+                      placeholder="e.g. High chair for toddler, silent corner..."
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      className="w-full mt-2 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-800 h-20 outline-none resize-none focus:border-slate-450 transition"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <Users className="h-4 w-4 text-orange-500" />
-                    Guest Count: {guestCount} Guests
-                  </label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="20"
-                    value={guestCount}
-                    onChange={(e) => setGuestCount(parseInt(e.target.value))}
-                    className="w-full mt-3 h-1.5 bg-slate-950 rounded-lg appearance-none cursor-pointer accent-orange-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-500 font-bold px-1 mt-1">
-                    <span>1 Guest</span>
-                    <span>10 Guests</span>
-                    <span>20 Guests</span>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      className="w-1/3 rounded-xl border py-3.5 text-sm font-semibold hover:bg-slate-50 transition text-slate-600"
+                      style={{ borderColor: `${primaryColor}20` }}
+                    >
+                      Back
+                    </button>
+                    <button
+                      type="submit"
+                      className="w-2/3 rounded-xl py-3.5 text-sm font-extrabold text-white transition shadow-lg"
+                      style={{ 
+                        backgroundColor: primaryColor,
+                        boxShadow: `0 4px 14px 0 ${primaryColor}22`
+                      }}
+                    >
+                      Book Table
+                    </button>
                   </div>
                 </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                    <MessageSquare className="h-4 w-4 text-orange-500" />
-                    Special Requests
-                  </label>
-                  <textarea
-                    placeholder="e.g. High chair for toddler, silent corner..."
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-xs text-white h-20 outline-none resize-none focus:border-orange-500 transition"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full mt-4 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 py-3.5 text-sm font-extrabold text-white hover:from-orange-500 hover:to-amber-400 transition shadow-lg shadow-orange-600/20"
-              >
-                Request Table Reservation
-              </button>
+              )}
             </form>
           </div>
         ) : (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-2xl text-center space-y-6">
-            <CheckCircle className="h-16 w-16 text-emerald-400 mx-auto animate-bounce" />
+          <div 
+            className="rounded-2xl border bg-white p-8 shadow-2xl text-center space-y-6"
+            style={{ borderColor: `${primaryColor}1a` }}
+          >
+            <CheckCircle className="h-16 w-16 mx-auto animate-bounce" style={{ color: accentColor }} />
             
             <div className="space-y-2">
-              <h2 className="text-2xl font-black text-white">Booking Requested!</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-2xl font-black" style={{ color: primaryColor }}>Booking Requested!</h2>
+              <p className="text-xs text-slate-500">
                 Your table reservation has been received and is currently in waitlist pending approval from the host.
               </p>
             </div>
 
-            <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3 text-xs text-left font-semibold">
-              <div className="flex justify-between text-slate-400">
+            <div 
+              className="bg-slate-50 border rounded-xl p-4 space-y-3 text-xs text-left font-semibold text-slate-700"
+              style={{ borderColor: `${primaryColor}1a` }}
+            >
+              <div className="flex justify-between">
                 <span>Guest Name:</span>
-                <span className="text-white font-bold">{customerName}</span>
+                <span className="font-bold text-slate-900">{customerName}</span>
               </div>
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between">
                 <span>Guests count:</span>
-                <span className="text-white font-bold">{recentBooking.guestCount} Guests</span>
+                <span className="font-bold text-slate-900">{recentBooking.guestCount} Guests</span>
               </div>
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between">
                 <span>Booking Time:</span>
-                <span className="text-white font-bold">
+                <span className="font-bold text-slate-900">
                   {new Date(recentBooking.reservationTime).toLocaleString()}
                 </span>
               </div>
-              <div className="flex justify-between text-slate-400">
+              <div className="flex justify-between items-center">
                 <span>Status:</span>
-                <span className="rounded bg-orange-950 px-2 py-0.5 text-[10px] text-orange-400 uppercase font-black">
+                <span 
+                  className="rounded px-2 py-0.5 text-[10px] uppercase font-black"
+                  style={{ backgroundColor: `${accentColor}1a`, color: accentColor }}
+                >
                   {recentBooking.status}
                 </span>
               </div>
@@ -295,14 +393,16 @@ export default function BookTablePage() {
 
             <div className="flex gap-2">
               <Link
-                href={`/order-online/menu`}
-                className="w-1/2 rounded-xl bg-orange-600 py-3 text-xs font-bold text-white hover:bg-orange-500 transition text-center"
+                href={`/menu`}
+                className="w-1/2 rounded-xl py-3 text-xs font-bold text-white hover:opacity-90 transition text-center"
+                style={{ backgroundColor: primaryColor }}
               >
                 Go to Menu
               </Link>
               <button
                 onClick={() => setIsSuccess(false)}
-                className="w-1/2 rounded-xl bg-slate-800 py-3 text-xs font-semibold text-slate-400 hover:bg-slate-700 transition"
+                className="w-1/2 rounded-xl border py-3 text-xs font-semibold hover:bg-slate-50 transition text-slate-600"
+                style={{ borderColor: `${primaryColor}20` }}
               >
                 New Reservation
               </button>
@@ -311,7 +411,10 @@ export default function BookTablePage() {
         )}
       </main>
 
-      <footer className="py-6 border-t border-slate-900 bg-slate-950 text-center text-[10px] text-slate-500">
+      <footer 
+        className="py-6 border-t text-center text-[10px] text-slate-400"
+        style={{ borderColor: `${primaryColor}1a` }}
+      >
         <div className="flex justify-center gap-4 mb-2">
           <span>{store.name}</span>
           <span>•</span>
