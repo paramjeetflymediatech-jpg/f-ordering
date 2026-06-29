@@ -27,6 +27,7 @@ import {
   UserPlus,
   LogOut,
   Award,
+  Menu as MenuIcon,
 } from 'lucide-react';
 
 interface CartItem {
@@ -206,6 +207,7 @@ export default function PublicOrderPage() {
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [selectedAddons, setSelectedAddons] = useState<any[]>([]);
   const [activeModal, setActiveModal] = useState<'checkout' | 'success' | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
   // Checkout details
   const [customer, setCustomer] = useState<any>(null);
@@ -534,8 +536,8 @@ export default function PublicOrderPage() {
             )}
           </Link>
 
-          {/* Nav Links */}
-          <div className="flex items-center gap-6 text-sm font-semibold">
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center gap-6 text-sm font-semibold">
             {store.website ? (
               <a href={store.website} className="text-white transition">
                 Home
@@ -546,7 +548,7 @@ export default function PublicOrderPage() {
               </Link>
             )}
             <Link
-              href={`/menu`}
+              href={`/order-online/${orgSlug}/menu`}
               className="hover:text-white transition"
               style={{ color: accentColor }}
             >
@@ -557,11 +559,11 @@ export default function PublicOrderPage() {
                 About Us
               </a>
             ) : (
-              <Link href= {store.website?(`${store.website.replace(/\/$/, '')}/about`) : "/about"} className="text-white transition">
+              <Link href={store.website?(`${store.website.replace(/\/$/, '')}/about`) : "/about"} className="text-white transition">
                 About Us
               </Link>
             )}
-            <Link href={`/book`} className="text-white transition">
+            <Link href={`/order-online/${orgSlug}/book`} className="text-white transition">
               Book Table
             </Link>
             {customer ? (
@@ -603,8 +605,149 @@ export default function PublicOrderPage() {
               </>
             )}
           </div>
+
+          {/* Mobile Hamburger Button */}
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="md:hidden p-2 rounded-xl text-white hover:bg-white/10 transition"
+          >
+            <MenuIcon className="h-6 w-6" />
+          </button>
         </div>
       </header>
+
+      {/* MOBILE DRAWER OVERLAY */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 md:hidden bg-slate-950/80 backdrop-blur-sm flex justify-end">
+          <div className={`w-72 h-full p-6 shadow-2xl flex flex-col justify-between ${
+            layoutStyle === 'modern_dark' ? 'bg-[#0c101b] text-white border-l border-[#1e293b]/60' : 'bg-white text-slate-800'
+          }`}>
+            <div className="space-y-6">
+              <div className="flex justify-between items-center pb-4 border-b border-slate-200">
+                <span className="font-bold text-sm uppercase tracking-wider">Navigation</span>
+                <button onClick={() => setMobileMenuOpen(false)} className="p-1 hover:opacity-85">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              <nav className="flex flex-col gap-4 text-sm font-semibold">
+                {store.website ? (
+                  <a href={store.website} className="hover:opacity-80 py-1 transition">
+                    Home
+                  </a>
+                ) : (
+                  <Link href="/" onClick={() => setMobileMenuOpen(false)} className="hover:opacity-80 py-1 transition">
+                    Home
+                  </Link>
+                )}
+                <Link
+                  href={`/order-online/${orgSlug}/menu`}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="hover:opacity-80 py-1 transition"
+                  style={{ color: accentColor }}
+                >
+                  Menu
+                </Link>
+                {store.website ? (
+                  <a href={`${store.website.replace(/\/$/, '')}/#about`} className="hover:opacity-80 py-1 transition">
+                    About Us
+                  </a>
+                ) : (
+                  <Link href={store.website?(`${store.website.replace(/\/$/, '')}/about`) : "/about"} onClick={() => setMobileMenuOpen(false)} className="hover:opacity-80 py-1 transition">
+                    About Us
+                  </Link>
+                )}
+                <Link href={`/order-online/${orgSlug}/book`} onClick={() => setMobileMenuOpen(false)} className="hover:opacity-80 py-1 transition">
+                  Book Table
+                </Link>
+              </nav>
+            </div>
+
+            <div className="pt-6 border-t border-slate-200/80">
+              {customer ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <User className="h-5 w-5 text-slate-400" />
+                    <div>
+                      <p className="text-xs font-bold">{customer.name}</p>
+                      {customer.loyaltyPoints !== undefined && (
+                        <p className="text-[10px] font-semibold text-amber-500 uppercase">{customer.loyaltyPoints} PTS</p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      handleLogout();
+                    }}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log Out
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <Link
+                    href={`/order-online/${orgSlug}/customer/login`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-center rounded-xl border border-slate-200 py-2.5 text-xs font-bold"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href={`/order-online/${orgSlug}/customer/register`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-center text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    Sign Up
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MOBILE CATEGORIES HORIZONTAL SLIDER */}
+      <div 
+        className={`lg:hidden border-b px-6 py-3 overflow-x-auto whitespace-nowrap flex gap-2 custom-scrollbar ${
+          layoutStyle === 'modern_dark'
+            ? 'bg-[#0c101b] border-[#1e293b]/60'
+            : 'bg-white border-slate-200'
+        }`}
+      >
+        <button
+          onClick={() => setSelectedCategoryId('all')}
+          className={`px-4 py-2 rounded-full text-xs font-bold transition shrink-0 ${
+            selectedCategoryId === 'all'
+              ? 'text-white'
+              : layoutStyle === 'modern_dark'
+              ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
+              : 'text-slate-600 bg-slate-50 border border-slate-100'
+          }`}
+          style={selectedCategoryId === 'all' ? { backgroundColor: primaryColor } : undefined}
+        >
+          All Items
+        </button>
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setSelectedCategoryId(cat.id)}
+            className={`px-4 py-2 rounded-full text-xs font-bold transition shrink-0 ${
+              selectedCategoryId === cat.id
+                ? 'text-white'
+                : layoutStyle === 'modern_dark'
+                ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
+                : 'text-slate-600 bg-slate-50 border border-slate-100'
+            }`}
+            style={selectedCategoryId === cat.id ? { backgroundColor: primaryColor } : undefined}
+          >
+            {cat.name}
+          </button>
+        ))}
+      </div>
 
       {/* BODY LAYOUT */}
       <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row gap-8">
@@ -775,7 +918,7 @@ export default function PublicOrderPage() {
                         <div className="flex-1 min-w-0">
                           <h3 className={`font-bold text-sm ${layoutStyle === 'modern_dark' ? 'text-white' : 'text-slate-800'}`} style={{ fontFamily: fontStyle === 'playfair' ? '"Playfair Display", serif' : 'inherit' }}>{item.name}</h3>
                           <p className={`text-xs mt-1 line-clamp-2 ${layoutStyle === 'modern_dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                            {item.description || 'Delicately cooked with selected spices.'}
+                            {item.description || ''}
                           </p>
                         </div>
 
@@ -1394,6 +1537,19 @@ export default function PublicOrderPage() {
         </div>
       )}
 
+    <footer 
+        className="py-6 border-t text-center text-[10px] text-slate-400 flex flex-col justify-center gap-3"
+        style={{ borderColor: `${primaryColor}1a` }}
+      >
+        <div className=' '> 
+         <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
+        
+        <div className="flex justify-center gap-3 mt-2 text-[9px] font-semibold text-slate-405">
+          <a href="#" className="hover:underline">Privacy Policy</a>
+          <span>•</span>
+          <a href="#" className="hover:underline">Terms & Conditions</a>
+        </div></div>
+      </footer>
     </div>
   );
 }

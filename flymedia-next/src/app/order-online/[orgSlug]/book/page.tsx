@@ -12,6 +12,7 @@ import {
   CheckCircle,
   AlertCircle,
 } from 'lucide-react';
+import RestaurantNavbar from '../../../../components/order-online/RestaurantNavbar';
 
 export default function BookTablePage() {
   const params = useParams();
@@ -155,31 +156,9 @@ export default function BookTablePage() {
       style={{ backgroundColor: bgColor, fontFamily: getFontFamily(), color: primaryColor }}
     >
       
-      <header 
-        className="border-b px-6 py-4 flex items-center justify-between shadow-sm"
-        style={{ backgroundColor: primaryColor, borderColor: `${primaryColor}1a` }}
-      >
-        <Link
-          href={`/menu`}
-          className="inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-bold transition border border-white/20 bg-white/10 text-white hover:bg-white/20"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Menu
-        </Link>
-        <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-3">
-          {store.Organization?.logo ? (
-            <img
-              src={store.Organization.logo}
-              alt={store.Organization.name || store.name}
-              className="h-10 max-h-10 w-auto object-contain bg-white/10 p-1 rounded"
-            />
-          ) : (
-            store.Organization?.name || store.name
-          )}
-        </h2>
-      </header>
+      <RestaurantNavbar orgSlug={orgSlug} />
 
-      <main className="flex-1 max-w-lg mx-auto w-full px-6 py-12">
+      <main className="flex-1 max-w-lg mx-auto w-full px-6 py-12 flex flex-col justify-center">
         {!isSuccess ? (
           <div 
             className="rounded-2xl border bg-white p-8 shadow-2xl space-y-6"
@@ -412,15 +391,17 @@ export default function BookTablePage() {
       </main>
 
       <footer 
-        className="py-6 border-t text-center text-[10px] text-slate-400"
+        className="py-6 border-t text-center text-[10px] text-slate-400 flex flex-col justify-center gap-3"
         style={{ borderColor: `${primaryColor}1a` }}
       >
-        <div className="flex justify-center gap-4 mb-2">
-          <span>{store.name}</span>
+        <div className=' '> 
+         <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
+        
+        <div className="flex justify-center gap-3 mt-2 text-[9px] font-semibold text-slate-405">
+          <a href="#" className="hover:underline">Privacy Policy</a>
           <span>•</span>
-          <span>{store.phone}</span>
-        </div>
-        <p>© 2026 Powered by F-Ordering POS SaaS</p>
+          <a href="#" className="hover:underline">Terms & Conditions</a>
+        </div></div>
       </footer>
 
     </div>

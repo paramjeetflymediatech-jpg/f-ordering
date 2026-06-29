@@ -77,7 +77,7 @@ export default function CustomerLoginPage() {
 
   return (
     <div 
-      className="min-h-screen flex flex-col font-sans transition-colors duration-350"
+      className="min-h-screen flex flex-col justify-between font-sans transition-colors duration-350"
       style={{ backgroundColor: bgColor, fontFamily: getFontFamily() }}
     >
       <RestaurantNavbar orgSlug={orgSlug} activePage="login" />
@@ -168,6 +168,20 @@ export default function CustomerLoginPage() {
           </div>
         </div>
       </main>
+
+     <footer 
+        className="py-6 border-t text-center text-[10px] text-slate-400 flex flex-col justify-center gap-3"
+        style={{ borderColor: `${primaryColor}1a` }}
+      >
+        <div className=' '> 
+         <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
+        
+        <div className="flex justify-center gap-3 mt-2 text-[9px] font-semibold text-slate-405">
+          <a href="#" className="hover:underline">Privacy Policy</a>
+          <span>•</span>
+          <a href="#" className="hover:underline">Terms & Conditions</a>
+        </div></div>
+      </footer>
     </div>
   );
 }
