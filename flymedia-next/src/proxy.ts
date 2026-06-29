@@ -36,12 +36,19 @@ export function proxy(request: NextRequest) {
 
   // ─── ROOT HOST: Redirect /order-online/{slug}/menu → {slug}.localhost:3000/menu ───
   if (isRootHost) {
+    const isLocal = hostname.includes('localhost') || hostname.includes('127.0.0.1');
+
     // Match /order-online/{slug}/menu
     const menuMatch = url.pathname.match(/^\/order-online\/([^/]+)\/menu$/);
     if (menuMatch) {
       const slug = menuMatch[1];
-      const port = hostname.split(':')[1] || '3000';
-      const redirectUrl = `http://${slug}.localhost:${port}/menu`;
+      let redirectUrl;
+      if (isLocal) {
+        const port = hostname.split(':')[1] || '3000';
+        redirectUrl = `http://${slug}.localhost:${port}/menu`;
+      } else {
+        redirectUrl = `https://${slug}.fly-pos.com/menu`;
+      }
       return NextResponse.redirect(redirectUrl);
     }
 
@@ -49,8 +56,13 @@ export function proxy(request: NextRequest) {
     const bookMatch = url.pathname.match(/^\/order-online\/([^/]+)\/book$/);
     if (bookMatch) {
       const slug = bookMatch[1];
-      const port = hostname.split(':')[1] || '3000';
-      const redirectUrl = `http://${slug}.localhost:${port}/book`;
+      let redirectUrl;
+      if (isLocal) {
+        const port = hostname.split(':')[1] || '3000';
+        redirectUrl = `http://${slug}.localhost:${port}/book`;
+      } else {
+        redirectUrl = `https://${slug}.fly-pos.com/book`;
+      }
       return NextResponse.redirect(redirectUrl);
     }
 
@@ -58,8 +70,13 @@ export function proxy(request: NextRequest) {
     const slugOnly = url.pathname.match(/^\/order-online\/([^/]+)\/?$/);
     if (slugOnly) {
       const slug = slugOnly[1];
-      const port = hostname.split(':')[1] || '3000';
-      const redirectUrl = `http://${slug}.localhost:${port}/menu`;
+      let redirectUrl;
+      if (isLocal) {
+        const port = hostname.split(':')[1] || '3000';
+        redirectUrl = `http://${slug}.localhost:${port}/menu`;
+      } else {
+        redirectUrl = `https://${slug}.fly-pos.com/menu`;
+      }
       return NextResponse.redirect(redirectUrl);
     }
   }
