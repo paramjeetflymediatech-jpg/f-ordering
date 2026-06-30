@@ -15,18 +15,22 @@ export default function AppLayoutWrapper({ children }: { children: React.ReactNo
     if (typeof window === 'undefined') return;
 
     const hostname = window.location.hostname;
+    console.log(hostname, 'host')
     const parts = hostname.split('.');
     let slug = '';
-
+    console.log(parts)
     if (parts.length > 1 && parts[0] !== 'www') {
       slug = parts[0];
     }
-
+    console.log(slug, 'slug')
     if (slug) {
       const path = window.location.pathname;
+      console.log(path, 'path')
       if (path === '/' || path === '') {
         const originalDomain = parts.slice(1).join('.');
+        console.log(originalDomain, 'originalDomain')
         const newUrl = `${window.location.protocol}//${originalDomain}${window.location.pathname}${window.location.search}${window.location.hash}`;
+     return
         window.location.href = newUrl;
       }
     }
