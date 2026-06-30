@@ -1,13 +1,15 @@
 import React from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, Sun, Moon } from 'lucide-react';
 
 interface POSHeaderProps {
   session: any;
   logoUrl?: string;
   companyName?: string;
+  theme?: 'dark' | 'light';
+  toggleTheme?: () => void;
 }
 
-export function POSHeader({ session, logoUrl, companyName }: POSHeaderProps) {
+export function POSHeader({ session, logoUrl, companyName, theme = 'dark', toggleTheme }: POSHeaderProps) {
   return (
     <header className="flex h-20 items-center justify-between px-6 border-b border-slate-850 bg-gradient-to-r from-[#0a0f1d]/90 via-[#080b11]/90 to-[#0c1222]/90 backdrop-blur-xl sticky top-0 z-10 shrink-0 shadow-lg shadow-slate-950/20">
       <div className="flex items-center gap-3">
@@ -36,6 +38,20 @@ export function POSHeader({ session, logoUrl, companyName }: POSHeaderProps) {
           </p>
         </div>
 
+        {toggleTheme && (
+          <button
+            onClick={toggleTheme}
+            className="rounded-xl border border-slate-800 bg-[#090d16] p-2 text-slate-400 hover:text-white hover:bg-slate-900 hover:border-slate-700 transition duration-200"
+            title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-4 w-4 text-amber-500" />
+            ) : (
+              <Moon className="h-4 w-4 text-sky-400" />
+            )}
+          </button>
+        )}
+
         <button
           onClick={() => alert('No new notifications')}
           className="rounded-xl border border-slate-800 bg-[#090d16] p-2 text-slate-400 hover:text-white hover:bg-slate-900 hover:border-slate-700 transition duration-200"
@@ -44,5 +60,6 @@ export function POSHeader({ session, logoUrl, companyName }: POSHeaderProps) {
         </button>
       </div>
     </header>
+
   );
 }

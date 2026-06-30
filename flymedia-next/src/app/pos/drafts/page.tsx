@@ -34,6 +34,14 @@ export default function POSDraftsPage() {
   }, [status, router]);
 
   const [drafts, setDrafts] = useState<any[]>([]);
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    const savedTheme = (localStorage.getItem('pos-theme') || localStorage.getItem('dashboard-theme')) as 'dark' | 'light';
+    if (savedTheme) {
+      setTheme(savedTheme);
+    }
+  }, []);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<'all' | 'dine_in' | 'takeaway' | 'delivery'>('all');
@@ -286,7 +294,7 @@ export default function POSDraftsPage() {
   };
 
   return (
-    <div className="flex h-screen w-screen bg-gradient-to-br from-[#070b12] via-[#080d16] to-[#0c1220] font-sans text-slate-100 overflow-hidden select-none">
+    <div className={`flex h-screen w-screen transition-colors duration-300 font-sans text-slate-100 overflow-hidden select-none ${theme === 'light' ? 'light-theme bg-[#f8fafc]' : 'bg-gradient-to-br from-[#070b12] via-[#080d16] to-[#0c1220]'}`}>
       {/* 1. LEFT SIDEBAR NAVIGATION */}
       <POSSidebar
         session={session}
