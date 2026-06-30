@@ -12,13 +12,6 @@ async function handler(request: NextRequest, context: any) {
   
   process.env.NEXTAUTH_URL = `${proto}://${host}`;
   
-  console.log('[NextAuth Debug]', {
-    host,
-    originalProto,
-    resolvedProto: proto,
-    nextAuthUrl: process.env.NEXTAUTH_URL,
-    nodeEnv: process.env.NODE_ENV
-  });
 
   // 1. Force headers to trust HTTPS
   const newHeaders = new Headers(request.headers);
