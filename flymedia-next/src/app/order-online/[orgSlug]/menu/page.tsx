@@ -221,6 +221,48 @@ export default function PublicOrderPage() {
   const [recentOrder, setRecentOrder] = useState<any>(null);
   const [newAccount, setNewAccount] = useState<{ phone: string; tempPassword: string } | null>(null);
 
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim() || !store?.id) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+      const res = await fetch('/api/public/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storeId: store.id,
+          code: couponCode,
+          subtotal,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAppliedCoupon(data.coupon);
+        setCouponError(null);
+      } else {
+        setCouponError(data.error || 'Failed to apply coupon.');
+        setAppliedCoupon(null);
+      }
+    } catch (err) {
+      console.error(err);
+      setCouponError('Network error. Please try again.');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    setCouponError(null);
+  };
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -356,11 +398,30 @@ export default function PublicOrderPage() {
   const getCartTotal = () => {
     const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     const taxRate = parseFloat(store.tax_rate) || 8.25;
-    const tax = (subtotal * taxRate) / 100;
+
+    let discount = 0;
+    if (appliedCoupon) {
+      const minAmount = parseFloat(appliedCoupon.min_order_amount) || 0;
+      if (subtotal >= minAmount) {
+        if (appliedCoupon.discount_type === 'percentage') {
+          discount = (subtotal * parseFloat(appliedCoupon.discount_value)) / 100;
+        } else {
+          discount = parseFloat(appliedCoupon.discount_value);
+        }
+        if (discount > subtotal) {
+          discount = subtotal;
+        }
+      }
+    }
+
+    const discountedSubtotal = subtotal - discount;
+    const tax = (discountedSubtotal * taxRate) / 100;
+
     return {
       subtotal,
+      discount,
       tax,
-      total: subtotal + tax,
+      total: discountedSubtotal + tax,
     };
   };
 
@@ -462,6 +523,7 @@ export default function PublicOrderPage() {
         tableId: orderType === 'dine_in' ? selectedTableId : undefined,
         deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
         notes: checkoutNotes,
+        couponCode: appliedCoupon ? appliedCoupon.code : undefined,
       };
 
       if (paymentMethod === 'cash' || !stripeEnabled) {
@@ -1088,15 +1150,75 @@ export default function PublicOrderPage() {
                 layoutStyle === 'modern_dark' ? 'border-[#1e293b]/60 bg-slate-950/50' : 'border-slate-100 bg-slate-50'
               }`}
             >
+              {/* Coupon Section */}
+              {cart.length > 0 && (
+                <div className="space-y-1.5 pb-2 border-b border-dashed border-slate-200/30">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Coupon Code</label>
+                  {appliedCoupon ? (
+                    <div className={`flex items-center justify-between border rounded-lg px-2.5 py-1.5 text-xs ${
+                      layoutStyle === 'modern_dark'
+                        ? 'bg-emerald-950/20 border-emerald-900/50 text-emerald-400'
+                        : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    }`}>
+                      <span className="font-bold">{appliedCoupon.code} Applied</span>
+                      <button
+                        type="button"
+                        onClick={handleRemoveCoupon}
+                        className="text-red-500 hover:text-red-700 font-bold"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="ENTER CODE"
+                        value={couponCode}
+                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        className={`flex-1 rounded-lg border px-2.5 py-1.5 text-xs outline-none transition uppercase ${
+                          layoutStyle === 'modern_dark'
+                            ? 'border-[#1e293b] bg-slate-950 text-white focus:border-slate-700'
+                            : 'border-slate-200 bg-white text-slate-800 focus:border-slate-400'
+                        }`}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleApplyCoupon}
+                        disabled={couponLoading || !couponCode.trim()}
+                        className="rounded-lg text-white px-3 py-1.5 text-xs font-bold transition disabled:opacity-50"
+                        style={{ backgroundColor: accentColor }}
+                      >
+                        {couponLoading ? '...' : 'Apply'}
+                      </button>
+                    </div>
+                  )}
+                  {couponError && (
+                    <p className="text-[10px] text-red-500 font-semibold">{couponError}</p>
+                  )}
+                  {appliedCoupon && totals.subtotal < parseFloat(appliedCoupon.min_order_amount) && (
+                    <p className="text-[10px] text-amber-500 font-semibold">
+                      Add ${(parseFloat(appliedCoupon.min_order_amount) - totals.subtotal).toFixed(2)} more to get discount.
+                    </p>
+                  )}
+                </div>
+              )}
+
               <div className="flex justify-between text-xs text-slate-500 font-semibold">
                 <span>Subtotal</span>
                 <span className={layoutStyle === 'modern_dark' ? 'text-white' : 'text-slate-800'}>${totals.subtotal.toFixed(2)}</span>
               </div>
+              {totals.discount > 0 && (
+                <div className="flex justify-between text-xs text-emerald-500 font-bold">
+                  <span>Discount</span>
+                  <span>-${totals.discount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-xs text-slate-500 font-semibold">
                 <span>Tax ({parseFloat(store.tax_rate).toFixed(2)}%)</span>
                 <span className={layoutStyle === 'modern_dark' ? 'text-white' : 'text-slate-800'}>${totals.tax.toFixed(2)}</span>
               </div>
-              <div className={`flex justify-between border-t pt-2 text-sm font-black ${layoutStyle === 'modern_dark' ? 'border-[#1e293b]/60 text-white' : 'border-slate-200 text-slate-805'}`}>
+              <div className={`flex justify-between border-t pt-2 text-sm font-black ${layoutStyle === 'modern_dark' ? 'border-[#1e293b]/60 text-white' : 'border-slate-200 text-slate-850'}`}>
                 <span>Grand Total</span>
                 <span>${totals.total.toFixed(2)}</span>
               </div>
@@ -1269,13 +1391,25 @@ export default function PublicOrderPage() {
             <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
 
               {/* Order summary strip */}
-              <div className="bg-slate-50 rounded-xl border border-slate-200 px-4 py-3 flex items-center justify-between">
-                <div className="text-xs text-slate-500 font-semibold">
-                  {cart.reduce((s, c) => s + c.quantity, 0)} item{cart.reduce((s, c) => s + c.quantity, 0) !== 1 ? 's' : ''}
-                  <span className="mx-2 text-slate-300">·</span>
-                  <span className="text-slate-400">Tax {parseFloat(store.tax_rate).toFixed(1)}%</span>
+              <div className="bg-slate-50 rounded-xl border border-slate-200 px-4 py-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-slate-500 font-semibold">
+                    {cart.reduce((s, c) => s + c.quantity, 0)} item{cart.reduce((s, c) => s + c.quantity, 0) !== 1 ? 's' : ''}
+                    <span className="mx-2 text-slate-300">·</span>
+                    <span className="text-slate-400">Tax {parseFloat(store.tax_rate).toFixed(1)}%</span>
+                  </div>
+                  <span className="text-xs text-slate-500 font-semibold">${totals.subtotal.toFixed(2)}</span>
                 </div>
-                <span className="text-sm font-black text-slate-800">${totals.total.toFixed(2)}</span>
+                {totals.discount > 0 && (
+                  <div className="flex items-center justify-between text-xs text-emerald-650 font-semibold">
+                    <span>Discount ({appliedCoupon?.code})</span>
+                    <span>-${totals.discount.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-sm font-black text-slate-800 border-t border-slate-200/60 pt-1.5">
+                  <span>Total Amount</span>
+                  <span>${totals.total.toFixed(2)}</span>
+                </div>
               </div>
 
               {/* Customer status */}
@@ -1432,6 +1566,7 @@ export default function PublicOrderPage() {
                       tableId: orderType === 'dine_in' ? selectedTableId : undefined,
                       deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
                       notes: checkoutNotes,
+                      couponCode: appliedCoupon ? appliedCoupon.code : undefined,
                     }}
                     onSuccess={(order: any, accountInfo?: any) => {
                       setRecentOrder(order);

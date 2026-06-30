@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sequelize, Store, Customer, Order, OrderItem, Payment, RestaurantTable, User, Role } from '../../../../models';
+import { sequelize, Store, Customer, Order, OrderItem, Payment, RestaurantTable, User, Role, Coupon } from '../../../../models';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
@@ -29,6 +29,7 @@ export async function POST(request: Request) {
       deliveryAddress,
       notes,
       stripePaymentIntentId,
+      couponCode,
     } = body;
 
     // 1. Validations
@@ -95,9 +96,38 @@ export async function POST(request: Request) {
       subtotal += item.price * item.quantity;
     }
 
+    let discountAmount = 0;
+    let coupon = null;
+    if (couponCode) {
+      coupon = await Coupon.findOne({
+        where: {
+          store_id: storeId,
+          code: couponCode.trim(),
+          is_active: true,
+        },
+        transaction,
+      });
+
+      if (coupon) {
+        const minAmount = parseFloat(coupon.min_order_amount as any) || 0;
+        if (subtotal >= minAmount) {
+          const discountVal = parseFloat(coupon.discount_value as any) || 0;
+          if (coupon.discount_type === 'percentage') {
+            discountAmount = (subtotal * discountVal) / 100;
+          } else {
+            discountAmount = discountVal;
+          }
+          if (discountAmount > subtotal) {
+            discountAmount = subtotal;
+          }
+        }
+      }
+    }
+
     const taxRate = parseFloat(store.tax_rate as any) || 8.25;
-    const tax = (subtotal * taxRate) / 100;
-    const total = subtotal + tax;
+    const discountedSubtotal = subtotal - discountAmount;
+    const tax = (discountedSubtotal * taxRate) / 100;
+    const total = discountedSubtotal + tax;
 
     // 4. Generate Order Number
     const orderCount = await Order.count({ where: { store_id: storeId } });
@@ -116,7 +146,7 @@ export async function POST(request: Request) {
         status: 'pending',
         subtotal,
         tax_amount: tax,
-        discount_amount: 0.00,
+        discount_amount: discountAmount,
         total_amount: total,
       },
       { transaction }
