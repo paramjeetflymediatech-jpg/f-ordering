@@ -15,26 +15,21 @@ export default function AppLayoutWrapper({ children }: { children: React.ReactNo
     if (typeof window === 'undefined') return;
 
     const hostname = window.location.hostname;
-    console.log(hostname, 'host')
+    console.log(window.location.origin,'origin',hostname)
+    if (hostname === process.env.NEXT_PUBLIC_URL) return;
     const parts = hostname.split('.');
     let slug = '';
-    console.log(parts)
     if (parts.length > 1 && parts[0] !== 'www') {
       slug = parts[0];
     }
-    console.log(slug, 'slug')
     if (slug) {
       const path = window.location.pathname;
-      console.log(path, 'path')
       if (path === '/' || path === '') {
         const originalDomain = parts.slice(1).join('.');
-        console.log(originalDomain, 'originalDomain',window.location)
         const newUrl = `${window.location.protocol}//${originalDomain}${window.location.pathname}${window.location.search}${window.location.hash}`;
-        window.location.href = originalDomain;
+        window.location.href = newUrl;
       }
     }
-    const newUrl = `${window.location.protocol}//${parts.slice(1).join('.')}${window.location.pathname}${window.location.search}${window.location.hash}`;
-    window.location.href = newUrl;
   }, [pathname]);
 
   // Internal app pages use the dark app shell
