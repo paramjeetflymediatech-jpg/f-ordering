@@ -30,7 +30,6 @@ export default function AppLayoutWrapper({ children }: { children: React.ReactNo
         const originalDomain = parts.slice(1).join('.');
         console.log(originalDomain, 'originalDomain')
         const newUrl = `${window.location.protocol}//${originalDomain}${window.location.pathname}${window.location.search}${window.location.hash}`;
-     return
         window.location.href = newUrl;
       }
     }
