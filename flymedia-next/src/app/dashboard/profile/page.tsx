@@ -1461,7 +1461,7 @@ export default function BusinessProfilePage() {
                     <p className="text-xs text-slate-400 mt-1">Manage POS cashier logins and store admin roles.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <button onClick={fetchStaff} disabled={staffLoading} className="rounded-xl border border-[#1e293b] bg-slate-900/40 p-2.5 text-slate-400 hover:text-white transition" title="Refresh">
+                    {/* <button onClick={fetchStaff} disabled={staffLoading} className="rounded-xl border border-[#1e293b] bg-slate-900/40 p-2.5 text-slate-400 hover:text-white transition" title="Refresh">
                       <RefreshCw className={`h-4 w-4 ${staffLoading ? 'animate-spin' : ''}`} />
                     </button>
                     <button
@@ -1472,7 +1472,7 @@ export default function BusinessProfilePage() {
                     >
                       {seedStaffLoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Users className="h-4 w-4" />}
                       Seed Demo Staff
-                    </button>
+                    </button> */}
                     <button onClick={() => { setShowCreateModal(true); setStaffError(null); setStaffSuccess(null); }} className="bg-[#f59e0b] hover:bg-amber-400 text-black font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-1.5 shadow">
                       <UserPlus className="h-4 w-4" /> Add Staff Account
                     </button>

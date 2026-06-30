@@ -193,7 +193,7 @@ export default function AnalyticsDashboardPage() {
           status: po.status === 'Received' ? 'Paid' : (po.status === 'Cancelled' ? 'Cancelled' : 'Pending'),
         }));
         setExpensesData(mapped);
-      } catch (e) {}
+      } catch (e) { }
     } else {
       setExpensesData([]);
     }
@@ -347,9 +347,8 @@ export default function AnalyticsDashboardPage() {
     const linePath = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
     const areaPath =
       points.length > 0
-        ? `${linePath} L ${points[points.length - 1].x} ${paddingTop + chartHeight} L ${points[0].x} ${
-            paddingTop + chartHeight
-          } Z`
+        ? `${linePath} L ${points[points.length - 1].x} ${paddingTop + chartHeight} L ${points[0].x} ${paddingTop + chartHeight
+        } Z`
         : '';
 
     return (
@@ -512,7 +511,7 @@ export default function AnalyticsDashboardPage() {
 
   return (
     <div className="p-6 md:p-8 space-y-8 max-w-7xl mx-auto w-full text-slate-200">
-      
+
       {/* HEADER SECTION */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-6 gap-4">
         <div>
@@ -534,22 +533,22 @@ export default function AnalyticsDashboardPage() {
               <ChevronLeft className="h-4 w-4" /> Back to Cards
             </button>
           )}
-          <button
+          {/* <button
             onClick={fetchAnalyticsData}
             className="rounded-xl border border-slate-800 bg-slate-900/40 p-2.5 text-slate-400 hover:text-white transition"
             title="Refresh Data"
             disabled={loading}
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
-          <button
+          </button> */}
+          {/* <button
             onClick={handleSeedDemoData}
             disabled={actionLoading}
             className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-orange-500/30 bg-orange-950/10 px-4 py-2.5 text-xs font-bold text-[#f59e0b] hover:bg-orange-950/20 transition shadow"
             title="Generate Demo Data"
           >
             <Database className="h-4 w-4" /> Seed Demo
-          </button>
+          </button> */}
         </div>
       </div>
 
@@ -571,12 +570,12 @@ export default function AnalyticsDashboardPage() {
 
       {/* CORE DOUBLE PANE LAYOUT */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        
+
         {/* LEFT COLUMN: BUSINESS REPORTS SIDEBAR */}
         <div className="space-y-6 lg:col-span-1">
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-5 space-y-4">
             <h2 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Business Reports</h2>
-            
+
             <nav className="space-y-1">
               {reportTabs.map((tab) => {
                 const isActive = activeReportTab === tab.id;
@@ -587,11 +586,10 @@ export default function AnalyticsDashboardPage() {
                       setActiveReportTab(tab.id);
                       setSelectedReportCard(null);
                     }}
-                    className={`flex items-center justify-between rounded-xl px-4 py-3 text-xs font-bold transition cursor-pointer ${
-                      isActive
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 text-xs font-bold transition cursor-pointer ${isActive
                         ? 'bg-orange-500 text-white'
                         : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                    }`}
+                      }`}
                   >
                     <span>{tab.label}</span>
                     <span className={`text-[10px] ${isActive ? 'text-orange-200' : 'text-slate-500'}`}>
@@ -606,11 +604,11 @@ export default function AnalyticsDashboardPage() {
 
         {/* RIGHT COLUMN: CARDS GRID OR DETAILS PAGE */}
         <div className="lg:col-span-3 space-y-6">
-          
+
           {/* A: SHOW CARD GRID */}
           {!selectedReportCard && (
             <div className="space-y-6">
-              
+
               {/* Category Header */}
               <div className="border-b border-slate-900 pb-3">
                 <h2 className="text-base font-extrabold text-white capitalize">{activeReportTab} Reports Center</h2>
@@ -619,11 +617,11 @@ export default function AnalyticsDashboardPage() {
 
               {/* Grid elements */}
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                
+
                 {/* SALES REPORTS TAB */}
                 {activeReportTab === 'sales' && (
                   <>
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('aggregate_revenue')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -635,7 +633,7 @@ export default function AnalyticsDashboardPage() {
                       <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
                     </div>
 
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('active_sales_items')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -647,7 +645,7 @@ export default function AnalyticsDashboardPage() {
                       <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
                     </div>
 
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('most_sellable_modifier')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -659,7 +657,7 @@ export default function AnalyticsDashboardPage() {
                       <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
                     </div>
 
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('most_profitable_items')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -671,7 +669,7 @@ export default function AnalyticsDashboardPage() {
                       <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
                     </div>
 
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('end_of_day')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -688,7 +686,7 @@ export default function AnalyticsDashboardPage() {
                 {/* FINANCIALS REPORTS TAB */}
                 {activeReportTab === 'financials' && (
                   <>
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('top_customer')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -700,7 +698,7 @@ export default function AnalyticsDashboardPage() {
                       <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
                     </div>
 
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('all_invoice')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -712,7 +710,7 @@ export default function AnalyticsDashboardPage() {
                       <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
                     </div>
 
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('payment_gateway')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -724,7 +722,7 @@ export default function AnalyticsDashboardPage() {
                       <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
                     </div>
 
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('gst_report')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -741,7 +739,7 @@ export default function AnalyticsDashboardPage() {
                 {/* OPERATIONAL REPORTS TAB */}
                 {activeReportTab === 'operational' && (
                   <>
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('stock_value')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -753,7 +751,7 @@ export default function AnalyticsDashboardPage() {
                       <ChevronRight className="h-4 w-4 text-slate-600 mt-4 self-end group-hover:translate-x-1 transition" />
                     </div>
 
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('stock_transfer')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -770,7 +768,7 @@ export default function AnalyticsDashboardPage() {
                 {/* EXPENSE REPORTS TAB */}
                 {activeReportTab === 'expense' && (
                   <>
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('expenses_ledger')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -787,7 +785,7 @@ export default function AnalyticsDashboardPage() {
                 {/* EMPLOYEES REPORTS TAB */}
                 {activeReportTab === 'employees' && (
                   <>
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('employee_performance')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -804,7 +802,7 @@ export default function AnalyticsDashboardPage() {
                 {/* SHORT URL REPORTS TAB */}
                 {activeReportTab === 'urls' && (
                   <>
-                    <div 
+                    <div
                       onClick={() => setSelectedReportCard('url_scans')}
                       className="group rounded-xl border border-slate-800 bg-slate-950/40 p-5 flex flex-col justify-between hover:border-orange-500/50 hover:bg-slate-900/20 cursor-pointer transition"
                     >
@@ -825,7 +823,7 @@ export default function AnalyticsDashboardPage() {
           {/* B: SHOW DETAILED REPORT ACTION VIEW */}
           {selectedReportCard && (
             <div className="space-y-6 animate-fade-in">
-              
+
               {/* Report specific contents */}
 
               {/* 1. AGGREGATE REVENUE DETAIL SCREEN */}
@@ -872,7 +870,7 @@ export default function AnalyticsDashboardPage() {
                           </select>
                         </div>
                       </div>
-                      
+
                       <div className="border border-slate-800/40 bg-slate-950/20 rounded-xl p-4 flex items-center justify-center">
                         {renderLineChart()}
                       </div>
@@ -1043,7 +1041,7 @@ export default function AnalyticsDashboardPage() {
               {selectedReportCard === 'end_of_day' && (
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-6">
                   <h3 className="font-extrabold text-sm text-white">Daily Reconciliation Audit (Shift Close)</h3>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="border border-slate-800 bg-slate-950 p-4 rounded-xl">
                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Drawer Cash Counted</p>
@@ -1172,15 +1170,14 @@ export default function AnalyticsDashboardPage() {
                                 <td className="py-3.5 px-4 text-slate-300">{res.guest_count} Guests</td>
                                 <td className="py-3.5 px-4 text-slate-400">{formattedDate}</td>
                                 <td className="py-3.5 px-4">
-                                  <span className={`rounded-full border px-2.5 py-0.5 text-[9px] uppercase font-bold tracking-wider ${
-                                    res.status === 'pending'
+                                  <span className={`rounded-full border px-2.5 py-0.5 text-[9px] uppercase font-bold tracking-wider ${res.status === 'pending'
                                       ? 'border-amber-500/30 bg-amber-950/20 text-amber-400'
                                       : res.status === 'confirmed'
-                                      ? 'border-sky-500/30 bg-sky-950/20 text-sky-400'
-                                      : res.status === 'seated'
-                                      ? 'border-emerald-500/30 bg-emerald-950/20 text-emerald-400'
-                                      : 'border-red-500/30 bg-red-950/20 text-red-400'
-                                  }`}>
+                                        ? 'border-sky-500/30 bg-sky-950/20 text-sky-400'
+                                        : res.status === 'seated'
+                                          ? 'border-emerald-500/30 bg-emerald-950/20 text-emerald-400'
+                                          : 'border-red-500/30 bg-red-950/20 text-red-400'
+                                    }`}>
                                     {res.status}
                                   </span>
                                 </td>
@@ -1276,7 +1273,7 @@ export default function AnalyticsDashboardPage() {
               {selectedReportCard === 'gst_report' && (
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
                   <h3 className="font-extrabold text-sm text-white">GST tax summaries</h3>
-                  
+
                   <div className="border border-slate-800 bg-slate-950 rounded-xl p-5 space-y-4">
                     <div className="flex justify-between text-xs font-bold border-b border-slate-800 pb-2">
                       <span className="text-slate-500">Aggregated Sales Revenue</span>
@@ -1300,7 +1297,7 @@ export default function AnalyticsDashboardPage() {
               {selectedReportCard === 'stock_value' && (
                 <div className="rounded-2xl border border-slate-800 bg-slate-900/20 p-6 space-y-4">
                   <h3 className="font-extrabold text-sm text-white">Store Inventory Valuation</h3>
-                  
+
                   <div className="border border-slate-800 bg-slate-950 rounded-xl p-5 space-y-2 text-xs">
                     <p className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Valuation Summary</p>
                     <p className="text-2xl font-black text-white mt-1">$2,350.00</p>

@@ -464,14 +464,14 @@ export default function DashboardPage() {
         </div>
 
         <div className="flex items-center gap-4">
-          <button
+          {/* <button
             onClick={fetchAnalytics}
             disabled={analyticsLoading}
             className="rounded-lg bg-slate-900 border border-[#1e293b] p-2 text-slate-400 hover:text-white hover:bg-slate-800 transition duration-150 disabled:opacity-50"
             title="Refresh analytics"
           >
             <RefreshCw className={`h-4 w-4 ${analyticsLoading ? 'animate-spin' : ''}`} />
-          </button>
+          </button> */}
           <div className="text-right hidden sm:block">
             <p className="text-sm font-bold text-white">{session?.user?.name || 'Administrator'}</p>
             <p className="text-[10px] text-[#f59e0b] font-semibold uppercase leading-none mt-0.5">
@@ -490,7 +490,7 @@ export default function DashboardPage() {
       {/* 2. BODY CONTENT */}
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
 
-        {/* SaaS Initialize Alert */}
+        {/* SaaS Initialize Alert
         <div className="rounded-2xl border border-[#f59e0b]/20 bg-gradient-to-r from-[#ea580c]/5 to-[#f59e0b]/5 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 backdrop-blur-sm shadow-xl">
           <div>
             <h2 className="text-base font-bold text-white flex items-center gap-2">
@@ -515,7 +515,7 @@ export default function DashboardPage() {
             <RotateCw className={`h-3.5 w-3.5 ${syncLoading ? 'animate-spin' : ''}`} />
             {syncLoading ? 'Seeding Tables...' : 'Seed Database'}
           </button>
-        </div>
+        </div> */}
 
         {/* Analytics Error Banner */}
         {analyticsError && (

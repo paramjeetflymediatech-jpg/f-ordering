@@ -148,12 +148,12 @@ export default function OrderHistoryPage() {
             Review detailed transactions, active POS bills, and track cashier ticket logs.
           </p>
         </div>
-        <button
+        {/* <button
           onClick={fetchOrders}
           className="rounded-xl border border-[#1e293b] bg-slate-900 px-4 py-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition"
         >
           Refresh log
-        </button>
+        </button> */}
       </div>
 
       {/* Analytics widgets */}

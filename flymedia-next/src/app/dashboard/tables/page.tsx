@@ -286,13 +286,13 @@ export default function TableManagerPage() {
         </div>
 
         <div className="flex gap-2">
-          <button
+          {/* <button
             onClick={fetchTables}
             className="rounded-xl border border-slate-800 bg-slate-900/40 p-2.5 text-slate-400 hover:text-white transition"
             title="Refresh List"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          </button> */}
           <button
             onClick={openAddModal}
             className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-orange-500 transition shadow-md shadow-orange-950/25"
