@@ -23,24 +23,6 @@ interface POSSidebarProps {
 export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab = 'pos', logoUrl }: POSSidebarProps) {
   const router = useRouter();
 
-  const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const parts = hostname.split('.');
-      let slug = '';
-      if (parts.length > 1 && parts[0] !== 'www') {
-        slug = parts[0];
-      }
-      if (slug) {
-        const originalDomain = parts.slice(1).join('.');
-        const callbackUrl = `${window.location.protocol}//${originalDomain}/login`;
-        signOut({ callbackUrl });
-        return;
-      }
-    }
-    signOut({ callbackUrl: '/login' });
-  };
-
   const handleModalClick = (modalName: string) => {
     if (activeTab === 'drafts') {
       router.push('/pos');
@@ -70,11 +52,10 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab
       <nav className="flex flex-col gap-2.5 w-full px-2">
         <button
           onClick={() => router.push('/pos')}
-          className={`group relative flex w-full flex-col items-center justify-center rounded-xl py-3 transition duration-200 ${
-            activeTab === 'pos'
+          className={`group relative flex w-full flex-col items-center justify-center rounded-xl py-3 transition duration-200 ${activeTab === 'pos'
               ? 'text-[#f59e0b] bg-[#1a2336]'
               : 'text-slate-400 hover:bg-[#111827] hover:text-white'
-          }`}
+            }`}
           title="Dashboard Terminal"
         >
           {/* Active Indicator line */}
@@ -87,11 +68,10 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab
 
         <button
           onClick={() => router.push('/pos/drafts')}
-          className={`group relative flex w-full flex-col items-center justify-center rounded-xl py-3 transition duration-200 ${
-            activeTab === 'drafts'
+          className={`group relative flex w-full flex-col items-center justify-center rounded-xl py-3 transition duration-200 ${activeTab === 'drafts'
               ? 'text-[#f59e0b] bg-[#1a2336]'
               : 'text-slate-400 hover:bg-[#111827] hover:text-white'
-          }`}
+            }`}
           title="Hold Queue / Drafts"
         >
           {activeTab === 'drafts' && (
@@ -159,7 +139,7 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab
       {/* Footer Logout & User Profile */}
       <div className="flex flex-col items-center gap-4 w-full">
         <button
-          onClick={handleLogout}
+          onClick={() => signOut({ callbackUrl: '/login' })}
           className="rounded-xl p-2.5 text-red-400/80 hover:bg-red-950/30 hover:text-red-400 transition"
           title="Sign Out"
         >

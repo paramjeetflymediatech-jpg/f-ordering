@@ -41,30 +41,30 @@ function NavigationItems({
 
   const navItems = isSuperAdmin
     ? [
-        { name: 'Organizations', href: '/dashboard/super-admin?tab=organizations', icon: Building, tab: 'organizations' },
-        { name: 'Core Services', href: '/dashboard/super-admin?tab=services', icon: Layers, tab: 'services' },
-        { name: 'Package Tiers', href: '/dashboard/super-admin?tab=packages', icon: Tag, tab: 'packages' },
-        { name: 'Revenue', href: '/dashboard/super-admin?tab=revenue', icon: BarChart3, tab: 'revenue' },
-        { name: 'Payment History', href: '/dashboard/super-admin?tab=payments', icon: CreditCard, tab: 'payments' },
-      ]
+      { name: 'Organizations', href: '/dashboard/super-admin?tab=organizations', icon: Building, tab: 'organizations' },
+      { name: 'Core Services', href: '/dashboard/super-admin?tab=services', icon: Layers, tab: 'services' },
+      { name: 'Package Tiers', href: '/dashboard/super-admin?tab=packages', icon: Tag, tab: 'packages' },
+      { name: 'Revenue', href: '/dashboard/super-admin?tab=revenue', icon: BarChart3, tab: 'revenue' },
+      { name: 'Payment History', href: '/dashboard/super-admin?tab=payments', icon: CreditCard, tab: 'payments' },
+    ]
     : [
-        { name: 'Overview', href: '/dashboard', icon: TrendingUp },
-        { name: 'Sales & Bookings', href: '/dashboard/analytics', icon: BarChart3 },
-        { name: 'Order History', href: '/dashboard/orders', icon: History },
-        { name: 'Business Profile', href: '/dashboard/profile', icon: Building },
-        { name: 'Manage Menu', href: '/dashboard/menu', icon: Utensils },
-        { name: 'Manage Item', href: '/dashboard/inventory', icon: Layers },
-        { name: 'Suppliers & POs', href: '/dashboard/suppliers', icon: Truck },
-        { name: 'Table Manager', href: '/dashboard/tables', icon: Table },
-        { name: 'Reservations', href: '/dashboard/reservations', icon: Calendar },
-        { name: 'Offers & Coupons', href: '/dashboard/offers', icon: Tag },
-        { name: 'Customer Database', href: '/dashboard/customers', icon: Users },
-        { name: 'Loyalty Rewards', href: '/dashboard/loyalty', icon: Gift },
-        { name: 'Advance Setup', href: '/dashboard/operations', icon: MonitorPlay },
-        { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
-        { name: 'Payment Settings', href: '/dashboard/settings/payment', icon: CreditCard },
-        { name: 'Taxes & Fees', href: '/dashboard/taxes', icon: Percent },
-      ];
+      { name: 'Overview', href: '/dashboard', icon: TrendingUp },
+      { name: 'Sales & Bookings', href: '/dashboard/analytics', icon: BarChart3 },
+      { name: 'Order History', href: '/dashboard/orders', icon: History },
+      { name: 'Business Profile', href: '/dashboard/profile', icon: Building },
+      { name: 'Manage Menu', href: '/dashboard/menu', icon: Utensils },
+      { name: 'Manage Item', href: '/dashboard/inventory', icon: Layers },
+      { name: 'Suppliers & POs', href: '/dashboard/suppliers', icon: Truck },
+      { name: 'Table Manager', href: '/dashboard/tables', icon: Table },
+      { name: 'Reservations', href: '/dashboard/reservations', icon: Calendar },
+      { name: 'Offers & Coupons', href: '/dashboard/offers', icon: Tag },
+      { name: 'Customer Database', href: '/dashboard/customers', icon: Users },
+      { name: 'Loyalty Rewards', href: '/dashboard/loyalty', icon: Gift },
+      { name: 'Advance Setup', href: '/dashboard/operations', icon: MonitorPlay },
+      { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
+      { name: 'Payment Settings', href: '/dashboard/settings/payment', icon: CreditCard },
+      { name: 'Taxes & Fees', href: '/dashboard/taxes', icon: Percent },
+    ];
 
   return (
     <>
@@ -78,11 +78,10 @@ function NavigationItems({
             key={item.name}
             href={item.href}
             onClick={() => setMobileOpen?.(false)}
-            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition duration-150 ${
-              isActive
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition duration-150 ${isActive
                 ? 'bg-[#1a2336] text-[#f59e0b] border-l-2 border-[#f59e0b] shadow-md shadow-[#f59e0b]/5'
                 : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
-            }`}
+              }`}
           >
             <Icon className="h-4.5 w-4.5" />
             {item.name}
@@ -124,24 +123,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
     localStorage.setItem('dashboard-theme', nextTheme);
-  };
-
-  const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const parts = hostname.split('.');
-      let slug = '';
-      if (parts.length > 1 && parts[0] !== 'www') {
-        slug = parts[0];
-      }
-      if (slug) {
-        const originalDomain = parts.slice(1).join('.');
-        const callbackUrl = `${window.location.protocol}//${originalDomain}/login`;
-        signOut({ callbackUrl });
-        return;
-      }
-    }
-    signOut({ callbackUrl: '/login' });
   };
 
   React.useEffect(() => {
@@ -188,10 +169,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className={`flex min-h-screen text-slate-100 font-sans px-4 sm:px-6 transition-colors duration-300 ${theme === 'light' ? 'light-theme bg-[#f8fafc]' : 'bg-[#080b11]'}`}>
-      
+
       {/* 1. SIDEBAR (DESKTOP) */}
       <aside className="hidden md:flex w-64 flex-col h-screen max-h-screen sticky top-0 bg-[#0c101b] border-r border-[#1e293b]/60 shrink-0 justify-between self-start">
-        
+
         <div className="flex flex-col flex-1 h-0 overflow-hidden">
           {/* Logo block */}
           <div className="h-16 flex items-center gap-3 px-6 border-b border-[#1e293b]/60 bg-[#0c101b] cursor-pointer shrink-0">
@@ -263,7 +244,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </button>
           <button
-            onClick={handleLogout}
+            onClick={() => signOut({ callbackUrl: '/login' })}
             className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400 hover:bg-red-950/45 transition duration-150"
           >
             <LogOut className="h-4 w-4" />
@@ -274,7 +255,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* MOBILE CONTAINER WRAPPER */}
       <div className="flex flex-col flex-1 min-h-screen">
-        
+
         {/* MOBILE HEADER BAR */}
         <header className="flex h-16 items-center justify-between border-b border-[#1e293b]/60 bg-[#0c101b] px-6 md:hidden shrink-0">
           <div className="flex items-center gap-2">
@@ -362,7 +343,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
               </button>
               <button
-                onClick={handleLogout}
+                onClick={() => signOut({ callbackUrl: '/login' })}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400"
               >
                 <LogOut className="h-4 w-4" />

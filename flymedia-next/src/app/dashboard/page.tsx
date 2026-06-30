@@ -360,24 +360,6 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
-  const handleLogout = () => {
-    if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const parts = hostname.split('.');
-      let slug = '';
-      if (parts.length > 1 && parts[0] !== 'www') {
-        slug = parts[0];
-      }
-      if (slug) {
-        const originalDomain = parts.slice(1).join('.');
-        const callbackUrl = `${window.location.protocol}//${originalDomain}/login`;
-        signOut({ callbackUrl });
-        return;
-      }
-    }
-    signOut({ callbackUrl: '/login' });
-  };
-
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
@@ -497,7 +479,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <button
-            onClick={handleLogout}
+            onClick={() => signOut({ callbackUrl: '/login' })}
             className="rounded-lg bg-slate-900 border border-[#1e293b] p-2 text-slate-400 hover:text-white hover:bg-slate-800 transition duration-150"
           >
             <LogOut className="h-4.5 w-4.5" />
@@ -644,11 +626,10 @@ export default function DashboardPage() {
                   <button
                     key={r}
                     onClick={() => setChartRange(r)}
-                    className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${
-                      chartRange === r
+                    className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg transition ${chartRange === r
                         ? 'bg-[#f59e0b]/15 text-[#f59e0b] border border-[#f59e0b]/30'
                         : 'text-slate-500 hover:text-slate-300 border border-transparent'
-                    }`}
+                      }`}
                   >
                     {r === 'daily' ? 'Day' : r === 'weekly' ? 'Wk' : r === 'monthly' ? 'Mo' : 'Yr'}
                   </button>
