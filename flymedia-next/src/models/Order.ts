@@ -15,6 +15,7 @@ export class Order extends Model {
   declare tax_amount: number;
   declare discount_amount: number;
   declare total_amount: number;
+  declare coupon_code: string | null;
 }
 
 Order.init(
@@ -77,6 +78,10 @@ Order.init(
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
       defaultValue: 0.00,
+    },
+    coupon_code: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
   },
   {

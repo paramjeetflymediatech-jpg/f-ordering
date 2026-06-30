@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { loadStripe } from '@stripe/stripe-js';
 import {
   Elements,
@@ -28,6 +29,7 @@ import {
   LogOut,
   Award,
   Menu as MenuIcon,
+  Info,
 } from 'lucide-react';
 
 interface CartItem {
@@ -221,13 +223,23 @@ export default function PublicOrderPage() {
   const [recentOrder, setRecentOrder] = useState<any>(null);
   const [newAccount, setNewAccount] = useState<{ phone: string; tempPassword: string } | null>(null);
 
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' | 'info' }>>([]);
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  };
+
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [couponLoading, setCouponLoading] = useState(false);
 
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim() || !store?.id) return;
+  const handleApplyCoupon = async (overrideCode?: string) => {
+    const codeToApply = overrideCode !== undefined ? overrideCode : couponCode;
+    if (!codeToApply.trim() || !store?.id) return;
     setCouponLoading(true);
     setCouponError(null);
     try {
@@ -237,21 +249,25 @@ export default function PublicOrderPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           storeId: store.id,
-          code: couponCode,
+          code: codeToApply,
           subtotal,
+          customerPhone: customerPhone || undefined,
         }),
       });
       const data = await res.json();
       if (data.success) {
         setAppliedCoupon(data.coupon);
         setCouponError(null);
+        showToast(`Coupon "${data.coupon.code}" applied successfully!`, 'success');
       } else {
         setCouponError(data.error || 'Failed to apply coupon.');
         setAppliedCoupon(null);
+        showToast(data.error || 'Failed to apply coupon.', 'error');
       }
     } catch (err) {
       console.error(err);
       setCouponError('Network error. Please try again.');
+      showToast('Network error while applying coupon.', 'error');
     } finally {
       setCouponLoading(false);
     }
@@ -261,6 +277,7 @@ export default function PublicOrderPage() {
     setAppliedCoupon(null);
     setCouponCode('');
     setCouponError(null);
+    showToast('Coupon removed.', 'info');
   };
 
   const [loading, setLoading] = useState(true);
@@ -346,6 +363,7 @@ export default function PublicOrderPage() {
         setCustomerName('');
         setCustomerPhone('');
         setCustomerEmail('');
+        showToast('Logged out successfully.', 'info');
       }
     } catch (e) {
       console.error('Logout error:', e);
@@ -476,6 +494,7 @@ export default function PublicOrderPage() {
     }
 
     setSelectedItem(null);
+    showToast(`${selectedItem.name} added to cart!`, 'success');
   };
 
   const updateQuantity = (id: string, qty: number) => {
@@ -501,8 +520,9 @@ export default function PublicOrderPage() {
       setCart([]);
       setDeliveryAddress('');
       setActiveModal('success');
+      showToast('Order placed successfully!', 'success');
     } else {
-      alert(data.error || 'Failed to place order.');
+      showToast(data.error || 'Failed to place order.', 'error');
     }
   };
 
@@ -532,7 +552,7 @@ export default function PublicOrderPage() {
       // Card flow is handled inside StripeCardCheckout component
     } catch (err) {
       console.error(err);
-      alert('Network error while processing order.');
+      showToast('Network error while processing order.', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -1150,60 +1170,6 @@ export default function PublicOrderPage() {
                 layoutStyle === 'modern_dark' ? 'border-[#1e293b]/60 bg-slate-950/50' : 'border-slate-100 bg-slate-50'
               }`}
             >
-              {/* Coupon Section */}
-              {cart.length > 0 && (
-                <div className="space-y-1.5 pb-2 border-b border-dashed border-slate-200/30">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Coupon Code</label>
-                  {appliedCoupon ? (
-                    <div className={`flex items-center justify-between border rounded-lg px-2.5 py-1.5 text-xs ${
-                      layoutStyle === 'modern_dark'
-                        ? 'bg-emerald-950/20 border-emerald-900/50 text-emerald-400'
-                        : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                    }`}>
-                      <span className="font-bold">{appliedCoupon.code} Applied</span>
-                      <button
-                        type="button"
-                        onClick={handleRemoveCoupon}
-                        className="text-red-500 hover:text-red-700 font-bold"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="ENTER CODE"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                        className={`flex-1 rounded-lg border px-2.5 py-1.5 text-xs outline-none transition uppercase ${
-                          layoutStyle === 'modern_dark'
-                            ? 'border-[#1e293b] bg-slate-950 text-white focus:border-slate-700'
-                            : 'border-slate-200 bg-white text-slate-800 focus:border-slate-400'
-                        }`}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleApplyCoupon}
-                        disabled={couponLoading || !couponCode.trim()}
-                        className="rounded-lg text-white px-3 py-1.5 text-xs font-bold transition disabled:opacity-50"
-                        style={{ backgroundColor: accentColor }}
-                      >
-                        {couponLoading ? '...' : 'Apply'}
-                      </button>
-                    </div>
-                  )}
-                  {couponError && (
-                    <p className="text-[10px] text-red-500 font-semibold">{couponError}</p>
-                  )}
-                  {appliedCoupon && totals.subtotal < parseFloat(appliedCoupon.min_order_amount) && (
-                    <p className="text-[10px] text-amber-500 font-semibold">
-                      Add ${(parseFloat(appliedCoupon.min_order_amount) - totals.subtotal).toFixed(2)} more to get discount.
-                    </p>
-                  )}
-                </div>
-              )}
-
               <div className="flex justify-between text-xs text-slate-500 font-semibold">
                 <span>Subtotal</span>
                 <span className={layoutStyle === 'modern_dark' ? 'text-white' : 'text-slate-800'}>${totals.subtotal.toFixed(2)}</span>
@@ -1448,7 +1414,13 @@ export default function PublicOrderPage() {
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone *</label>
                   <input
                     type="tel" required placeholder="+1 555-0100"
-                    value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)}
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    onBlur={() => {
+                      if (appliedCoupon) {
+                        handleApplyCoupon(appliedCoupon.code);
+                      }
+                    }}
                     className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition"
                   />
                 </div>
@@ -1467,6 +1439,50 @@ export default function PublicOrderPage() {
                   />
                 </div>
               )}
+
+              {/* Coupon Section in Checkout Form */}
+              <div className="border border-slate-200 rounded-xl p-3 bg-slate-50 space-y-1.5">
+                <label className="text-[10px] font-bold text-slate-400 tracking-wider">APPLY COUPON</label>
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between border border-emerald-200 bg-emerald-50 rounded-lg px-2.5 py-1.5 text-xs text-emerald-800">
+                    <span className="font-bold">{appliedCoupon.code} Applied</span>
+                    <button
+                      type="button"
+                      onClick={handleRemoveCoupon}
+                      className="text-red-500 hover:text-red-700 font-bold"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="ENTER CODE"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      className="flex-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 outline-none focus:border-slate-400 transition uppercase"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleApplyCoupon()}
+                      disabled={couponLoading || !couponCode.trim()}
+                      className="rounded-lg text-white px-3 py-1.5 text-xs font-bold transition disabled:opacity-50"
+                      style={{ backgroundColor: accentColor }}
+                    >
+                      {couponLoading ? '...' : 'Apply'}
+                    </button>
+                  </div>
+                )}
+                {couponError && (
+                  <p className="text-[10px] text-red-500 font-semibold">{couponError}</p>
+                )}
+                {appliedCoupon && totals.subtotal < parseFloat(appliedCoupon.min_order_amount) && (
+                  <p className="text-[10px] text-amber-500 font-semibold">
+                    Add ${(parseFloat(appliedCoupon.min_order_amount) - totals.subtotal).toFixed(2)} more to get discount.
+                  </p>
+                )}
+              </div>
 
               {/* Order Type */}
               <div>
@@ -1685,6 +1701,45 @@ export default function PublicOrderPage() {
           <a href="#" className="hover:underline">Terms & Conditions</a>
         </div></div>
       </footer>
+
+      {/* Toast Notification Container */}
+      <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2.5 max-w-sm w-full pointer-events-none">
+        <AnimatePresence>
+          {toasts.map((toast) => (
+            <motion.div
+              key={toast.id}
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className={`pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-xl backdrop-blur-md border ${
+                layoutStyle === 'modern_dark'
+                  ? toast.type === 'success'
+                    ? 'bg-emerald-950/95 border-emerald-900/50 text-emerald-100'
+                    : toast.type === 'error'
+                    ? 'bg-rose-950/95 border-rose-900/50 text-rose-100'
+                    : 'bg-slate-900/95 border-slate-800/80 text-slate-100'
+                  : toast.type === 'success'
+                  ? 'bg-emerald-50/95 border-emerald-100 text-emerald-800'
+                  : toast.type === 'error'
+                  ? 'bg-rose-50/95 border-rose-100 text-rose-800'
+                  : 'bg-slate-50/95 border-slate-100 text-slate-800'
+              }`}
+            >
+              {toast.type === 'success' && <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />}
+              {toast.type === 'error' && <AlertCircle className="h-5 w-5 text-rose-500 shrink-0" />}
+              {toast.type === 'info' && <Info className="h-5 w-5 text-blue-500 shrink-0" />}
+              <span className="text-xs font-bold">{toast.message}</span>
+              <button
+                onClick={() => setToasts((prev) => prev.filter((t) => t.id !== toast.id))}
+                className="ml-auto text-slate-400 hover:text-slate-650 transition"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

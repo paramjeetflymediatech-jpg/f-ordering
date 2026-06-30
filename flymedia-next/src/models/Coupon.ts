@@ -20,7 +20,7 @@ Coupon.init(
     },
     store_id: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
     code: {
       type: DataTypes.STRING,

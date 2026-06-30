@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { Op } from 'sequelize';
 import { sequelize, Store, Customer, Order, OrderItem, Payment, RestaurantTable, User, Role, Coupon } from '../../../../models';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
@@ -99,16 +100,42 @@ export async function POST(request: Request) {
     let discountAmount = 0;
     let coupon = null;
     if (couponCode) {
+      // Find the coupon matching code, either store-specific or global
       coupon = await Coupon.findOne({
         where: {
-          store_id: storeId,
           code: couponCode.trim(),
           is_active: true,
+          [Op.or]: [
+            { store_id: storeId },
+            { store_id: null }
+          ]
         },
         transaction,
       });
 
       if (coupon) {
+        // Double-check if this coupon has already been used by this customer phone number
+        if (customerPhone && customerPhone.trim()) {
+          const checkCustomer = await Customer.findOne({
+            where: { phone: customerPhone.trim() },
+            transaction,
+          });
+          if (checkCustomer) {
+            const orderUsed = await Order.findOne({
+              where: {
+                customer_id: checkCustomer.id,
+                coupon_code: coupon.code,
+                status: { [Op.ne]: 'cancelled' },
+              },
+              transaction,
+            });
+            if (orderUsed) {
+              await transaction.rollback();
+              return NextResponse.json({ error: 'This coupon code has already been used with this mobile number.' }, { status: 400 });
+            }
+          }
+        }
+
         const minAmount = parseFloat(coupon.min_order_amount as any) || 0;
         if (subtotal >= minAmount) {
           const discountVal = parseFloat(coupon.discount_value as any) || 0;
@@ -148,6 +175,7 @@ export async function POST(request: Request) {
         tax_amount: tax,
         discount_amount: discountAmount,
         total_amount: total,
+        coupon_code: coupon ? coupon.code : null,
       },
       { transaction }
     );
