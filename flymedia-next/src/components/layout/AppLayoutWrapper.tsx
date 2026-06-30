@@ -16,7 +16,9 @@ export default function AppLayoutWrapper({ children }: { children: React.ReactNo
 
     const hostname = window.location.hostname;
     console.log(window.location.origin,'origin',hostname)
-    if (hostname === process.env.NEXT_PUBLIC_URL) return;
+    if (hostname === process.env.NEXT_PUBLIC_URL){
+      window.location.href = process.env.NEXT_PUBLIC_URL
+    }
     const parts = hostname.split('.');
     let slug = '';
     if (parts.length > 1 && parts[0] !== 'www') {
