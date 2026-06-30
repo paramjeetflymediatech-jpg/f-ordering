@@ -28,11 +28,13 @@ export default function AppLayoutWrapper({ children }: { children: React.ReactNo
       console.log(path, 'path')
       if (path === '/' || path === '') {
         const originalDomain = parts.slice(1).join('.');
-        console.log(originalDomain, 'originalDomain')
+        console.log(originalDomain, 'originalDomain',window.location)
         const newUrl = `${window.location.protocol}//${originalDomain}${window.location.pathname}${window.location.search}${window.location.hash}`;
         window.location.href = originalDomain;
       }
     }
+    const newUrl = `${window.location.protocol}//${parts.slice(1).join('.')}${window.location.pathname}${window.location.search}${window.location.hash}`;
+    window.location.href = newUrl;
   }, [pathname]);
 
   // Internal app pages use the dark app shell
