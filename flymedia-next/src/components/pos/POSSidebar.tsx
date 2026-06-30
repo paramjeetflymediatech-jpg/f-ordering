@@ -23,6 +23,24 @@ interface POSSidebarProps {
 export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab = 'pos', logoUrl }: POSSidebarProps) {
   const router = useRouter();
 
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      let slug = '';
+      if (parts.length > 1 && parts[0] !== 'www') {
+        slug = parts[0];
+      }
+      if (slug) {
+        const originalDomain = parts.slice(1).join('.');
+        const callbackUrl = `${window.location.protocol}//${originalDomain}/login`;
+        signOut({ callbackUrl });
+        return;
+      }
+    }
+    signOut({ callbackUrl: '/login' });
+  };
+
   const handleModalClick = (modalName: string) => {
     if (activeTab === 'drafts') {
       router.push('/pos');
@@ -141,7 +159,7 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab
       {/* Footer Logout & User Profile */}
       <div className="flex flex-col items-center gap-4 w-full">
         <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
+          onClick={handleLogout}
           className="rounded-xl p-2.5 text-red-400/80 hover:bg-red-950/30 hover:text-red-400 transition"
           title="Sign Out"
         >

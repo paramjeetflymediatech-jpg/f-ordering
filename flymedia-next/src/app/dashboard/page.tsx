@@ -360,6 +360,24 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      let slug = '';
+      if (parts.length > 1 && parts[0] !== 'www') {
+        slug = parts[0];
+      }
+      if (slug) {
+        const originalDomain = parts.slice(1).join('.');
+        const callbackUrl = `${window.location.protocol}//${originalDomain}/login`;
+        signOut({ callbackUrl });
+        return;
+      }
+    }
+    signOut({ callbackUrl: '/login' });
+  };
+
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
@@ -479,7 +497,7 @@ export default function DashboardPage() {
             </p>
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={handleLogout}
             className="rounded-lg bg-slate-900 border border-[#1e293b] p-2 text-slate-400 hover:text-white hover:bg-slate-800 transition duration-150"
           >
             <LogOut className="h-4.5 w-4.5" />

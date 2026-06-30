@@ -126,6 +126,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     localStorage.setItem('dashboard-theme', nextTheme);
   };
 
+  const handleLogout = () => {
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const parts = hostname.split('.');
+      let slug = '';
+      if (parts.length > 1 && parts[0] !== 'www') {
+        slug = parts[0];
+      }
+      if (slug) {
+        const originalDomain = parts.slice(1).join('.');
+        const callbackUrl = `${window.location.protocol}//${originalDomain}/login`;
+        signOut({ callbackUrl });
+        return;
+      }
+    }
+    signOut({ callbackUrl: '/login' });
+  };
+
   React.useEffect(() => {
     const handleProfileUpdate = () => {
       fetch('/api/dashboard/profile')
@@ -245,7 +263,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </button>
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400 hover:bg-red-950/45 transition duration-150"
           >
             <LogOut className="h-4 w-4" />
@@ -344,7 +362,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 )}
               </button>
               <button
-                onClick={() => signOut({ callbackUrl: '/login' })}
+                onClick={handleLogout}
                 className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400"
               >
                 <LogOut className="h-4 w-4" />
