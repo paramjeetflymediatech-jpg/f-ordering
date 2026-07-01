@@ -1310,9 +1310,9 @@ export default function PublicOrderPage() {
                           }`}
                         >
                           <p>{v.name}</p>
-                          <p className="text-[10px] text-slate-400 mt-0.5">
+                          {/* <p className="text-[10px] text-slate-400 mt-0.5">
                             +${parseFloat(v.additional_price).toFixed(2)}
-                          </p>
+                          </p> */}
                         </button>
                       );
                     })}
@@ -1337,7 +1337,7 @@ export default function PublicOrderPage() {
                           }`}
                         >
                           <span>{addon.name}</span>
-                          <span className="font-bold text-slate-600">+${parseFloat(addon.price).toFixed(2)}</span>
+                          {/* <span className="font-bold text-slate-600">+${parseFloat(addon.price).toFixed(2)}</span> */}
                         </div>
                       );
                     })}
