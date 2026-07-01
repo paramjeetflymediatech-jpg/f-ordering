@@ -95,11 +95,11 @@ app.prepare().then(() => {
     nextHook();
   });
 
-  // Serve dynamic uploads folder directly via express to avoid Next.js startup static caching issues
-  expressApp.use('/uploads', express.static(path.join(process.cwd(), 'public', 'uploads')));
+  // Serve public assets and dynamic uploads directly via express
+  expressApp.use(express.static(path.join(process.cwd(), 'public')));
 
   // Next.js Route handlers
-  expressApp.all('*', (req, res) => {
+  expressApp.all(/.*/, (req, res) => {
     return handle(req, res);
   });
 

@@ -27,38 +27,43 @@ import {
   LogOut
 } from 'lucide-react';
 
-// Web Audio API notification sound generator (synthesizes clean chime without external assets)
+// Notification sound generator using ringbellnoti.mp3 from public folder
+let sharedAudio: HTMLAudioElement | null = null;
+
+if (typeof window !== 'undefined') {
+  sharedAudio = new Audio('/ringbellnoti.mp3');
+  const unlockAudio = () => {
+    const audio = sharedAudio;
+    if (audio) {
+      audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        // Successfully unlocked! Safe to remove listeners now.
+        window.removeEventListener('click', unlockAudio);
+        window.removeEventListener('touchstart', unlockAudio);
+        window.removeEventListener('keydown', unlockAudio);
+      }).catch((e) => {
+        console.warn("Failed to unlock audio element:", e);
+        // Do not remove listeners on failure, allow subsequent real clicks to try unlocking again
+      });
+    }
+  };
+  window.addEventListener('click', unlockAudio);
+  window.addEventListener('touchstart', unlockAudio);
+  window.addEventListener('keydown', unlockAudio);
+}
+
 const playNotificationSound = () => {
   try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    const ctx = new AudioContextClass();
-    
-    // Play dual tone (D5 then A5)
-    const osc1 = ctx.createOscillator();
-    const osc2 = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc1.connect(gain);
-    osc2.connect(gain);
-    gain.connect(ctx.destination);
-    
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-    osc1.frequency.setValueAtTime(880.00, ctx.currentTime + 0.12); // A5
-    
-    osc2.type = 'triangle';
-    osc2.frequency.setValueAtTime(293.66, ctx.currentTime); // D4 sub-harmony
-    
-    gain.gain.setValueAtTime(0.08, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-    
-    osc1.start();
-    osc2.start();
-    osc1.stop(ctx.currentTime + 0.35);
-    osc2.stop(ctx.currentTime + 0.35);
+    if (!sharedAudio) {
+      sharedAudio = new Audio('/ringbellnoti.mp3');
+    }
+    sharedAudio.currentTime = 0;
+    sharedAudio.play().catch((err) => {
+      console.warn("Audio play blocked by browser autoplay policy or unsupported:", err);
+    });
   } catch (err) {
-    console.warn("Audio notification blocked by browser autoplay policy or unsupported:", err);
+    console.warn("Failed to play notification sound:", err);
   }
 };
 
@@ -258,12 +263,19 @@ export default function KDSPage() {
     // Handle new incoming kitchen ticket
     socket.on('kitchen_new_order', (newOrder: any) => {
       console.log('[KDS Socket] New order received:', newOrder);
+      playNotificationSound();
+      setUnreadKDSCount((c) => c + 1);
+      
+      // Normalize items key to lowercase to match backend schema
+      const normalizedOrder = {
+        ...newOrder,
+        items: newOrder.items || newOrder.Items || [],
+      };
+      
       // Prepend to active list if not already present
       setActiveOrders((prev) => {
-        if (prev.some((o) => o.id === newOrder.id)) return prev;
-        playNotificationSound();
-        setUnreadKDSCount((c) => c + 1);
-        return [...prev, newOrder];
+        if (prev.some((o) => o.id === normalizedOrder.id)) return prev;
+        return [...prev, normalizedOrder];
       });
     });
 
