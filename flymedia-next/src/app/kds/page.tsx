@@ -24,57 +24,31 @@ import {
   AlertTriangle,
   Sun,
   Moon,
-  LogOut
+  LogOut,
+  X,
+  Eye
 } from 'lucide-react';
 
-// Notification sound generator using ringbellnoti.mp3 from public folder
-let sharedAudio: HTMLAudioElement | null = null;
-
-if (typeof window !== 'undefined') {
-  sharedAudio = new Audio('/ringbellnoti.mp3');
-  const unlockAudio = () => {
-    const audio = sharedAudio;
-    if (audio) {
-      audio.play().then(() => {
-        audio.pause();
-        audio.currentTime = 0;
-        // Successfully unlocked! Safe to remove listeners now.
-        window.removeEventListener('click', unlockAudio);
-        window.removeEventListener('touchstart', unlockAudio);
-        window.removeEventListener('keydown', unlockAudio);
-      }).catch((e) => {
-        console.warn("Failed to unlock audio element:", e);
-        // Do not remove listeners on failure, allow subsequent real clicks to try unlocking again
-      });
-    }
-  };
-  window.addEventListener('click', unlockAudio);
-  window.addEventListener('touchstart', unlockAudio);
-  window.addEventListener('keydown', unlockAudio);
-}
-
-const playNotificationSound = () => {
-  try {
-    if (!sharedAudio) {
-      sharedAudio = new Audio('/ringbellnoti.mp3');
-    }
-    sharedAudio.currentTime = 0;
-    sharedAudio.play().catch((err) => {
-      console.warn("Audio play blocked by browser autoplay policy or unsupported:", err);
-    });
-  } catch (err) {
-    console.warn("Failed to play notification sound:", err);
-  }
-};
+// Notification sound element is handled inside the component to comply with browser autoplay gesture policies
 
 interface OrderItem {
   id: string;
   quantity: number;
   notes: string | null;
-  MenuItem: {
+  unit_price?: string | number;
+  price?: string | number;
+  MenuItem?: {
     name: string;
     price: string | number;
-  };
+    description?: string | null;
+  } | null;
+  name?: string;
+  description?: string;
+  menuItem?: {
+    name: string;
+    price: string | number;
+    description?: string | null;
+  } | null;
   variant?: {
     name: string;
   } | null;
@@ -87,6 +61,9 @@ interface Order {
   order_type: 'dine_in' | 'takeaway' | 'delivery' | 'qr_order';
   status: 'pending' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'cancelled' | 'on_hold';
   total_amount: string | number;
+  subtotal?: string | number;
+  discount_amount?: string | number;
+  tax_amount?: string | number;
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];
@@ -103,6 +80,68 @@ interface Order {
 export default function KDSPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
+
+  // Audio system state for notification chime
+  const [audioBlocked, setAudioBlocked] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const audio = new Audio('/ringbellnoti.mp3');
+    audioRef.current = audio;
+
+    // Test playback to see if browser blocks it
+    audio.play().then(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      setAudioBlocked(false);
+    }).catch(() => {
+      setAudioBlocked(true);
+    });
+
+    const unlockAudio = () => {
+      if (audio) {
+        audio.play().then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          setAudioBlocked(false);
+          // Successfully unlocked! Remove listeners
+          window.removeEventListener('click', unlockAudio);
+          window.removeEventListener('touchstart', unlockAudio);
+          window.removeEventListener('keydown', unlockAudio);
+        }).catch((e) => {
+          console.warn("Failed to unlock audio element:", e);
+          setAudioBlocked(true);
+        });
+      }
+    };
+
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+    window.addEventListener('keydown', unlockAudio);
+
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+    };
+  }, []);
+
+  const playNotificationSound = () => {
+    try {
+      const audio = audioRef.current;
+      if (audio) {
+        audio.currentTime = 0;
+        audio.play().catch((err) => {
+          console.warn("Audio play blocked by browser autoplay policy or unsupported:", err);
+          setAudioBlocked(true);
+        });
+      }
+    } catch (err) {
+      console.warn("Failed to play notification sound:", err);
+    }
+  };
   
   // Auth state & Store state
   const [storeId, setStoreId] = useState<string | null>(null);
@@ -124,6 +163,7 @@ export default function KDSPage() {
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({}); // track item strikethroughs
   const [socketConnected, setSocketConnected] = useState(false);
   const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const [selectedDetailOrder, setSelectedDetailOrder] = useState<Order | null>(null);
 
   // Socket reference
   const socketRef = useRef<Socket | null>(null);
@@ -277,6 +317,9 @@ export default function KDSPage() {
         if (prev.some((o) => o.id === normalizedOrder.id)) return prev;
         return [...prev, normalizedOrder];
       });
+
+      // Fetch fresh list from database to ensure all includes (like MenuItem description) are properly loaded
+      fetchKDSOrders(true);
     });
 
     // Handle updates from other operators
@@ -390,7 +433,7 @@ export default function KDSPage() {
       .filter((order) => filterType === 'all' || order.order_type === filterType)
       .forEach((order) => {
         order.items.forEach((item) => {
-          const itemName = item.MenuItem?.name || 'Unknown Item';
+          const itemName = item.MenuItem?.name || item.name || item.menuItem?.name || 'Unknown Item';
           const variantSuffix = item.variant?.name ? ` (${item.variant.name})` : '';
           const key = `${itemName}${variantSuffix}`;
           
@@ -446,7 +489,7 @@ export default function KDSPage() {
     return (
       <div
         key={order.id}
-        className={`rounded-xl border bg-[#0c101b]/95 p-4 flex flex-col justify-between shadow-md transition duration-200 hover:border-slate-400 dark:hover:border-slate-700/80 ${
+        className={`rounded-xl border bg-white dark:bg-[#0d1321] p-4 flex flex-col justify-between shadow-md transition duration-200 hover:border-slate-400 dark:hover:border-slate-700/80 ${
           order.status === 'pending'
             ? 'border-cyan-300 dark:border-cyan-900/40 hover:shadow-cyan-950/10'
             : elapsedMinutes >= 20
@@ -456,18 +499,33 @@ export default function KDSPage() {
       >
         {/* Header info */}
         <div className="flex items-center justify-between pb-2.5 border-b border-slate-200 dark:border-slate-900">
-          <div>
+          <div className="flex flex-wrap items-center gap-1.5">
             <span className="font-extrabold text-slate-800 dark:text-white text-xs">{order.order_number}</span>
-            <span className={`ml-2 text-[9px] font-bold px-2 py-0.5 rounded border ${typeDetails.bg}`}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedDetailOrder(order);
+              }}
+              className="p-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-850 dark:text-slate-400 dark:hover:text-white transition ml-1"
+              title="View Order Details"
+            >
+              <Eye className="h-3 w-3" />
+            </button>
+            <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${typeDetails.bg}`}>
               {typeDetails.label}
             </span>
             
             {/* Table Number details */}
             {order.RestaurantTable && (
-              <span className="ml-1.5 text-[9px] font-bold bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded">
+              <span className="text-[9px] font-bold bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 px-2 py-0.5 rounded">
                 Table {order.RestaurantTable.table_number}
               </span>
             )}
+
+            {/* Billing Amount */}
+            <span className="text-[9.5px] font-extrabold bg-amber-500/10 text-amber-650 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded">
+              ${parseFloat(order.total_amount as string || '0').toFixed(2)}
+            </span>
           </div>
           
           {/* Timer since order creation */}
@@ -520,22 +578,31 @@ export default function KDSPage() {
                   </div>
                   
                   {/* Details text */}
-                  <div className="flex flex-col">
+                  <div className="flex flex-col flex-1">
                     <span className={`font-semibold text-sm transition ${
                       isChecked ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'
                     }`}>
-                      {item.MenuItem?.name}
+                      {item.MenuItem?.name || item.name || item.menuItem?.name || 'Dish Item'}
                       {item.variant?.name && (
-                        <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800/60 ml-1.5">
+                        <span className="text-[10px] font-medium text-slate-650 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800/60 ml-1.5">
                           {item.variant.name}
                         </span>
                       )}
                     </span>
                     
+                    {/* MenuItem description */}
+                    {(item.MenuItem?.description || item.description || item.menuItem?.description) && (
+                      <p className={`text-[11.5px] mt-0.5 leading-normal transition ${
+                        isChecked ? 'line-through text-slate-400/80 dark:text-slate-600' : 'text-slate-550 dark:text-slate-400'
+                      }`}>
+                        {item.MenuItem?.description || item.description || item.menuItem?.description}
+                      </p>
+                    )}
+                    
                     {/* Render Addons */}
                     {item.addons && item.addons.length > 0 && (
-                      <div className={`text-[10px] flex flex-wrap gap-1 mt-1 transition ${
-                        isChecked ? 'line-through text-slate-400 dark:text-slate-600' : 'text-slate-600 dark:text-slate-400'
+                      <div className={`text-[10px] flex flex-wrap gap-1 mt-1.5 transition ${
+                        isChecked ? 'line-through text-slate-400 dark:text-slate-650' : 'text-slate-600 dark:text-slate-400'
                       }`}>
                         {item.addons.map((addon, aIdx) => (
                           <span key={aIdx} className="bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800/40">
@@ -642,6 +709,25 @@ export default function KDSPage() {
         ? 'light-theme bg-[#f8fafc] text-slate-800' 
         : 'dark bg-slate-950 text-white'
     }`}>
+
+      {/* Autoplay blocked notification banner */}
+      {audioBlocked && (
+        <div className="bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-400 text-xs px-6 py-2.5 flex items-center justify-between font-bold animate-pulse z-50">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-[#f59e0b]" />
+            <span>Sound notifications are muted by your browser\'s security policy. Click anywhere or click Enable Sound to unmute.</span>
+          </div>
+          <button 
+            onClick={() => {
+              // Trigger a click gesture which will unlock
+              setAudioBlocked(false);
+            }}
+            className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded text-[10px] font-black uppercase transition shrink-0"
+          >
+            Enable Sound
+          </button>
+        </div>
+      )}
       
       {/* ── HEADER ──────────────────────────────────────────────────────── */}
       <header className="border-b border-slate-200 dark:border-[#1e293b]/60 bg-white/80 dark:bg-[#080d19]/80 backdrop-blur-md px-6 py-4 flex items-center justify-between shadow-lg relative z-20">
@@ -770,7 +856,7 @@ export default function KDSPage() {
           
           {/* Active Prep Summary box */}
           {prepSummary.length > 0 && (
-            <div className="rounded-2xl border border-blue-200 dark:border-blue-900/30 bg-blue-50/50 dark:bg-[#050b18]/60 p-4 backdrop-blur-md shadow-inner flex flex-wrap items-center gap-3">
+            <div className="rounded-2xl border border-blue-200 dark:border-blue-900/30 bg-blue-50/50 dark:bg-[#050b18]/60 p-4 backdrop-blur-md shadow-inner flex flex-wrap items-center gap-3 max-h-28 overflow-y-auto custom-scrollbar">
               <span className="text-xs font-black text-blue-700 dark:text-blue-400 tracking-wider uppercase flex items-center gap-1.5 mr-2">
                 <ChefHat className="h-4 w-4 text-[#f59e0b]" /> Active Prep Summary:
               </span>
@@ -888,7 +974,22 @@ export default function KDSPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-extrabold text-xs text-purple-950 dark:text-purple-200">{order.order_number}</div>
+                        <div className="font-extrabold text-xs text-purple-950 dark:text-purple-200 flex items-center gap-1.5">
+                          <span>{order.order_number}</span>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedDetailOrder(order);
+                            }}
+                            className="p-1 rounded bg-purple-100/50 hover:bg-purple-200/50 dark:bg-purple-950/40 dark:hover:bg-purple-900/40 text-purple-700 hover:text-purple-900 dark:text-purple-355 dark:hover:text-white transition"
+                            title="View Order Details"
+                          >
+                            <Eye className="h-3 w-3" />
+                          </button>
+                          <span className="text-[9px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-450 border border-amber-500/20 px-1.5 py-0.5 rounded">
+                            ${parseFloat(order.total_amount as string || '0').toFixed(2)}
+                          </span>
+                        </div>
                         <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono mt-0.5">
                           Served: {new Date(order.updatedAt).toLocaleTimeString()}
                         </div>
@@ -902,15 +1003,42 @@ export default function KDSPage() {
                       </button>
                     </div>
 
-                    <div className="border-t border-purple-100 dark:border-purple-950/40 pt-2 space-y-1">
-                      {order.items.map((item) => (
-                        <div key={item.id} className="text-xs flex justify-between text-slate-700 dark:text-slate-300">
-                          <span>
-                            x{item.quantity} {item.MenuItem?.name}
-                            {item.variant?.name && ` (${item.variant.name})`}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="border-t border-purple-100 dark:border-purple-950/40 pt-2 space-y-2">
+                      {order.items.map((item) => {
+                        const itemDescription = item.MenuItem?.description || item.description || item.menuItem?.description;
+                        return (
+                          <div key={item.id} className="text-xs flex flex-col text-slate-700 dark:text-slate-350">
+                            <div className="flex justify-between font-semibold">
+                              <span>
+                                x{item.quantity} {item.MenuItem?.name || item.name || item.menuItem?.name || 'Dish Item'}
+                                {item.variant?.name && (
+                                  <span className="text-[9px] font-medium text-slate-600 bg-slate-100 dark:bg-slate-900 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-800 ml-1.5">
+                                    {item.variant.name}
+                                  </span>
+                                )}
+                              </span>
+                            </div>
+                            
+                            {/* MenuItem description */}
+                            {itemDescription && (
+                              <p className="text-[10.5px] text-slate-500 dark:text-slate-450 leading-normal mt-0.5 italic">
+                                {itemDescription}
+                              </p>
+                            )}
+
+                            {/* Render Addons in served log */}
+                            {item.addons && item.addons.length > 0 && (
+                              <div className="text-[9.5px] flex flex-wrap gap-1 mt-1 text-slate-500 dark:text-slate-400">
+                                {item.addons.map((addon, aIdx) => (
+                                  <span key={aIdx} className="bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800/40">
+                                    + {addon.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 ))
@@ -955,6 +1083,237 @@ export default function KDSPage() {
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+      )}
+      {/* ── ORDER DETAIL MODAL ────────────────────────────────────────── */}
+      {selectedDetailOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-md p-4 animate-fade-in">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0c101b] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-900 p-5 bg-slate-50 dark:bg-slate-950/40">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="text-base font-black text-slate-800 dark:text-white">
+                  Order Details: {selectedDetailOrder.order_number}
+                </h3>
+                <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded border ${getOrderTypeDetails(selectedDetailOrder.order_type).bg}`}>
+                  {getOrderTypeDetails(selectedDetailOrder.order_type).label}
+                </span>
+                <span className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded border ${
+                  selectedDetailOrder.status === 'pending'
+                    ? 'border-cyan-300 dark:border-cyan-900/40 bg-cyan-50 dark:bg-cyan-950/20 text-cyan-700 dark:text-cyan-400'
+                    : selectedDetailOrder.status === 'ready'
+                    ? 'border-emerald-300 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400'
+                    : 'border-amber-300 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-400'
+                }`}>
+                  {selectedDetailOrder.status}
+                </span>
+              </div>
+              <button
+                onClick={() => setSelectedDetailOrder(null)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-slate-900 transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+              
+              {/* Order Metadata Row */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 bg-slate-50 dark:bg-slate-950/30 p-4 rounded-xl border border-slate-100 dark:border-slate-900/60 text-xs">
+                <div>
+                  <span className="text-slate-400 dark:text-slate-500 block font-semibold uppercase tracking-wider text-[9px]">Received At</span>
+                  <span className="font-bold text-slate-750 dark:text-slate-200">{new Date(selectedDetailOrder.createdAt).toLocaleTimeString()} ({new Date(selectedDetailOrder.createdAt).toLocaleDateString()})</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 dark:text-slate-500 block font-semibold uppercase tracking-wider text-[9px]">Elapsed Time</span>
+                  <span className={`font-bold font-mono ${getTimerColorClass(selectedDetailOrder.createdAt)}`}>
+                    {formatTimer(selectedDetailOrder.createdAt)}
+                  </span>
+                </div>
+                {selectedDetailOrder.RestaurantTable && (
+                  <div>
+                    <span className="text-slate-400 dark:text-slate-500 block font-semibold uppercase tracking-wider text-[9px]">Dining Table</span>
+                    <span className="font-bold text-slate-750 dark:text-slate-200">Table {selectedDetailOrder.RestaurantTable.table_number}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Customer Info */}
+              {selectedDetailOrder.customer && (
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <User className="h-3.5 w-3.5" /> Customer Information
+                  </h4>
+                  <div className="bg-slate-50 dark:bg-slate-950/20 p-4 rounded-xl border border-slate-100 dark:border-slate-900/40 text-xs space-y-1">
+                    <p className="font-bold text-slate-750 dark:text-slate-200">{selectedDetailOrder.customer.name}</p>
+                    <p className="text-slate-500 dark:text-slate-400">Phone: {selectedDetailOrder.customer.phone}</p>
+                    {(selectedDetailOrder.customer as any).email && (
+                      <p className="text-slate-500 dark:text-slate-400">Email: {(selectedDetailOrder.customer as any).email}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Order Items Details */}
+              <div>
+                <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                  <Utensils className="h-3.5 w-3.5" /> Items Checklist
+                </h4>
+                <div className="border border-slate-250/60 dark:border-slate-900 rounded-xl overflow-hidden divide-y divide-slate-200 dark:divide-slate-900">
+                  {selectedDetailOrder.items.map((item) => {
+                    const isChecked = !!checkedItems[item.id];
+                    const itemDescription = item.MenuItem?.description || item.description || item.menuItem?.description;
+                    
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => toggleItemCheck(item.id)}
+                        className="p-4 flex items-start justify-between gap-4 cursor-pointer select-none hover:bg-slate-50 dark:hover:bg-slate-900/20 transition"
+                      >
+                        <div className="flex items-start gap-3">
+                          {/* Checkbox */}
+                          <div className={`mt-0.5 h-5 w-5 rounded border flex items-center justify-center transition shrink-0 ${
+                            isChecked 
+                              ? 'bg-emerald-600 border-emerald-500 text-white' 
+                              : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950'
+                          }`}>
+                            {isChecked && <Check className="h-3.5 w-3.5 stroke-[4]" />}
+                          </div>
+
+                          <div className="flex flex-col">
+                            <span className={`font-bold text-sm ${
+                              isChecked ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-slate-200'
+                            }`}>
+                              {item.MenuItem?.name || item.name || item.menuItem?.name || 'Dish Item'}
+                              {item.variant?.name && (
+                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-250 dark:border-slate-800 ml-2">
+                                  {item.variant.name}
+                                </span>
+                              )}
+                            </span>
+
+                            {itemDescription && (
+                              <p className={`text-xs mt-1 leading-relaxed ${
+                                isChecked ? 'line-through text-slate-400/80 dark:text-slate-600' : 'text-slate-550 dark:text-slate-400'
+                              }`}>
+                                {itemDescription}
+                              </p>
+                            )}
+
+                            {/* Render Addons */}
+                            {item.addons && item.addons.length > 0 && (
+                              <div className="text-[10px] flex flex-wrap gap-1 mt-2">
+                                {item.addons.map((addon, aIdx) => (
+                                  <span key={aIdx} className="bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded text-slate-650 dark:text-slate-400 border border-slate-250 dark:border-slate-850">
+                                    + {addon.name}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {/* Item notes */}
+                            {item.notes && (
+                              <span className="text-xs text-amber-650 dark:text-amber-500/80 italic mt-2 flex items-start gap-1 font-medium">
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                                <span>Note: {item.notes}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Quantity & Unit Price */}
+                        <div className="text-right shrink-0 font-medium">
+                          <span className={`font-mono text-sm font-black block ${
+                            isChecked ? 'text-slate-400 dark:text-slate-500' : 'text-slate-850 dark:text-white'
+                          }`}>
+                            x{item.quantity}
+                          </span>
+                          <span className="text-[10.5px] text-slate-450 dark:text-slate-500 font-mono mt-0.5 block">
+                            ${parseFloat(item.unit_price as any || item.price as any || '0').toFixed(2)} ea
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Billing Summary */}
+              <div className="bg-slate-50 dark:bg-slate-950/20 border border-slate-205 dark:border-slate-900 rounded-xl p-4.5 space-y-2.5 text-xs text-slate-550 dark:text-slate-400">
+                <div className="flex justify-between">
+                  <span>Subtotal:</span>
+                  <span className="font-mono text-slate-800 dark:text-slate-200">${parseFloat(selectedDetailOrder.subtotal as any || '0').toFixed(2)}</span>
+                </div>
+                {parseFloat(selectedDetailOrder.discount_amount as any) > 0 && (
+                  <div className="flex justify-between text-rose-600 dark:text-rose-450">
+                    <span>Discount:</span>
+                    <span className="font-mono">-${parseFloat(selectedDetailOrder.discount_amount as any).toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span>Tax:</span>
+                  <span className="font-mono text-slate-800 dark:text-slate-200">${parseFloat(selectedDetailOrder.tax_amount as any || '0').toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between pt-2.5 border-t border-slate-200 dark:border-slate-900 text-sm font-extrabold text-slate-850 dark:text-white">
+                  <span>Total Bill Amount:</span>
+                  <span className="font-mono text-amber-500">${parseFloat(selectedDetailOrder.total_amount as any || '0').toFixed(2)}</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-900 bg-slate-50 dark:bg-slate-950/40 flex justify-between gap-3">
+              <button
+                onClick={() => setSelectedDetailOrder(null)}
+                className="w-1/3 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-900 dark:hover:bg-slate-800 py-3 text-xs font-extrabold text-slate-650 dark:text-slate-350 transition"
+              >
+                Close Details
+              </button>
+              
+              {selectedDetailOrder.status === 'pending' && (
+                <button
+                  onClick={() => {
+                    handleUpdateStatus(selectedDetailOrder.id, 'pending', 'preparing');
+                    setSelectedDetailOrder(null);
+                  }}
+                  className="w-2/3 inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-extrabold text-white py-3 transition shadow-md shadow-blue-600/10"
+                >
+                  <span>Accept Ticket</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              )}
+
+              {['accepted', 'preparing'].includes(selectedDetailOrder.status) && (
+                <button
+                  onClick={() => {
+                    handleUpdateStatus(selectedDetailOrder.id, 'preparing', 'ready');
+                    setSelectedDetailOrder(null);
+                  }}
+                  className="w-2/3 inline-flex items-center justify-center gap-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-xs font-extrabold text-slate-950 py-3 transition shadow-md shadow-amber-500/10"
+                >
+                  <span>Mark Ready</span>
+                  <Check className="h-3.5 w-3.5 stroke-[3]" />
+                </button>
+              )}
+
+              {selectedDetailOrder.status === 'ready' && (
+                <button
+                  onClick={() => {
+                    handleUpdateStatus(selectedDetailOrder.id, 'ready', 'completed');
+                    setSelectedDetailOrder(null);
+                  }}
+                  className="w-2/3 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-extrabold text-white py-3 transition shadow-md shadow-emerald-600/10"
+                >
+                  <span>Complete & Serve</span>
+                  <Check className="h-3.5 w-3.5 stroke-[3]" />
+                </button>
+              )}
+            </div>
+
           </div>
         </div>
       )}

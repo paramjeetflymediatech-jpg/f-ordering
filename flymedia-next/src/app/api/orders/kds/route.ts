@@ -39,7 +39,7 @@ export async function GET(request: Request) {
           include: [
             {
               model: MenuItem,
-              attributes: ['name', 'price'],
+              attributes: ['name', 'price', 'description'],
             },
             {
               model: MenuVariant,
@@ -78,7 +78,7 @@ export async function GET(request: Request) {
           include: [
             {
               model: MenuItem,
-              attributes: ['name', 'price'],
+              attributes: ['name', 'price', 'description'],
             },
             {
               model: MenuVariant,

@@ -899,3 +899,39 @@ SIMULATED DISPATCH DETAIL:
 ========================================================================
 
 
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/1/2026, 6:07:55 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00031
+Order Type: TAKEAWAY
+Timestamp: 7/1/2026, 6:07:55 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Fresh Mint Lime Soda [Variant: Regular] @ $4.50 each = $4.50
+
+Subtotal: $4.50
+Tax: $0.37
+Total Amount: $4.87
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $4.87
+Transaction Reference: ONL-TX-1782909475440
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
