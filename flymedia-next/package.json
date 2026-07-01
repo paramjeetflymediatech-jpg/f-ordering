@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "npx tsx src/server.ts",
     "build": "next build",
-    "start": "next start",
+    "start": "npx tsx src/server.ts",
     "lint": "eslint"
   },
   "dependencies": {
