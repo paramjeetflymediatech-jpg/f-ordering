@@ -827,3 +827,75 @@ SIMULATED DISPATCH DETAIL:
 ========================================================================
 
 
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/1/2026, 12:06:46 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00020
+Order Type: QR_ORDER
+Timestamp: 7/1/2026, 12:06:46 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: man
+Phone: 1478523690
+Email: man@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Fresh Mint Lime Soda [Variant: Large] @ $6.00 each = $6.00
+
+Subtotal: $6.00
+Tax: $0.49
+Total Amount: $6.50
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $6.50
+Transaction Reference: ONL-TX-1782887806632
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: man@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/1/2026, 12:07:37 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00021
+Order Type: QR_ORDER
+Timestamp: 7/1/2026, 12:07:37 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: man
+Phone: 1478523690
+Email: man@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Truffle Parmesan Fries @ $9.50 each = $9.50
+
+Subtotal: $9.50
+Tax: $0.78
+Total Amount: $10.28
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $10.28
+Transaction Reference: ONL-TX-1782887857686
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: man@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+

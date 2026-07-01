@@ -101,6 +101,7 @@ export default function KDSPage() {
   
   // Auth state & Store state
   const [storeId, setStoreId] = useState<string | null>(null);
+  const [unreadKDSCount, setUnreadKDSCount] = useState(0);
   const [stores, setStores] = useState<any[]>([]);
   const [storeName, setStoreName] = useState<string>('Kitchen Console');
   const [loadingStores, setLoadingStores] = useState(false);
@@ -261,6 +262,7 @@ export default function KDSPage() {
       setActiveOrders((prev) => {
         if (prev.some((o) => o.id === newOrder.id)) return prev;
         playNotificationSound();
+        setUnreadKDSCount((c) => c + 1);
         return [...prev, newOrder];
       });
     });
@@ -685,6 +687,23 @@ export default function KDSPage() {
               <Moon className="h-4 w-4 text-slate-500" />
             ) : (
               <Sun className="h-4 w-4 text-[#f59e0b]" />
+            )}
+          </button>
+
+          <button
+            onClick={() => setUnreadKDSCount(0)}
+            className={`p-2.5 rounded-xl border transition relative ${
+              unreadKDSCount > 0
+                ? 'border-rose-300 dark:border-rose-900/30 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400'
+                : 'border-slate-200 dark:border-[#1e293b] bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
+            }`}
+            title="Unread Kitchen Tickets Notifications"
+          >
+            <Bell className={`h-4 w-4 ${unreadKDSCount > 0 ? 'animate-bounce' : ''}`} />
+            {unreadKDSCount > 0 && (
+              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-rose-600 text-[8px] font-bold text-white shadow-md">
+                {unreadKDSCount}
+              </span>
             )}
           </button>
 

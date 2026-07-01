@@ -16,8 +16,42 @@ import { POSCart } from '../../components/pos/POSCart';
 import { POSModals } from '../../components/pos/POSModals';
 import { POSOrderTypePanel } from '../../components/pos/POSOrderTypePanel';
 import { Sparkline, DailySalesTrendChart, CategorySalesChart } from '../../components/pos/POSCharts';
-
 import { Clock, TrendingUp, LayoutGrid, LineChart, Utensils, FolderOpen, Settings, ShoppingBag, X } from 'lucide-react';
+
+// Web Audio API notification sound generator (synthesizes clean chime without external assets)
+const playNotificationSound = () => {
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    const ctx = new AudioContextClass();
+    
+    // Play dual tone (D5 then A5)
+    const osc1 = ctx.createOscillator();
+    const osc2 = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc1.connect(gain);
+    osc2.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+    osc1.frequency.setValueAtTime(880.00, ctx.currentTime + 0.12); // A5
+    
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(293.66, ctx.currentTime); // D4 sub-harmony
+    
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+    
+    osc1.start();
+    osc2.start();
+    osc1.stop(ctx.currentTime + 0.35);
+    osc2.stop(ctx.currentTime + 0.35);
+  } catch (err) {
+    console.warn("Audio notification blocked by browser autoplay policy or unsupported:", err);
+  }
+};
 
 export default function POSPage() {
   const { data: session, status } = useSession();
@@ -48,13 +82,8 @@ export default function POSPage() {
         socket.on('kitchen_new_order', (newOrder: any) => {
           console.log('[POS Socket] New online/POS order received:', newOrder);
           fetchHeldOrders(); // Refresh orders queue dynamically
-          
-          // Play notification chime to alert cashier
-          try {
-            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav');
-            audio.volume = 0.5;
-            audio.play().catch(() => {});
-          } catch (e) {}
+          setUnreadOrdersCount((c) => c + 1);
+          playNotificationSound();
         });
 
         return () => {
@@ -134,6 +163,7 @@ export default function POSPage() {
 
   // Custom states for newly added features
   const [activeModal, setActiveModal] = useState<'checkout' | 'hold' | 'resume' | 'split' | 'receipt' | 'table' | 'inventory' | 'settings' | null>(null);
+  const [unreadOrdersCount, setUnreadOrdersCount] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState<'cash' | 'card' | 'upi'>('cash');
   const [checkoutNotes, setCheckoutNotes] = useState('');
   const [holdNotes, setHoldNotes] = useState('');
@@ -724,8 +754,18 @@ export default function POSPage() {
       {/* 2. MIDDLE DASHBOARD CONTENT CONTAINER */}
       <div className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-transparent pb-16 md:pb-0">
         
-        {/* TOP ROW HEADER */}
-        <POSHeader session={session} logoUrl={logoUrl} companyName={companyName} theme={theme} toggleTheme={toggleTheme} />
+        <POSHeader 
+          session={session} 
+          logoUrl={logoUrl} 
+          companyName={companyName} 
+          theme={theme} 
+          toggleTheme={toggleTheme} 
+          unreadCount={unreadOrdersCount}
+          onNotificationClick={() => {
+            setUnreadOrdersCount(0);
+            setActiveModal('resume');
+          }}
+        />
 
         {viewMode === 'order_type' ? (
           <POSOrderTypePanel
