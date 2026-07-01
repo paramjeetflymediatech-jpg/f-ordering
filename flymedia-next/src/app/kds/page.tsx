@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import {
@@ -23,7 +23,8 @@ import {
   ListCollapse,
   AlertTriangle,
   Sun,
-  Moon
+  Moon,
+  LogOut
 } from 'lucide-react';
 
 // Web Audio API notification sound generator (synthesizes clean chime without external assets)
@@ -142,8 +143,14 @@ export default function KDSPage() {
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {
       router.push('/login');
+    } else if (sessionStatus === 'authenticated' && session?.user) {
+      const roles = (session.user as any).roles || [];
+      const hasAccess = ['Super Admin', 'Restaurant Owner', 'Manager', 'Cashier', 'Kitchen Staff', 'Waiter'].some(r => roles.includes(r));
+      if (!hasAccess) {
+        setErrorMsg('Access Denied: You do not have permissions to view the Kitchen Display System.');
+      }
     }
-  }, [sessionStatus, router]);
+  }, [sessionStatus, session, router]);
 
   // Clock tick
   useEffect(() => {
@@ -679,6 +686,14 @@ export default function KDSPage() {
             ) : (
               <Sun className="h-4 w-4 text-[#f59e0b]" />
             )}
+          </button>
+
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="p-2.5 rounded-xl border border-rose-200 dark:border-rose-950/40 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition"
+            title="Logout"
+          >
+            <LogOut className="h-4 w-4" />
           </button>
 
           <button

@@ -55,6 +55,8 @@ export default function BusinessProfilePage() {
   const [staffPage, setStaffPage] = useState(1);
   const STAFF_PER_PAGE = 8;
   const [availableRoles, setAvailableRoles] = useState<{ id: string; name: string; description: string | null }[]>([]);
+  const [customRoleName, setCustomRoleName] = useState('');
+  const [editCustomRoleName, setEditCustomRoleName] = useState('');
   
   // State for data
   const [loading, setLoading] = useState(true);
@@ -257,14 +259,40 @@ export default function BusinessProfilePage() {
     e.preventDefault();
     try {
       setCreateLoading(true); setStaffError(null); setStaffSuccess(null);
+
+      let finalRoleName = newStaff.roleName;
+      if (newStaff.roleName === 'custom') {
+        const trimmedCustom = customRoleName.trim();
+        if (!trimmedCustom) {
+          setStaffError('Please enter a custom role name.');
+          setCreateLoading(false);
+          return;
+        }
+
+        // Call API to create the custom role
+        const roleRes = await fetch('/api/dashboard/roles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: trimmedCustom, description: 'Created on-the-fly' }),
+        });
+        const roleData = await roleRes.json();
+        if (!roleData.success) {
+          setStaffError(roleData.error || 'Failed to create custom role.');
+          setCreateLoading(false);
+          return;
+        }
+        finalRoleName = trimmedCustom;
+      }
+
       const res = await fetch('/api/dashboard/staff', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newStaff),
+        body: JSON.stringify({ ...newStaff, roleName: finalRoleName }),
       });
       const data = await res.json();
       if (data.success) {
         setStaffSuccess(data.message); setShowCreateModal(false);
         setNewStaff({ name: '', email: '', phone: '', password: '', roleName: 'Cashier' });
+        setCustomRoleName('');
         await fetchStaff();
       } else { setStaffError(data.error || 'Failed to create account.'); }
     } catch { setStaffError('Network error.'); }
@@ -294,6 +322,7 @@ export default function BusinessProfilePage() {
       roleName: memberRoles[0]?.name || 'Cashier',
       status: member.status || 'active',
     });
+    setEditCustomRoleName('');
     setStaffError(null);
     setStaffSuccess(null);
   };
@@ -303,15 +332,41 @@ export default function BusinessProfilePage() {
     if (!editingStaff) return;
     try {
       setUpdateLoading(true); setStaffError(null); setStaffSuccess(null);
+
+      let finalRoleName = editForm.roleName;
+      if (editForm.roleName === 'custom') {
+        const trimmedCustom = editCustomRoleName.trim();
+        if (!trimmedCustom) {
+          setStaffError('Please enter a custom role name.');
+          setUpdateLoading(false);
+          return;
+        }
+
+        // Call API to create the custom role
+        const roleRes = await fetch('/api/dashboard/roles', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: trimmedCustom, description: 'Created on-the-fly' }),
+        });
+        const roleData = await roleRes.json();
+        if (!roleData.success) {
+          setStaffError(roleData.error || 'Failed to create custom role.');
+          setUpdateLoading(false);
+          return;
+        }
+        finalRoleName = trimmedCustom;
+      }
+
       const res = await fetch('/api/dashboard/staff', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: editingStaff.id, ...editForm }),
+        body: JSON.stringify({ id: editingStaff.id, ...editForm, roleName: finalRoleName }),
       });
       const data = await res.json();
       if (data.success) {
         setStaffSuccess(data.message);
         setEditingStaff(null);
+        setEditCustomRoleName('');
         await fetchStaff();
       } else { setStaffError(data.error || 'Failed to update account.'); }
     } catch { setStaffError('Network error.'); }
@@ -1625,8 +1680,17 @@ export default function BusinessProfilePage() {
                           <div>
                             <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Role</label>
                             <select value={editForm.roleName} onChange={e => setEditForm(p => ({ ...p, roleName: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition">
-                              <option value="Cashier">Cashier</option>
-                              <option value="Restaurant Owner">Restaurant Owner</option>
+                              {availableRoles.length > 0 ? (
+                                availableRoles.map(role => (
+                                  <option key={role.id} value={role.name}>{role.name}</option>
+                                ))
+                              ) : (
+                                <>
+                                  <option value="Cashier">Cashier</option>
+                                  <option value="Restaurant Owner">Restaurant Owner</option>
+                                </>
+                              )}
+                              <option value="custom">+ Add Custom Role...</option>
                             </select>
                           </div>
                           <div>
@@ -1637,6 +1701,12 @@ export default function BusinessProfilePage() {
                             </select>
                           </div>
                         </div>
+                        {editForm.roleName === 'custom' && (
+                          <div>
+                            <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Custom Role Name *</label>
+                            <input required type="text" value={editCustomRoleName} onChange={e => setEditCustomRoleName(e.target.value)} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition" placeholder="e.g. Head Chef, Bar Manager" />
+                          </div>
+                        )}
                         <div className="flex gap-3 pt-2">
                           <button type="button" onClick={() => setEditingStaff(null)} className="flex-1 py-3 border border-slate-800 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">Cancel</button>
                           <button type="submit" disabled={updateLoading} className="flex-1 py-3 bg-[#f59e0b] text-black rounded-xl text-xs font-extrabold hover:bg-amber-400 transition flex items-center justify-center gap-1.5 disabled:opacity-50">
@@ -1679,11 +1749,26 @@ export default function BusinessProfilePage() {
                           <div>
                             <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Role</label>
                             <select value={newStaff.roleName} onChange={e => setNewStaff(p => ({ ...p, roleName: e.target.value }))} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition">
-                              <option value="Cashier">Cashier</option>
-                              <option value="Restaurant Owner">Restaurant Owner</option>
+                              {availableRoles.length > 0 ? (
+                                availableRoles.map(role => (
+                                  <option key={role.id} value={role.name}>{role.name}</option>
+                                ))
+                              ) : (
+                                <>
+                                  <option value="Cashier">Cashier</option>
+                                  <option value="Restaurant Owner">Restaurant Owner</option>
+                                </>
+                              )}
+                              <option value="custom">+ Add Custom Role...</option>
                             </select>
                           </div>
                         </div>
+                        {newStaff.roleName === 'custom' && (
+                          <div>
+                            <label className="text-slate-400 font-bold uppercase tracking-wide block mb-1.5">Custom Role Name *</label>
+                            <input required type="text" value={customRoleName} onChange={e => setCustomRoleName(e.target.value)} className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition" placeholder="e.g. Head Chef, Bar Manager" />
+                          </div>
+                        )}
                         <div className="flex gap-3 pt-2">
                           <button type="button" onClick={() => setShowCreateModal(false)} className="flex-1 py-3 border border-slate-800 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition">Cancel</button>
                           <button type="submit" disabled={createLoading} className="flex-1 py-3 bg-[#f59e0b] text-black rounded-xl text-xs font-extrabold hover:bg-amber-400 transition flex items-center justify-center gap-1.5 disabled:opacity-50">

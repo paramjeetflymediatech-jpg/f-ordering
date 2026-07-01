@@ -51,7 +51,9 @@ export default function LoginPage() {
   useEffect(() => {
     if (status === 'authenticated' && session?.user) {
       const roles = (session.user as any).roles || [];
-      if (roles.includes('Cashier') || roles.includes('Waiter')) {
+      if (roles.includes('Kitchen Staff')) {
+        router.push('/kds');
+      } else if (roles.includes('Cashier') || roles.includes('Waiter')) {
         router.push('/pos');
       } else {
         router.push('/dashboard');
