@@ -12,7 +12,7 @@ export default function AppLayoutWrapper({ children }: { children: React.ReactNo
   const isOrderOnlinePage = pathname?.startsWith('/order-online') || pathname?.startsWith('/menu') || pathname?.startsWith('/book');
 
   // Internal app pages use the dark app shell
-  const isAppPage = ['/pos', '/dashboard', '/login', '/register'].some(
+  const isAppPage = ['/pos', '/kds', '/dashboard', '/login', '/register'].some(
     (path) => pathname?.startsWith(path)
   );
 
