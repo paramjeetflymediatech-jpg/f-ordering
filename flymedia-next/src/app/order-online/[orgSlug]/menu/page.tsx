@@ -826,7 +826,7 @@ export default function PublicOrderPage() {
 
       {/* MOBILE CATEGORIES HORIZONTAL SLIDER */}
       <div 
-        className={`lg:hidden border-b px-6 py-3 overflow-x-auto whitespace-nowrap flex gap-2 custom-scrollbar ${
+        className={`lg:hidden sticky top-[96px] z-30 border-b px-6 py-3 overflow-x-auto whitespace-nowrap flex gap-2 custom-scrollbar ${
           layoutStyle === 'modern_dark'
             ? 'bg-[#0c101b] border-[#1e293b]/60'
             : 'bg-white border-slate-200'
