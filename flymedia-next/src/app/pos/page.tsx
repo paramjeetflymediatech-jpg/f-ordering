@@ -44,6 +44,19 @@ export default function POSPage() {
           console.log('[POS Socket] Connected, joining store room:', storeId);
           socket.emit('join_store', storeId);
         });
+
+        socket.on('kitchen_new_order', (newOrder: any) => {
+          console.log('[POS Socket] New online/POS order received:', newOrder);
+          fetchHeldOrders(); // Refresh orders queue dynamically
+          
+          // Play notification chime to alert cashier
+          try {
+            const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-84.wav');
+            audio.volume = 0.5;
+            audio.play().catch(() => {});
+          } catch (e) {}
+        });
+
         return () => {
           socket.disconnect();
         };
@@ -182,23 +195,34 @@ export default function POSPage() {
           const formattedHeld = data.heldOrders.map((order: any) => ({
             id: order.id,
             timestamp: new Date(order.createdAt),
-            items: order.items.map((oi: any) => ({
-              id: `${oi.menu_item_id}-${oi.variant_id || ''}-${(oi.addons || []).map((a: any) => a.id).sort().join(',')}`,
-              menuItemId: oi.menu_item_id,
-              name: oi.MenuItem?.name || 'Dish Item',
-              price: parseFloat(oi.unit_price),
-              quantity: oi.quantity,
-              notes: oi.notes,
-              addons: oi.addons || [],
-              variant: oi.variant_id ? { id: oi.variant_id, name: '', additional_price: 0 } : undefined,
-            })),
+            notes: order.notes || order.order_number,
+            status: order.status,
+            orderNumber: order.order_number,
             discountRate: 0,
             discountAmount: parseFloat(order.discount_amount) || 0,
             orderType: order.order_type,
+            items: order.items.map((oi: any) => {
+              let addonsList = [];
+              try {
+                addonsList = typeof oi.addons === 'string' ? JSON.parse(oi.addons) : (oi.addons || []);
+              } catch (e) {}
+              return {
+                id: `${oi.menu_item_id}-${oi.variant_id || ''}-${addonsList.map((a: any) => a.id || a.name).sort().join(',')}`,
+                menuItemId: oi.menu_item_id,
+                name: oi.MenuItem?.name || 'Dish Item',
+                price: parseFloat(oi.unit_price),
+                quantity: oi.quantity,
+                notes: oi.notes || '',
+                addons: addonsList,
+                variant: oi.variant_id ? { id: oi.variant_id, name: '', additional_price: 0 } : undefined,
+              };
+            }),
             selectedTable: order.RestaurantTable
               ? { id: order.table_id, table_number: order.RestaurantTable.table_number }
               : null,
-            notes: order.items[0]?.notes || undefined,
+            selectedCustomer: order.customer
+              ? { name: order.customer.name, phone: order.customer.phone, email: order.customer.email }
+              : null,
           }));
 
           usePOSStore.setState({ heldOrders: formattedHeld });

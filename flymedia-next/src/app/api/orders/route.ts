@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth';
+import { Op } from 'sequelize';
 import { sequelize, Order, OrderItem, Payment, RestaurantTable, MenuItem, Customer } from '../../../models';
 
 export async function GET() {
@@ -15,7 +16,9 @@ export async function GET() {
     const heldOrders = await Order.findAll({
       where: {
         store_id,
-        status: 'on_hold',
+        status: {
+          [Op.in]: ['on_hold', 'pending'],
+        },
       },
       include: [
         {

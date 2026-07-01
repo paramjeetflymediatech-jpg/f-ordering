@@ -358,8 +358,16 @@ export function POSModals({
                     className="rounded-xl border border-[#1e293b] bg-slate-950 p-4 flex justify-between items-center text-xs"
                   >
                     <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        {order.status === 'pending' ? (
+                          <span className="px-1.5 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-[8px] font-bold text-blue-400 uppercase tracking-wider">Online</span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/25 text-[8px] font-bold text-amber-400 uppercase tracking-wider">Held</span>
+                        )}
+                        <span className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-[8px] font-bold text-slate-400 uppercase tracking-wider">{order.orderType || 'Order'}</span>
+                      </div>
                       <p className="font-extrabold text-white">
-                        Label: {order.notes || 'Unnamed Order'}
+                        Label: {order.notes || order.orderNumber || 'Unnamed Order'}
                       </p>
                       <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-1">
                         <Clock className="h-3.5 w-3.5" />

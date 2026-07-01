@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { loadStripe } from '@stripe/stripe-js';
 import {
@@ -507,6 +508,36 @@ export default function PublicOrderPage() {
     }
   };
 
+  const triggerOrderCreatedNotification = (order: any, items: any[], type: string) => {
+    try {
+      const socket = io({
+        transports: ['websocket', 'polling']
+      });
+      socket.emit('new_order', {
+        storeId: store.id,
+        order: {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          total: order.total,
+          status: order.status,
+          createdAt: new Date(),
+          orderType: type === 'dine_in' ? 'qr_order' : type,
+          Items: items.map((item: any) => ({
+            id: item.id || item.menuItemId,
+            quantity: item.quantity,
+            price: item.price,
+            MenuItem: { name: item.name },
+            addons: item.addons || [],
+            notes: item.notes || null,
+          })),
+        },
+      });
+      setTimeout(() => socket.disconnect(), 1000);
+    } catch (err) {
+      console.error('[Socket Notification] Failed to notify order creation:', err);
+    }
+  };
+
   const handleCashCheckout = async (cartItems: CartItem[], payload: any) => {
     const res = await fetch('/api/public/orders', {
       method: 'POST',
@@ -515,6 +546,7 @@ export default function PublicOrderPage() {
     });
     const data = await res.json();
     if (data.success) {
+      triggerOrderCreatedNotification(data.order, cartItems, payload.orderType);
       setRecentOrder(data.order);
       setNewAccount(data.newAccount || null);
       setCart([]);
@@ -1585,6 +1617,7 @@ export default function PublicOrderPage() {
                       couponCode: appliedCoupon ? appliedCoupon.code : undefined,
                     }}
                     onSuccess={(order: any, accountInfo?: any) => {
+                      triggerOrderCreatedNotification(order, cart, orderType);
                       setRecentOrder(order);
                       setNewAccount(accountInfo || null);
                       setCart([]);

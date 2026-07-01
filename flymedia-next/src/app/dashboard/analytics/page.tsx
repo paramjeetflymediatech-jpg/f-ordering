@@ -132,6 +132,8 @@ export default function AnalyticsDashboardPage() {
   const [expensesData, setExpensesData] = useState<any[]>([]);
   const [employeeData, setEmployeeData] = useState<any[]>([]);
   const [urlData, setUrlData] = useState<any[]>([]);
+  const [unpaidTotal, setUnpaidTotal] = useState(0);
+  const [unpaidCount, setUnpaidCount] = useState(0);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,6 +169,8 @@ export default function AnalyticsDashboardPage() {
         setModifiersList(data.modifiersList || []);
         setEmployeeData(data.employeeData || []);
         setUrlData(data.urlData || []);
+        setUnpaidTotal(data.unpaidTotal || 0);
+        setUnpaidCount(data.unpaidCount || 0);
       } else {
         setError(data.error || 'Failed to load analytics data.');
       }
@@ -1045,19 +1049,19 @@ export default function AnalyticsDashboardPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="border border-slate-800 bg-slate-950 p-4 rounded-xl">
                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Drawer Cash Counted</p>
-                      <h4 className="text-xl font-black text-white mt-1">${(totalPeriodCash * 0.15).toFixed(2)}</h4>
+                      <h4 className="text-xl font-black text-white mt-1">${totalPeriodCash.toFixed(2)}</h4>
                       <p className="text-[9px] text-emerald-500 font-bold mt-1">Status: Balanced</p>
                     </div>
 
                     <div className="border border-slate-800 bg-slate-950 p-4 rounded-xl">
                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Unpaid Orders Outstanding</p>
-                      <h4 className="text-xl font-black text-red-400 mt-1">${(totalPeriodOnline * 0.05).toFixed(2)}</h4>
-                      <p className="text-[9px] text-slate-600 mt-1">Pending payments</p>
+                      <h4 className="text-xl font-black text-red-400 mt-1">${unpaidTotal.toFixed(2)}</h4>
+                      <p className="text-[9px] text-slate-650 mt-1">{unpaidCount} unpaid orders pending</p>
                     </div>
 
                     <div className="border border-slate-800 bg-slate-950 p-4 rounded-xl">
                       <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Completed Transactions</p>
-                      <h4 className="text-xl font-black text-white mt-1">{Math.round(totalPeriodTransactions * 0.2)}</h4>
+                      <h4 className="text-xl font-black text-white mt-1">{totalPeriodTransactions}</h4>
                       <p className="text-[9px] text-slate-600 mt-1">Today's Shift total</p>
                     </div>
                   </div>

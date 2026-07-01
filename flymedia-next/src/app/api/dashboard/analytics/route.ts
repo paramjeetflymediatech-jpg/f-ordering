@@ -366,6 +366,17 @@ export async function GET() {
       })
     );
 
+    // Calculate actual unpaid/outstanding orders
+    let unpaidTotal = 0;
+    let unpaidCount = 0;
+    orders.forEach((order) => {
+      const payments = (order as any).payments || [];
+      if (payments.length === 0 && order.status !== 'completed' && order.status !== 'cancelled') {
+        unpaidTotal += Number(order.total_amount) || 0;
+        unpaidCount += 1;
+      }
+    });
+
     return NextResponse.json({
       success: true,
       revenue: { daily, weekly, monthly, yearly },
@@ -377,6 +388,8 @@ export async function GET() {
       modifiersList,
       employeeData: employeePerformance,
       urlData,
+      unpaidTotal,
+      unpaidCount,
     });
   } catch (error: any) {
     console.error('Fetch Analytics Error:', error);

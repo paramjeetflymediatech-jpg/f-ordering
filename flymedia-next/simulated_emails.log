@@ -791,3 +791,39 @@ SIMULATED DISPATCH DETAIL:
   Admin notified: owner@fordering.com
   
 
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/1/2026, 11:54:12 AM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00019
+Order Type: TAKEAWAY
+Timestamp: 7/1/2026, 11:54:12 AM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: man
+Phone: 145789632
+Email: man@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Woodfired Margherita Pizza [Variant: Small 9"] @ $13.99 each = $13.99
+
+Subtotal: $13.99
+Tax: $1.15
+Total Amount: $15.14
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $15.14
+Transaction Reference: ONL-TX-1782887052544
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: man@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
