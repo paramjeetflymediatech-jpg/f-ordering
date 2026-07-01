@@ -751,13 +751,14 @@ export default function DashboardPage() {
                 Render prepared orders and cooking progress in real-time. Culinary teams can accept pending tickets and send instant order-ready signals to waiter consoles.
               </p>
             </div>
-            <button
-              onClick={() => alert('KDS Console module is configured in the background. Screen release scheduled for next release phase.')}
-              className="mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-slate-900 border border-[#1e293b] py-3 text-xs font-extrabold text-slate-300 hover:bg-slate-800 transition"
+            <Link
+              href="/kds"
+              target="_blank"
+              className="mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 py-3 text-xs font-extrabold text-white transition shadow-md shadow-purple-600/10"
             >
               Launch Kitchen Console
               <ChevronRight className="h-3.5 w-3.5" />
-            </button>
+            </Link>
           </div>
 
         </div>

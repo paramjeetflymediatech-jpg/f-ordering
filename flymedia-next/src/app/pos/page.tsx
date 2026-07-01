@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { usePOSStore } from '../../lib/store';
+import { io } from 'socket.io-client';
 
 // Import Modular POS Components
 import { POSSidebar } from '../../components/pos/POSSidebar';
@@ -28,6 +29,27 @@ export default function POSPage() {
       router.push('/login');
     }
   }, [status, router]);
+
+  // Socket.IO client setup for real-time kitchen syncing
+  const socketRef = useRef<any>(null);
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      const storeId = (session.user as any).store_id;
+      if (storeId) {
+        const socket = io({
+          transports: ['websocket', 'polling']
+        });
+        socketRef.current = socket;
+        socket.on('connect', () => {
+          console.log('[POS Socket] Connected, joining store room:', storeId);
+          socket.emit('join_store', storeId);
+        });
+        return () => {
+          socket.disconnect();
+        };
+      }
+    }
+  }, [session, status]);
 
   // Load POS State from Zustand
   const {
@@ -459,6 +481,17 @@ export default function POSPage() {
       const data = await res.json();
       if (data.success) {
         setRecentOrder(data.order);
+        
+        // Emit Socket event to notify KDS instantly
+        if (socketRef.current) {
+          const storeId = (session?.user as any)?.store_id;
+          if (storeId) {
+            socketRef.current.emit('new_order', {
+              storeId,
+              order: data.order,
+            });
+          }
+        }
         
         // Clear local table cart state on checkout success
         if (selectedTable) {

@@ -81,6 +81,9 @@ OrderItem.belongsTo(Order, { foreignKey: 'order_id' });
 MenuItem.hasMany(OrderItem, { foreignKey: 'menu_item_id' });
 OrderItem.belongsTo(MenuItem, { foreignKey: 'menu_item_id' });
 
+OrderItem.belongsTo(MenuVariant, { foreignKey: 'variant_id', as: 'variant', constraints: false });
+MenuVariant.hasMany(OrderItem, { foreignKey: 'variant_id', constraints: false });
+
 // Orders & Payments
 Order.hasMany(Payment, { foreignKey: 'order_id', as: 'payments', onDelete: 'CASCADE' });
 Payment.belongsTo(Order, { foreignKey: 'order_id' });
