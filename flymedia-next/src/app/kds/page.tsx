@@ -155,10 +155,26 @@ export default function KDSPage() {
   useEffect(() => {
     if (sessionStatus === 'authenticated' && session?.user) {
       const userStoreId = (session.user as any).store_id;
-      if (userStoreId) {
-        setStoreId(userStoreId);
-        // Fetch store name
-        fetchStoresList(userStoreId);
+      
+      // Try to read storeId from URL query string
+      let activeId = userStoreId;
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const urlStoreId = params.get('storeId');
+        if (urlStoreId) {
+          // If the user has a restricted store_id in session, they shouldn't view other stores
+          if (userStoreId && userStoreId !== urlStoreId) {
+            setErrorMsg('Unauthorized store access');
+            return;
+          }
+          activeId = urlStoreId;
+        }
+      }
+
+      if (activeId) {
+        setStoreId(activeId);
+        // Fetch store name and restrict list if user is restricted
+        fetchStoresList(activeId, !!userStoreId);
       } else {
         // No pre-assigned store_id (e.g. Org owner / Admin), fetch stores
         fetchStoresList();
@@ -166,17 +182,26 @@ export default function KDSPage() {
     }
   }, [sessionStatus, session]);
 
-  const fetchStoresList = async (preselectedId?: string) => {
+  const fetchStoresList = async (preselectedId?: string, isRestricted = false) => {
     setLoadingStores(true);
     try {
       const res = await fetch('/api/dashboard/locations');
       const data = await res.json();
       if (data.success && data.locations) {
-        setStores(data.locations);
         if (preselectedId) {
           const selected = data.locations.find((l: any) => l.id === preselectedId);
-          if (selected) setStoreName(selected.name);
+          if (selected) {
+            setStoreName(selected.name);
+            if (isRestricted) {
+              setStores([selected]); // Restrict list to only this store (hides Switch Store)
+            } else {
+              setStores(data.locations); // Let admins switch locations
+            }
+          } else {
+            setStores(data.locations);
+          }
         } else {
+          setStores(data.locations);
           // If only 1 store, auto-select
           if (data.locations.length === 1) {
             setStoreId(data.locations[0].id);
@@ -561,6 +586,31 @@ export default function KDSPage() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 text-white">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#f59e0b] border-t-transparent"></div>
         <p className="mt-4 text-xs font-bold text-slate-400 tracking-wider uppercase">Loading Kitchen System...</p>
+      </div>
+    );
+  }
+
+  if (errorMsg) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 text-white p-4">
+        <div className="h-12 w-12 flex items-center justify-center rounded-2xl bg-rose-950/40 border border-rose-800/30 mb-4">
+          <AlertTriangle className="h-6 w-6 text-rose-500 animate-bounce" />
+        </div>
+        <h2 className="text-base font-bold text-white mb-2">Kitchen Console Error</h2>
+        <p className="text-slate-400 text-xs font-semibold text-center max-w-sm">{errorMsg}</p>
+        <button
+          onClick={() => {
+            setErrorMsg(null);
+            if (storeId) {
+              fetchKDSOrders();
+            } else {
+              window.location.reload();
+            }
+          }}
+          className="mt-6 px-4 py-2 bg-slate-900 border border-[#1e293b] hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
