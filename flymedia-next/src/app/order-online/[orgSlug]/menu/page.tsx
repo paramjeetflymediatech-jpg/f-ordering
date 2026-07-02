@@ -1342,7 +1342,7 @@ export default function PublicOrderPage() {
       {/* CUSTOMIZATION DIALOG */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-5xl rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xl flex flex-col md:flex-row relative">
+          <div className="w-full max-w-5xl rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xl flex flex-col md:flex-row relative max-h-[92vh] md:max-h-[85vh]">
             
             {/* Close Button */}
             <button
@@ -1353,7 +1353,7 @@ export default function PublicOrderPage() {
             </button>
 
             {/* Left Side: Product Image / Visual details */}
-            <div className="w-full md:w-5/12 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 flex items-center justify-center relative min-h-[220px] md:min-h-full">
+            <div className="w-full md:w-5/12 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 flex items-center justify-center relative h-36 md:h-auto flex-shrink-0">
               {selectedItem.image_url ? (
                 <img 
                   src={selectedItem.image_url} 
@@ -1361,17 +1361,17 @@ export default function PublicOrderPage() {
                   className="w-full h-full object-cover absolute inset-0"
                 />
               ) : (
-                <div className="text-slate-400 font-extrabold text-lg flex flex-col items-center gap-2 py-12">
-                  <span className={`h-20 w-20 rounded-2xl text-white font-extrabold flex items-center justify-center shadow-md ${getItemInitialsAndColor(selectedItem.name).color}`}>
+                <div className="text-slate-400 font-extrabold text-lg flex flex-col items-center gap-2 py-6">
+                  <span className={`h-16 w-16 rounded-2xl text-white font-extrabold flex items-center justify-center shadow-md ${getItemInitialsAndColor(selectedItem.name).color}`}>
                     {getItemInitialsAndColor(selectedItem.name).initials}
                   </span>
-                  <span className="text-slate-600 mt-2 font-bold">{selectedItem.name}</span>
+                  <span className="text-slate-650 mt-1 font-bold text-xs">{selectedItem.name}</span>
                 </div>
               )}
             </div>
 
             {/* Right Side: Options & Details */}
-            <div className="w-full md:w-7/12 flex flex-col max-h-[85vh] md:max-h-[75vh]">
+            <div className="w-full md:w-7/12 flex flex-col min-h-0 flex-1 overflow-hidden">
               {/* Product Info */}
               <div className="p-6 pb-4 border-b border-slate-100">
                 <span className="text-[10px] bg-slate-100 text-slate-500 uppercase tracking-widest px-2 py-0.5 rounded font-bold">
