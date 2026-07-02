@@ -43,7 +43,7 @@ export const sequelize = new Sequelize(database, username, password, {
 if (process.env.NODE_ENV === 'development') {
   (async () => {
     try {
-      await sequelize.sync({ alter: true });
+      await sequelize.sync();
       console.log('✅ DB sync (dev) complete');
     } catch (err) {
       console.error('⚠️ DB sync error', err);

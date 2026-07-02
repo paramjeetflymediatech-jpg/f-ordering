@@ -157,6 +157,10 @@ export async function PUT(request: Request) {
     if (body.themeBgColor !== undefined) storeUpdates.theme_bg_color = body.themeBgColor;
     if (body.themeLayout !== undefined) storeUpdates.theme_layout = body.themeLayout;
     if (body.themeFont !== undefined) storeUpdates.theme_font = body.themeFont;
+      // Include business hours if edited
+      if (body.businessHours && Object.keys(body.businessHours).length > 0) {
+        storeUpdates.business_hours = body.businessHours;
+      }
 
     if (Object.keys(storeUpdates).length > 0) {
       await store.update(storeUpdates);

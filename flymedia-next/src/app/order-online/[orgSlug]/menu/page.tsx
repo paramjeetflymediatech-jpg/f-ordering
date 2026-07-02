@@ -297,80 +297,91 @@ export default function PublicOrderPage() {
   const [stripeStoreId, setStripeStoreId] = useState<string | null>(null);
 
   // Fetch Store Info and Menu by Organization Slug
-  useEffect(() => {
-    if (!orgSlug) return;
+  const fetchStoreAndMenu = async () => {
+    try {
+      setLoading(true);
 
-    const fetchStoreAndMenu = async () => {
-      try {
-        setLoading(true);
+      // 1. Fetch Store Config by Org Slug
+      const storeRes = await fetch(`/api/public/store?orgSlug=${orgSlug}`);
+      const storeData = await storeRes.json();
+      if (!storeRes.ok || !storeData.success) {
+        throw new Error(storeData.error || 'Failed to load store information.');
+      }
+      setStore(storeData.store);
+      console.log('DEBUG: store business_hours', storeData.store.business_hours);
+      setTables(storeData.tables || []);
+      setStripeStoreId(storeData.store?.id || null);
 
-        // 1. Fetch Store Config by Org Slug
-        const storeRes = await fetch(`/api/public/store?orgSlug=${orgSlug}`);
-        const storeData = await storeRes.json();
-        if (!storeRes.ok || !storeData.success) {
-          throw new Error(storeData.error || 'Failed to load store information.');
-        }
-        setStore(storeData.store);
-        setTables(storeData.tables || []);
-        setStripeStoreId(storeData.store?.id || null);
-
-        // Check if Stripe is configured for this store (lightweight — no PaymentIntent created)
-        if (storeData.store?.id) {
-          try {
-            const cfgRes = await fetch(`/api/public/stripe/config?storeId=${storeData.store.id}`);
-            const cfgData = await cfgRes.json();
-            if (cfgData.enabled && cfgData.publishableKey) {
-              setStripeEnabled(true);
-              setStripePromise(loadStripe(cfgData.publishableKey));
-            }
-          } catch {
-            // Stripe not configured — cash only
-          }
-        }
-
-        // 2. Fetch Menu by Org Slug
-        const menuRes = await fetch(`/api/public/menu?orgSlug=${orgSlug}`);
-        const menuData = await menuRes.json();
-        if (!menuRes.ok || !menuData.success) {
-          throw new Error(menuData.error || 'Failed to load menu listing.');
-        }
-        setCategories(menuData.categories || []);
-
-        // 3. Fetch active coupons / offers for banner carousel
-        if (storeData.store?.id) {
-          try {
-            const promoRes = await fetch(`/api/public/coupons?storeId=${storeData.store.id}`);
-            const promoData = await promoRes.json();
-            if (promoRes.ok && promoData.success) {
-              setOffers(promoData.coupons || []);
-            }
-          } catch (e) {
-            console.error('Failed to load active promotions:', e);
-          }
-        }
-
-        // 4. Fetch logged in customer info if exists (for prefilling)
+      // Check if Stripe is configured for this store (lightweight — no PaymentIntent created)
+      if (storeData.store?.id) {
         try {
-          const custRes = await fetch('/api/public/customer/me');
-          const custData = await custRes.json();
-          if (custRes.ok && custData.success && custData.customer) {
-            setCustomer(custData.customer);
-            setCustomerName(custData.customer.name);
-            setCustomerPhone(custData.customer.phone);
-            setCustomerEmail(custData.customer.email || '');
+          const cfgRes = await fetch(`/api/public/stripe/config?storeId=${storeData.store.id}`);
+          const cfgData = await cfgRes.json();
+          if (cfgData.enabled && cfgData.publishableKey) {
+            setStripeEnabled(true);
+            setStripePromise(loadStripe(cfgData.publishableKey));
+          }
+        } catch {
+          // Stripe not configured — cash only
+        }
+      }
+
+      // 2. Fetch Menu by Org Slug
+      const menuRes = await fetch(`/api/public/menu?orgSlug=${orgSlug}`);
+      const menuData = await menuRes.json();
+      if (!menuRes.ok || !menuData.success) {
+        throw new Error(menuData.error || 'Failed to load menu listing.');
+      }
+      setCategories(menuData.categories || []);
+
+      // 3. Fetch active coupons / offers for banner carousel
+      if (storeData.store?.id) {
+        try {
+          const promoRes = await fetch(`/api/public/coupons?storeId=${storeData.store.id}`);
+          const promoData = await promoRes.json();
+          if (promoRes.ok && promoData.success) {
+            setOffers(promoData.coupons || []);
           }
         } catch (e) {
-          // Ignore if not logged in
+          console.error('Failed to load active promotions:', e);
         }
-
-      } catch (err: any) {
-        setError(err.message || 'An error occurred while setting up the terminal.');
-      } finally {
-        setLoading(false);
       }
-    };
 
+      // 4. Fetch logged in customer info if exists (for prefilling)
+      try {
+        const custRes = await fetch('/api/public/customer/me');
+        const custData = await custRes.json();
+        if (custRes.ok && custData.success && custData.customer) {
+          setCustomer(custData.customer);
+          setCustomerName(custData.customer.name);
+          setCustomerPhone(custData.customer.phone);
+          setCustomerEmail(custData.customer.email || '');
+        }
+      } catch (e) {
+        // Ignore if not logged in
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while setting up the terminal.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    if (!orgSlug) return;
     fetchStoreAndMenu();
+  }, [orgSlug]);
+
+  // Refetch when profile is updated elsewhere
+  useEffect(() => {
+    const handler = () => {
+      fetchStoreAndMenu();
+    };
+    window.addEventListener('profileUpdated', handler);
+    return () => {
+      window.removeEventListener('profileUpdated', handler);
+    };
   }, [orgSlug]);
 
   const handleLogout = async () => {
@@ -678,6 +689,32 @@ export default function PublicOrderPage() {
     }
   };
 
+  // Helper to format opening hours label based on store business_hours and order type
+  const getBusinessHoursLabel = (type: 'takeaway' | 'delivery' | 'dine_in') => {
+    if (!store?.business_hours) return '';
+    const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    const today = new Date();
+    const dayKey = dayNames[today.getDay()];
+    // Business hours may be stored with capitalized day keys or as numbers; try several lookups
+    const typeHoursObj = store.business_hours?.[type] || {};
+    const possibleKeys = [dayKey, dayKey.charAt(0).toUpperCase() + dayKey.slice(1)];
+    let typeHours = undefined as any;
+    for (const k of possibleKeys) {
+      if (typeHoursObj[k]) { typeHours = typeHoursObj[k]; break; }
+    }
+    if (!typeHours) return '';
+    const formatTime = (t: string) => {
+      const [h, m] = t.split(':');
+      let hour = parseInt(h, 10);
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12 === 0 ? 12 : hour % 12;
+      return `${hour}:${m} ${ampm}`;
+    };
+    const open = formatTime(typeHours.open);
+    const close = formatTime(typeHours.close);
+    return `Open ${open} - ${close}`;
+  };
+
   return (
     <div
       className={`min-h-screen pb-24 lg:pb-0 ${layoutStyle === 'modern_dark' ? 'text-slate-100 font-sans' : 'text-slate-800 font-sans'
@@ -735,6 +772,12 @@ export default function PublicOrderPage() {
                 About Us
               </Link>
             )}
+            {/* Business Hours for Takeaway, Delivery, Dine-in */}
+            <div className="mt-1 flex flex-col text-xs opacity-80">
+              <span>{getBusinessHoursLabel('takeaway')}</span>
+              <span>{getBusinessHoursLabel('delivery')}</span>
+              <span>{getBusinessHoursLabel('dine_in')}</span>
+            </div>
             <Link href={`/order-online/${orgSlug}/book`} className="text-white transition">
               Book Table
             </Link>
@@ -1014,7 +1057,7 @@ export default function PublicOrderPage() {
                 style={orderType === 'takeaway' ? { backgroundColor: primaryColor } : undefined}
               >
                 <span className="text-sm uppercase tracking-wide">Take Away</span>
-                <span className={`text-[10px] mt-1 ${orderType === 'takeaway' ? 'text-white/80' : 'text-slate-500'}`}>Open 05:00 PM - 10:00 PM</span>
+                <span className={`text-[10px] mt-1 ${orderType === 'takeaway' ? 'text-white/80' : 'text-slate-500'}`}>{getBusinessHoursLabel('takeaway')}</span>
               </button>
               <button
                 type="button"
@@ -1028,7 +1071,7 @@ export default function PublicOrderPage() {
                 style={orderType === 'delivery' ? { backgroundColor: primaryColor } : undefined}
               >
                 <span className="text-sm uppercase tracking-wide">Delivery</span>
-                <span className={`text-[10px] mt-1 ${orderType === 'delivery' ? 'text-white/80' : 'text-slate-500'}`}>Open 05:00 PM - 10:00 PM</span>
+                <span className={`text-[10px] mt-1 ${orderType === 'delivery' ? 'text-white/80' : 'text-slate-500'}`}>{getBusinessHoursLabel('delivery')}</span>
               </button>
             </div>
 

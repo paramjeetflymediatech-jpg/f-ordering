@@ -66,6 +66,7 @@ export default function BusinessProfilePage() {
 
   const [store, setStore] = useState<any>(null);
   const [organization, setOrganization] = useState<any>(null);
+  const layoutStyle = store?.theme_layout || 'classic';
 
   // Coupon Campaigns State
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -95,6 +96,8 @@ export default function BusinessProfilePage() {
     themeLayout: 'classic',
     themeFont: 'serif',
   });
+  // Business Hours State
+  const [businessHours, setBusinessHours] = useState<any>({});
 
   const [editMode, setEditMode] = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
@@ -208,6 +211,7 @@ export default function BusinessProfilePage() {
           themeLayout: data.store.theme_layout || 'classic',
           themeFont: data.store.theme_font || 'serif',
         });
+        setBusinessHours(data.store.business_hours || null);
       } else {
         setError(data.error || 'Failed to fetch business profile.');
       }
@@ -406,13 +410,14 @@ export default function BusinessProfilePage() {
       const res = await fetch('/api/dashboard/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, businessHours: businessHours }),
       });
 
       const data = await res.json();
       if (data.success) {
         setStore(data.store);
         setOrganization(data.organization);
+        setBusinessHours(data.store.business_hours || null);
         setSuccess('Business profile updated successfully!');
         setEditMode(false);
         if (typeof window !== 'undefined') {
@@ -650,7 +655,7 @@ export default function BusinessProfilePage() {
                         {!editMode ? (
                           <button
                             onClick={() => setEditMode(true)}
-                            className="bg-slate-900 border border-[#1e293b] text-slate-200 hover:text-white hover:bg-slate-800 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shrink-0"
+                            className={`bg-slate-900 border border-[#1e293b] hover:text-white hover:bg-slate-800 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shrink-0`}
                           >
                             <Edit3 className="h-3.5 w-3.5" />
                             Edit Profile
@@ -1022,6 +1027,61 @@ export default function BusinessProfilePage() {
                       />
                     </div>
                   </div>
+
+                    {/* Business Hours Section */}
+                    <div className="mt-6">
+                      <h4 className="text-sm font-semibold text-[#f59e0b] mb-3">Business Hours</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {['takeaway','delivery','dine_in'].map((type) => (
+                          <div key={type} className="bg-[#0c101b] p-4 rounded-xl border border-[#1e293b]/60">
+                            <h5 className="text-xs font-medium text-[#f59e0b] mb-2 capitalize">{type.replace('_',' ')}</h5>
+                            {['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'].map((day) => (
+                              <div key={day} className="flex items-center gap-2 mb-1">
+                                <span className="text-[10px] w-20 text-slate-400">{day.slice(0,3)}</span>
+                                <input
+                                  type="time"
+                                  disabled={!editMode}
+                                  value={businessHours?.[type]?.[day]?.open || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setBusinessHours((prev:any) => ({
+                                      ...prev,
+                                      [type]: {
+                                        ...(prev?.[type] || {}),
+                                        [day]: {
+                                          ...(prev?.[type]?.[day] || {}),
+                                          open: val,
+                                        },
+                                      },
+                                    }));
+                                  }}
+                                  className="w-20 bg-[#080b11] border border-[#1e293b] text-white rounded px-1 py-0.5 text-xs"
+                                />
+                                <input
+                                  type="time"
+                                  disabled={!editMode}
+                                  value={businessHours?.[type]?.[day]?.close || ''}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    setBusinessHours((prev:any) => ({
+                                      ...prev,
+                                      [type]: {
+                                        ...(prev?.[type] || {}),
+                                        [day]: {
+                                          ...(prev?.[type]?.[day] || {}),
+                                          close: val,
+                                        },
+                                      },
+                                    }));
+                                  }}
+                                  className="w-20 bg-[#080b11] border border-[#1e293b] text-white rounded px-1 py-0.5 text-xs"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
                   {/* Floating Action Bar (Edit Mode Only) */}
                   {editMode && (
