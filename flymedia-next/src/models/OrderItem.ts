@@ -7,6 +7,7 @@ export class OrderItem extends Model {
   declare menu_item_id: string;
   declare variant_id: string | null;
   declare addons: any; // JSON
+  declare bases: any; // JSON
   declare quantity: number;
   declare unit_price: number;
   declare total_price: number;
@@ -33,6 +34,10 @@ OrderItem.init(
       allowNull: true,
     },
     addons: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    bases: {
       type: DataTypes.JSON,
       allowNull: true,
     },

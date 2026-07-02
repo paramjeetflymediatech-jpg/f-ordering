@@ -14,3 +14,6 @@ CREATE TABLE IF NOT EXISTS `menu_bases` (
     ON DELETE CASCADE 
     ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 2. Add bases JSON column to order_items table to record selected bases per ordered item
+ALTER TABLE `order_items` ADD COLUMN `bases` JSON NULL AFTER `addons`;

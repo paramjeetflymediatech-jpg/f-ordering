@@ -191,6 +191,7 @@ export async function POST(request: Request) {
       menu_item_id: item.menuItemId,
       variant_id: item.variant?.id || null,
       addons: item.addons || [],
+      bases: item.bases || [],
       quantity: item.quantity,
       unit_price: item.price,
       total_price: item.price * item.quantity,

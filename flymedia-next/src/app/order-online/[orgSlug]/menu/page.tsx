@@ -42,6 +42,7 @@ interface CartItem {
   quantity: number;
   variant: any | null;
   addons: any[];
+  bases?: any[];
   notes?: string;
 }
 
@@ -211,7 +212,7 @@ export default function PublicOrderPage() {
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [selectedAddons, setSelectedAddons] = useState<any[]>([]);
-  const [selectedBase, setSelectedBase] = useState<any>(null);
+  const [selectedBases, setSelectedBases] = useState<any[]>([]);
   const [activeModal, setActiveModal] = useState<'checkout' | 'success' | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -487,9 +488,17 @@ export default function PublicOrderPage() {
 
   const handleOpenItem = (item: any) => {
     setSelectedItem(item);
-    setSelectedBase(item.bases?.[0] || null);
+    setSelectedBases([]); // Optional: start with no selection
     setSelectedVariant(item.variants?.[0] || null);
     setSelectedAddons([]);
+  };
+
+  const handleToggleBase = (base: any) => {
+    setSelectedBases((prev) =>
+      prev.some((b) => b.id === base.id)
+        ? prev.filter((b) => b.id !== base.id)
+        : [...prev, base]
+    );
   };
 
   const handleToggleAddon = (addon: any) => {
@@ -510,7 +519,13 @@ export default function PublicOrderPage() {
     const addonPrice = selectedAddons.reduce((sum, addon) => sum + parseFloat(addon.price || 0), 0);
     finalUnitPrice += addonPrice;
 
-    const cartItemId = `${selectedItem.id}-${selectedBase?.id || 'none'}-${selectedVariant?.id || 'none'}-${selectedAddons
+    const basePrice = selectedBases.reduce((sum, base) => sum + parseFloat(base.extraPrice || 0), 0);
+    finalUnitPrice += basePrice;
+
+    const cartItemId = `${selectedItem.id}-${selectedBases
+      .map((b) => b.id)
+      .sort()
+      .join(',')}-${selectedVariant?.id || 'none'}-${selectedAddons
       .map((a) => a.id)
       .sort()
       .join(',')}`;
@@ -530,7 +545,7 @@ export default function PublicOrderPage() {
           name: selectedItem.name,
           price: finalUnitPrice,
           quantity: 1,
-          base: selectedBase,
+          bases: selectedBases,
           variant: selectedVariant,
           addons: selectedAddons,
         },
@@ -571,6 +586,7 @@ export default function PublicOrderPage() {
             price: item.price,
             MenuItem: { name: item.name },
             addons: item.addons || [],
+            bases: item.bases || [],
             notes: item.notes || null,
           })),
         },
@@ -1139,19 +1155,20 @@ export default function PublicOrderPage() {
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if ((item.variants && item.variants.length > 0) || (item.addons && item.addons.length > 0)) {
+                                      if ((item.variants && item.variants.length > 0) || (item.addons && item.addons.length > 0) || (item.bases && item.bases.length > 0)) {
                                         handleOpenItem(item);
                                       } else {
                                         setCart((prev) => [
                                           ...prev,
                                           {
-                                            id: `${item.id}-none-`,
+                                            id: `${item.id}-none-none-none`,
                                             menuItemId: item.id,
                                             name: item.name,
                                             price: parseFloat(item.price),
                                             quantity: 1,
                                             variant: null,
                                             addons: [],
+                                            bases: [],
                                           },
                                         ]);
                                       }
@@ -1222,6 +1239,11 @@ export default function PublicOrderPage() {
                       <p className={`text-xs font-bold truncate ${layoutStyle === 'modern_dark' ? 'text-white' : 'text-slate-700'}`}>{item.name}</p>
                       {item.variant && (
                         <p className="text-[10px] mt-0.5 font-semibold" style={{ color: accentColor }}>Variant: {item.variant.name}</p>
+                      )}
+                      {item.bases && item.bases.length > 0 && (
+                        <p className={`text-[10px] truncate mt-0.5 font-semibold ${layoutStyle === 'modern_dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+                          Bases: {item.bases.map((b: any) => b.name.toUpperCase()).join(', ')}
+                        </p>
                       )}
                       {item.addons.length > 0 && (
                         <p className={`text-[10px] truncate mt-0.5 font-semibold ${layoutStyle === 'modern_dark' ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -1348,14 +1370,14 @@ export default function PublicOrderPage() {
 
               {selectedItem.bases && selectedItem.bases.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Base</h4>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Bases (Optional)</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {selectedItem.bases.map((b: any) => {
-                      const isSelected = selectedBase?.id === b.id;
+                      const isSelected = selectedBases.some((base) => base.id === b.id);
                       return (
                         <button
                           key={b.id}
-                          onClick={() => setSelectedBase(b)}
+                          onClick={() => handleToggleBase(b)}
                           className={`p-3 rounded-xl border text-left text-xs uppercase font-bold transition ${isSelected
                               ? 'border-[#C39A3C] bg-[#C39A3C]/10 text-[#2A0E07]'
                               : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
@@ -1427,7 +1449,7 @@ export default function PublicOrderPage() {
                 <p className="text-xl font-black text-slate-800 mt-0.5">
                   ${(
                     parseFloat(selectedItem.price) +
-                    parseFloat(selectedBase?.extraPrice || 0) +
+                    selectedBases.reduce((sum, b) => sum + parseFloat(b.extraPrice || 0), 0) +
                     parseFloat(selectedVariant?.additional_price || 0) +
                     selectedAddons.reduce((sum, a) => sum + parseFloat(a.price || 0), 0)
                   ).toFixed(2)}
