@@ -772,12 +772,7 @@ export default function PublicOrderPage() {
                 About Us
               </Link>
             )}
-            {/* Business Hours for Takeaway, Delivery, Dine-in */}
-            <div className="mt-1 flex flex-col text-xs opacity-80">
-              <span>{getBusinessHoursLabel('takeaway')}</span>
-              <span>{getBusinessHoursLabel('delivery')}</span>
-              <span>{getBusinessHoursLabel('dine_in')}</span>
-            </div>
+         
             <Link href={`/order-online/${orgSlug}/book`} className="text-white transition">
               Book Table
             </Link>
