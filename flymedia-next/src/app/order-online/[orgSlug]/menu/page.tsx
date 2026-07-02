@@ -1342,127 +1342,153 @@ export default function PublicOrderPage() {
       {/* CUSTOMIZATION DIALOG */}
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xl">
-            <div className="relative h-48 bg-slate-100 flex items-center justify-center border-b border-slate-200">
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="absolute top-4 right-4 z-10 rounded-full bg-white/80 p-2 text-slate-500 hover:text-slate-800 border border-slate-200 transition"
-              >
-                <X className="h-4 w-4" />
-              </button>
+          <div className="w-full max-w-5xl rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xl flex flex-col md:flex-row relative">
+            
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedItem(null)}
+              className="absolute top-4 right-4 z-20 rounded-full bg-white/80 p-2 text-slate-500 hover:text-slate-800 border border-slate-200 transition"
+            >
+              <X className="h-4 w-4" />
+            </button>
+
+            {/* Left Side: Product Image / Visual details */}
+            <div className="w-full md:w-5/12 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 flex items-center justify-center relative min-h-[220px] md:min-h-full">
               {selectedItem.image_url ? (
-                <img src={selectedItem.image_url} alt="detail" className="w-full h-full object-contain" />
+                <img 
+                  src={selectedItem.image_url} 
+                  alt="detail" 
+                  className="w-full h-full object-cover absolute inset-0"
+                />
               ) : (
-                <div className="text-slate-400 font-extrabold text-lg flex flex-col items-center gap-2">
-                  <span className={`h-16 w-16 rounded-xl text-white font-extrabold flex items-center justify-center shadow-md ${getItemInitialsAndColor(selectedItem.name).color}`}>
+                <div className="text-slate-400 font-extrabold text-lg flex flex-col items-center gap-2 py-12">
+                  <span className={`h-20 w-20 rounded-2xl text-white font-extrabold flex items-center justify-center shadow-md ${getItemInitialsAndColor(selectedItem.name).color}`}>
                     {getItemInitialsAndColor(selectedItem.name).initials}
                   </span>
-                  <span>{selectedItem.name}</span>
+                  <span className="text-slate-600 mt-2 font-bold">{selectedItem.name}</span>
                 </div>
               )}
             </div>
 
-            <div className="p-6 space-y-6 overflow-y-auto max-h-[50vh]">
-              <div>
-                <h3 className="text-lg font-extrabold text-slate-800">{selectedItem.name}</h3>
-                <p className="text-xs text-slate-500 mt-1">{selectedItem.description}</p>
+            {/* Right Side: Options & Details */}
+            <div className="w-full md:w-7/12 flex flex-col max-h-[85vh] md:max-h-[75vh]">
+              {/* Product Info */}
+              <div className="p-6 pb-4 border-b border-slate-100">
+                <span className="text-[10px] bg-slate-100 text-slate-500 uppercase tracking-widest px-2 py-0.5 rounded font-bold">
+                  {selectedItem.categoryName || 'Menu Item'}
+                </span>
+                <h3 className="text-xl font-black text-slate-850 mt-2">{selectedItem.name}</h3>
+                <p className="text-xs text-slate-505 mt-1.5 leading-relaxed">{selectedItem.description}</p>
               </div>
 
-              {selectedItem.bases && selectedItem.bases.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Bases (Optional)</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedItem.bases.map((b: any) => {
-                      const isSelected = selectedBases.some((base) => base.id === b.id);
-                      return (
-                        <button
-                          key={b.id}
-                          onClick={() => handleToggleBase(b)}
-                          className={`p-3 rounded-xl border text-left text-xs uppercase font-bold transition ${isSelected
-                              ? 'border-[#C39A3C] bg-[#C39A3C]/10 text-[#2A0E07]'
-                              : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
-                            }`}
-                        >
-                          <p>{b.name}</p>
-                          {/* <p className="text-[10px] text-slate-400 mt-0.5">+${parseFloat(b.extraPrice).toFixed(2)}</p> */}
-                        </button>
-                      );
-                    })}
+              {/* Options Scroll Container */}
+              <div className="p-6 pt-4 space-y-6 overflow-y-auto flex-1">
+                {selectedItem.bases && selectedItem.bases.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-650 uppercase tracking-wider mb-2">Select Bases (Optional)</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedItem.bases.map((b: any) => {
+                        const isSelected = selectedBases.some((base) => base.id === b.id);
+                        return (
+                          <button
+                            key={b.id}
+                            onClick={() => handleToggleBase(b)}
+                            className={`p-3 rounded-xl border text-left text-xs uppercase font-bold transition flex flex-col justify-between ${isSelected
+                                ? 'border-[#C39A3C] bg-[#C39A3C]/10 text-[#2A0E07]'
+                                : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                              }`}
+                          >
+                            <p>{b.name}</p>
+                            {parseFloat(b.extraPrice) > 0 && (
+                              <p className={`text-[10px] mt-1 ${isSelected ? 'text-[#C39A3C]' : 'text-slate-400'}`}>
+                                +${parseFloat(b.extraPrice).toFixed(2)}
+                              </p>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {selectedItem.variants && selectedItem.variants.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Variant</h4>
-                  <div className="grid grid-cols-2 gap-2">
-                    {selectedItem.variants.map((v: any) => {
-                      const isSelected = selectedVariant?.id === v.id;
-                      return (
-                        <button
-                          key={v.id}
-                          onClick={() => setSelectedVariant(v)}
-                          className={`p-3 rounded-xl border text-left text-xs uppercase font-bold transition ${isSelected
-                              ? 'border-[#C39A3C] bg-[#C39A3C]/10 text-[#2A0E07]'
-                              : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
-                            }`}
-                        >
-                          <p>{v.name}</p>
-                          {/* <p className="text-[10px] text-slate-400 mt-0.5">
-                            +${parseFloat(v.additional_price).toFixed(2)}
-                          </p> */}
-                        </button>
-                      );
-                    })}
+                {selectedItem.variants && selectedItem.variants.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-650 uppercase tracking-wider mb-2">Select Variant</h4>
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedItem.variants.map((v: any) => {
+                        const isSelected = selectedVariant?.id === v.id;
+                        return (
+                          <button
+                            key={v.id}
+                            onClick={() => setSelectedVariant(v)}
+                            className={`p-3 rounded-xl border text-left text-xs uppercase font-bold transition flex flex-col justify-between ${isSelected
+                                ? 'border-[#C39A3C] bg-[#C39A3C]/10 text-[#2A0E07]'
+                                : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                              }`}
+                          >
+                            <p>{v.name}</p>
+                            {parseFloat(v.additional_price) > 0 && (
+                              <p className={`text-[10px] mt-1 ${isSelected ? 'text-[#C39A3C]' : 'text-slate-400'}`}>
+                                +${parseFloat(v.additional_price).toFixed(2)}
+                              </p>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
-              {selectedItem.addons && selectedItem.addons.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Add-ons (Optional)</h4>
-                  <div className="space-y-2">
-                    {selectedItem.addons.map((addon: any) => {
-                      const isSelected = selectedAddons.some((a) => a.id === addon.id);
-                      return (
-                        <div
-                          key={addon.id}
-                          onClick={() => handleToggleAddon(addon)}
-                          className={`flex items-center justify-between p-3 rounded-xl border text-xs font-semibold cursor-pointer transition ${isSelected
-                              ? 'border-[#C39A3C] bg-[#C39A3C]/5 text-[#2A0E07]'
-                              : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
-                            }`}
-                        >
-                          <span className="uppercase">{addon.name}</span>
-                          {/* <span className="font-bold text-slate-600">+${parseFloat(addon.price).toFixed(2)}</span> */}
-                        </div>
-                      );
-                    })}
+                {selectedItem.addons && selectedItem.addons.length > 0 && (
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-650 uppercase tracking-wider mb-2">Select Add-ons (Optional)</h4>
+                    <div className="space-y-2">
+                      {selectedItem.addons.map((addon: any) => {
+                        const isSelected = selectedAddons.some((a) => a.id === addon.id);
+                        return (
+                          <div
+                            key={addon.id}
+                            onClick={() => handleToggleAddon(addon)}
+                            className={`flex items-center justify-between p-3 rounded-xl border text-xs font-semibold cursor-pointer transition ${isSelected
+                                ? 'border-[#C39A3C] bg-[#C39A3C]/5 text-[#2A0E07]'
+                                : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                              }`}
+                          >
+                            <span className="uppercase">{addon.name}</span>
+                            {parseFloat(addon.price) > 0 && (
+                              <span className="font-bold text-slate-605">+${parseFloat(addon.price).toFixed(2)}</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] text-slate-400 font-bold uppercase">Final Price</p>
-                <p className="text-xl font-black text-slate-800 mt-0.5">
-                  ${(
-                    parseFloat(selectedItem.price) +
-                    selectedBases.reduce((sum, b) => sum + parseFloat(b.extraPrice || 0), 0) +
-                    parseFloat(selectedVariant?.additional_price || 0) +
-                    selectedAddons.reduce((sum, a) => sum + parseFloat(a.price || 0), 0)
-                  ).toFixed(2)}
-                </p>
+                )}
               </div>
 
-              <button
-                onClick={handleAddToCart}
-                className="rounded-xl bg-[#2A0E07] px-6 py-3 text-xs font-bold text-white hover:bg-[#3E1A10] transition shadow-lg shadow-[#2A0E07]/20"
-              >
-                Add to Cart
-              </button>
+              {/* Bottom Footer Actions */}
+              <div className="p-6 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase">Final Price</p>
+                  <p className="text-xl font-black text-slate-800 mt-0.5">
+                    ${(
+                      parseFloat(selectedItem.price) +
+                      selectedBases.reduce((sum, b) => sum + parseFloat(b.extraPrice || 0), 0) +
+                      parseFloat(selectedVariant?.additional_price || 0) +
+                      selectedAddons.reduce((sum, a) => sum + parseFloat(a.price || 0), 0)
+                    ).toFixed(2)}
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleAddToCart}
+                  className="rounded-xl bg-[#2A0E07] px-6 py-3 text-xs font-bold text-white hover:bg-[#3E1A10] transition shadow-lg shadow-[#2A0E07]/20"
+                >
+                  Add to Cart
+                </button>
+              </div>
             </div>
+
           </div>
         </div>
       )}
