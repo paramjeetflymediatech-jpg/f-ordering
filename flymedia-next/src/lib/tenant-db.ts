@@ -30,6 +30,7 @@ import { Payment }         from '../models/Payment';
 import { Customer }        from '../models/Customer';
 import { Reservation }     from '../models/Reservation';
 import { Coupon }          from '../models/Coupon';
+import { MenuBase }        from '../models/MenuBase';
 import { DeliveryZone }    from '../models/DeliveryZone';
 import { DeliveryRule }    from '../models/DeliveryRule';
 
@@ -131,6 +132,7 @@ function makeTenantModels(seq: Sequelize) {
   const TCustomer    = rebind(Customer,        'Customer',        'customers');
   const TReservation = rebind(Reservation,     'Reservation',     'reservations');
   const TCoupon      = rebind(Coupon,          'Coupon',          'coupons');
+  const TBase        = rebind(MenuBase,        'MenuBase',        'menu_bases');
   const TDeliveryZone = rebind(DeliveryZone,   'DeliveryZone',    'delivery_zones');
   const TDeliveryRule = rebind(DeliveryRule,   'DeliveryRule',    'delivery_rules');
 
@@ -151,6 +153,8 @@ function makeTenantModels(seq: Sequelize) {
   (TVariant as any).belongsTo(TMenuItem, { foreignKey: 'menu_item_id' });
   (TMenuItem as any).hasMany(TAddon, { foreignKey: 'menu_item_id', as: 'addons', onDelete: 'CASCADE' });
   (TAddon as any).belongsTo(TMenuItem, { foreignKey: 'menu_item_id' });
+  (TMenuItem as any).hasMany(TBase, { foreignKey: 'menu_item_id', as: 'bases', onDelete: 'CASCADE' });
+  (TBase as any).belongsTo(TMenuItem, { foreignKey: 'menu_item_id' });
 
   // Store ↔ Tables
   (TStore as any).hasMany(TTable, { foreignKey: 'store_id', onDelete: 'CASCADE' });
@@ -207,6 +211,7 @@ function makeTenantModels(seq: Sequelize) {
     Customer: TCustomer,
     Reservation: TReservation,
     Coupon: TCoupon,
+    MenuBase: TBase,
     DeliveryZone: TDeliveryZone,
     DeliveryRule: TDeliveryRule,
   };
@@ -231,6 +236,7 @@ export interface TenantModels {
   Customer: any;
   Reservation: any;
   Coupon: any;
+  MenuBase: any;
   DeliveryZone: any;
   DeliveryRule: any;
 }

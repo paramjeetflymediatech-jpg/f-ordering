@@ -33,19 +33,44 @@ export async function POST(request: Request) {
 
     const { store_id } = session.user as any;
     const body = await request.json();
-    const { code, discountType, discountValue, minOrderAmount = 0 } = body;
+    const {
+      code,
+      discountType,
+      discountValue,
+      minOrderAmount = 0,
+      banner_url,
+      type = 'discount',
+      buy_item_id,
+      buy_qty = 0,
+      get_item_id,
+      get_qty = 0,
+    } = body;
 
-    if (!code || !discountType || discountValue === undefined) {
-      return NextResponse.json({ error: 'Code, Discount Type, and Value are required' }, { status: 400 });
+    if (!code) {
+      return NextResponse.json({ error: 'Coupon code is required' }, { status: 400 });
+    }
+
+    if (type === 'discount' && (!discountType || discountValue === undefined)) {
+      return NextResponse.json({ error: 'Discount Type and Value are required for standard coupons' }, { status: 400 });
+    }
+
+    if (type === 'buy_x_get_y' && (!buy_item_id || !buy_qty || !get_item_id || !get_qty)) {
+      return NextResponse.json({ error: 'Buy Item, Buy Qty, Get Item, and Get Qty are required for Buy X Get Y offers' }, { status: 400 });
     }
 
     const coupon = await Coupon.create({
       store_id,
       code: code.toUpperCase().replace(/\s+/g, ''),
-      discount_type: discountType,
-      discount_value: parseFloat(discountValue),
+      discount_type: type === 'buy_x_get_y' ? 'fixed' : discountType,
+      discount_value: type === 'buy_x_get_y' ? 0.00 : parseFloat(discountValue),
       min_order_amount: parseFloat(minOrderAmount),
       is_active: true,
+      banner_url: banner_url || null,
+      type,
+      buy_item_id: type === 'buy_x_get_y' ? buy_item_id : null,
+      buy_qty: type === 'buy_x_get_y' ? parseInt(buy_qty as any, 10) : 0,
+      get_item_id: type === 'buy_x_get_y' ? get_item_id : null,
+      get_qty: type === 'buy_x_get_y' ? parseInt(get_qty as any, 10) : 0,
     });
 
     return NextResponse.json({ success: true, coupon });

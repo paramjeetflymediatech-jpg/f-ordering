@@ -63,6 +63,7 @@ export default function ManageItemPage() {
   const [showItemModal, setShowItemModal] = useState(false);
   const [variants, setVariants] = useState<{ id?: string; name: string; additional_price: number }[]>([]);
   const [addons, setAddons] = useState<{ id?: string; name: string; price: number }[]>([]);
+  const [bases, setBases] = useState<{ id?: string; name: string; extraPrice: number }[]>([]);
 
   // Transfer states
   const [transferItemId, setTransferItemId] = useState('');
@@ -168,6 +169,7 @@ export default function ManageItemPage() {
           isAvailable: isEdit ? editingItem.is_available : true,
           variants,
           addons,
+          bases,
         }),
       });
 
@@ -217,6 +219,7 @@ export default function ManageItemPage() {
     setItemUnit('pcs');
     setVariants([]);
     setAddons([]);
+    setBases([]);
   };
 
   // CSV Exporter
@@ -811,6 +814,7 @@ export default function ManageItemPage() {
                                 setItemUnit(item.unit || 'pcs');
                                 setVariants(item.variants || []);
                                 setAddons(item.addons || []);
+                                setBases(item.bases || []);
                                 setShowItemModal(true);
                               }}
                               className="rounded-lg bg-slate-900 p-2 text-slate-400 hover:text-white border border-slate-800"
@@ -1687,6 +1691,62 @@ export default function ManageItemPage() {
                         <button
                           type="button"
                           onClick={() => setAddons(addons.filter((_, i) => i !== index))}
+                          className="text-red-400 hover:text-red-300 p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* BASES SECTION */}
+              <div className="border-t border-slate-800/60 pt-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-slate-400 font-bold uppercase tracking-wide">Bases (e.g. Patty, Crust)</label>
+                  <button
+                    type="button"
+                    onClick={() => setBases([...bases, { name: '', extraPrice: 0 }])}
+                    className="text-[10px] bg-slate-800 text-orange-400 hover:text-orange-300 px-2 py-1 rounded font-bold border border-slate-700/60 transition"
+                  >
+                    + Add Base
+                  </button>
+                </div>
+                {bases.length === 0 ? (
+                  <p className="text-[11px] text-slate-500 italic">No bases defined (defaults to standard base).</p>
+                ) : (
+                  <div className="space-y-2">
+                    {bases.map((b, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Base Name (e.g. Gluten Free Crust)"
+                          value={b.name}
+                          onChange={(e) => {
+                            const newBases = [...bases];
+                            newBases[index].name = e.target.value;
+                            setBases(newBases);
+                          }}
+                          className="flex-1 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                        />
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          placeholder="Price mod (+$)"
+                          value={b.extraPrice}
+                          onChange={(e) => {
+                            const newBases = [...bases];
+                            newBases[index].extraPrice = parseFloat(e.target.value) || 0;
+                            setBases(newBases);
+                          }}
+                          className="w-24 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setBases(bases.filter((_, i) => i !== index))}
                           className="text-red-400 hover:text-red-300 p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition"
                         >
                           <Trash2 className="h-3.5 w-3.5" />

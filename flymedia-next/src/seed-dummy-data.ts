@@ -22,7 +22,8 @@ import {
   MenuCategory as CentralCategory,
   MenuItem as CentralMenuItem,
   MenuVariant as CentralVariant,
-  MenuAddon as CentralAddon
+  MenuAddon as CentralAddon,
+  MenuBase as CentralBase
 } from './models';
 import { provisionTenantDatabase, getTenantModels } from './lib/tenant-db';
 
@@ -76,6 +77,18 @@ async function seedMenuAndTablesInCentral(orgId: string, storeId: string, itemsL
           menu_item_id: menuItem.id,
           name: a.name,
           price: a.price,
+        });
+      }
+    }
+
+    // Seed bases
+    if (item.bases) {
+      await CentralBase.destroy({ where: { menu_item_id: menuItem.id } });
+      for (const b of item.bases) {
+        await CentralBase.create({
+          menu_item_id: menuItem.id,
+          name: b.name,
+          extraPrice: b.extraPrice,
         });
       }
     }
@@ -263,6 +276,11 @@ async function seedCentralDb() {
           { name: 'Extra Cheese', price: 1.50 },
           { name: 'Bacon Stripe', price: 2.00 },
           { name: 'Fried Egg', price: 1.50 }
+        ],
+        bases: [
+          { name: 'Beef Patty', extraPrice: 0.00 },
+          { name: 'Chicken Patty', extraPrice: 1.00 },
+          { name: 'Veggie Patty', extraPrice: 0.00 }
         ]
       },
       { 
@@ -279,6 +297,11 @@ async function seedCentralDb() {
           { name: 'Extra Mozzarella', price: 2.00 },
           { name: 'Truffle Oil Drizzle', price: 3.00 },
           { name: 'Olives', price: 1.00 }
+        ],
+        bases: [
+          { name: 'Regular Crust', extraPrice: 0.00 },
+          { name: 'Gluten Free Crust', extraPrice: 3.00 },
+          { name: 'Whole Wheat Crust', extraPrice: 1.50 }
         ]
       },
       { 
@@ -321,6 +344,11 @@ async function seedCentralDb() {
         addons: [
           { name: 'Extra Butter Drizzle', price: 1.00 },
           { name: 'Add Boneless Breast pieces', price: 3.50 }
+        ],
+        bases: [
+          { name: 'With Rice', extraPrice: 0.00 },
+          { name: 'With Butter Naan', extraPrice: 2.00 },
+          { name: 'With Garlic Naan', extraPrice: 2.50 }
         ]
       },
       { category: 'Mains', name: 'Dal Makhani', description: 'Slow cooked creamy black lentils', price: 18.90 },
@@ -502,6 +530,18 @@ async function seedTenantDb(slug: string, storeName: string, itemsList: any[], c
         });
       }
     }
+
+    // Seed bases if provided
+    if (item.bases) {
+      await models.MenuBase.destroy({ where: { menu_item_id: menuItem.id } });
+      for (const b of item.bases) {
+        await models.MenuBase.create({
+          menu_item_id: menuItem.id,
+          name: b.name,
+          extraPrice: b.extraPrice,
+        });
+      }
+    }
   }
 
   // Seed Tables
@@ -594,6 +634,11 @@ async function main() {
             { name: 'Extra Cheese', price: 1.50 },
             { name: 'Bacon Stripe', price: 2.00 },
             { name: 'Fried Egg', price: 1.50 }
+          ],
+          bases: [
+            { name: 'Beef Patty', extraPrice: 0.00 },
+            { name: 'Chicken Patty', extraPrice: 1.00 },
+            { name: 'Veggie Patty', extraPrice: 0.00 }
           ]
         },
         { 
@@ -610,6 +655,11 @@ async function main() {
             { name: 'Extra Mozzarella', price: 2.00 },
             { name: 'Truffle Oil Drizzle', price: 3.00 },
             { name: 'Olives', price: 1.00 }
+          ],
+          bases: [
+            { name: 'Regular Crust', extraPrice: 0.00 },
+            { name: 'Gluten Free Crust', extraPrice: 3.00 },
+            { name: 'Whole Wheat Crust', extraPrice: 1.50 }
           ]
         },
         { 
@@ -656,6 +706,11 @@ async function main() {
           addons: [
             { name: 'Extra Butter Drizzle', price: 1.00 },
             { name: 'Add Boneless Breast pieces', price: 3.50 }
+          ],
+          bases: [
+            { name: 'With Rice', extraPrice: 0.00 },
+            { name: 'With Butter Naan', extraPrice: 2.00 },
+            { name: 'With Garlic Naan', extraPrice: 2.50 }
           ]
         },
         { category: 'Mains', name: 'Dal Makhani', description: 'Slow cooked creamy black lentils', price: 18.90 },

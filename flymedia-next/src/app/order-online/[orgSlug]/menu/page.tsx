@@ -31,6 +31,7 @@ import {
   Award,
   Menu as MenuIcon,
   Info,
+  Sparkles,
 } from 'lucide-react';
 
 interface CartItem {
@@ -201,17 +202,19 @@ export default function PublicOrderPage() {
   const [store, setStore] = useState<any>(null);
   const [tables, setTables] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [offers, setOffers] = useState<any[]>([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   // Cart & UI states
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<any>(null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const [selectedAddons, setSelectedAddons] = useState<any[]>([]);
+  const [selectedBase, setSelectedBase] = useState<any>(null);
   const [activeModal, setActiveModal] = useState<'checkout' | 'success' | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  
+
   // Checkout details
   const [customer, setCustomer] = useState<any>(null);
   const [customerName, setCustomerName] = useState('');
@@ -299,7 +302,7 @@ export default function PublicOrderPage() {
     const fetchStoreAndMenu = async () => {
       try {
         setLoading(true);
-        
+
         // 1. Fetch Store Config by Org Slug
         const storeRes = await fetch(`/api/public/store?orgSlug=${orgSlug}`);
         const storeData = await storeRes.json();
@@ -332,7 +335,20 @@ export default function PublicOrderPage() {
         }
         setCategories(menuData.categories || []);
 
-        // 3. Fetch logged in customer info if exists (for prefilling)
+        // 3. Fetch active coupons / offers for banner carousel
+        if (storeData.store?.id) {
+          try {
+            const promoRes = await fetch(`/api/public/coupons?storeId=${storeData.store.id}`);
+            const promoData = await promoRes.json();
+            if (promoRes.ok && promoData.success) {
+              setOffers(promoData.coupons || []);
+            }
+          } catch (e) {
+            console.error('Failed to load active promotions:', e);
+          }
+        }
+
+        // 4. Fetch logged in customer info if exists (for prefilling)
         try {
           const custRes = await fetch('/api/public/customer/me');
           const custData = await custRes.json();
@@ -410,7 +426,7 @@ export default function PublicOrderPage() {
   const filteredItems = allItems.filter((item) => {
     const matchesCategory = selectedCategoryId === 'all' || item.category_id === selectedCategoryId;
     const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      item.description?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
@@ -422,11 +438,36 @@ export default function PublicOrderPage() {
     if (appliedCoupon) {
       const minAmount = parseFloat(appliedCoupon.min_order_amount) || 0;
       if (subtotal >= minAmount) {
-        if (appliedCoupon.discount_type === 'percentage') {
-          discount = (subtotal * parseFloat(appliedCoupon.discount_value)) / 100;
+        if (appliedCoupon.type === 'buy_x_get_y') {
+          // BOGO offer logic
+          const totalBuyQty = cart
+            .filter((item) => item.menuItemId === appliedCoupon.buy_item_id)
+            .reduce((sum, item) => sum + item.quantity, 0);
+
+          if (totalBuyQty >= (appliedCoupon.buy_qty || 0)) {
+            const getCartItems = cart.filter((item) => item.menuItemId === appliedCoupon.get_item_id);
+            let remainingFreeQty = appliedCoupon.get_qty || 0;
+            let bogoDiscount = 0;
+
+            // Sort items ascending by price to discount cheaper ones first
+            const sortedGetItems = [...getCartItems].sort((a, b) => a.price - b.price);
+            for (const item of sortedGetItems) {
+              if (remainingFreeQty <= 0) break;
+              const countToDiscount = Math.min(item.quantity, remainingFreeQty);
+              bogoDiscount += item.price * countToDiscount;
+              remainingFreeQty -= countToDiscount;
+            }
+            discount = bogoDiscount;
+          }
         } else {
-          discount = parseFloat(appliedCoupon.discount_value);
+          // Standard coupon logic
+          if (appliedCoupon.discount_type === 'percentage') {
+            discount = (subtotal * parseFloat(appliedCoupon.discount_value)) / 100;
+          } else {
+            discount = parseFloat(appliedCoupon.discount_value);
+          }
         }
+
         if (discount > subtotal) {
           discount = subtotal;
         }
@@ -446,6 +487,7 @@ export default function PublicOrderPage() {
 
   const handleOpenItem = (item: any) => {
     setSelectedItem(item);
+    setSelectedBase(item.bases?.[0] || null);
     setSelectedVariant(item.variants?.[0] || null);
     setSelectedAddons([]);
   };
@@ -468,13 +510,13 @@ export default function PublicOrderPage() {
     const addonPrice = selectedAddons.reduce((sum, addon) => sum + parseFloat(addon.price || 0), 0);
     finalUnitPrice += addonPrice;
 
-    const cartItemId = `${selectedItem.id}-${selectedVariant?.id || 'none'}-${selectedAddons
+    const cartItemId = `${selectedItem.id}-${selectedBase?.id || 'none'}-${selectedVariant?.id || 'none'}-${selectedAddons
       .map((a) => a.id)
       .sort()
       .join(',')}`;
 
     const existingIndex = cart.findIndex((item) => item.id === cartItemId);
-    
+
     if (existingIndex > -1) {
       const updated = [...cart];
       updated[existingIndex].quantity += 1;
@@ -488,6 +530,7 @@ export default function PublicOrderPage() {
           name: selectedItem.name,
           price: finalUnitPrice,
           quantity: 1,
+          base: selectedBase,
           variant: selectedVariant,
           addons: selectedAddons,
         },
@@ -596,7 +639,7 @@ export default function PublicOrderPage() {
     const matched = (cat.MenuItems || []).filter((item: any) => {
       const matchesCategory = selectedCategoryId === 'all' || item.category_id === selectedCategoryId;
       const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                            item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
     return { ...cat, filteredItems: matched };
@@ -621,15 +664,14 @@ export default function PublicOrderPage() {
 
   return (
     <div
-      className={`min-h-screen pb-24 lg:pb-0 ${
-        layoutStyle === 'modern_dark' ? 'text-slate-100 font-sans' : 'text-slate-800 font-sans'
-      }`}
+      className={`min-h-screen pb-24 lg:pb-0 ${layoutStyle === 'modern_dark' ? 'text-slate-100 font-sans' : 'text-slate-800 font-sans'
+        }`}
       style={{
         backgroundColor: bgColor,
         fontFamily: getFontFamily(fontStyle),
       }}
     >
-      
+
       {/* HEADER NAVBAR */}
       <header
         className="sticky top-0 z-40 px-6 py-4 shadow-md border-b"
@@ -673,7 +715,7 @@ export default function PublicOrderPage() {
                 About Us
               </a>
             ) : (
-              <Link href={store.website?(`${store.website.replace(/\/$/, '')}/about`) : "/about"} className="text-white transition">
+              <Link href={store.website ? (`${store.website.replace(/\/$/, '')}/about`) : "/about"} className="text-white transition">
                 About Us
               </Link>
             )}
@@ -733,9 +775,8 @@ export default function PublicOrderPage() {
       {/* MOBILE DRAWER OVERLAY */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 md:hidden bg-slate-950/80 backdrop-blur-sm flex justify-end">
-          <div className={`w-72 h-full p-6 shadow-2xl flex flex-col justify-between ${
-            layoutStyle === 'modern_dark' ? 'bg-[#0c101b] text-white border-l border-[#1e293b]/60' : 'bg-white text-slate-800'
-          }`}>
+          <div className={`w-72 h-full p-6 shadow-2xl flex flex-col justify-between ${layoutStyle === 'modern_dark' ? 'bg-[#0c101b] text-white border-l border-[#1e293b]/60' : 'bg-white text-slate-800'
+            }`}>
             <div className="space-y-6">
               <div className="flex justify-between items-center pb-4 border-b border-slate-200">
                 <span className="font-bold text-sm uppercase tracking-wider">Navigation</span>
@@ -767,7 +808,7 @@ export default function PublicOrderPage() {
                     About Us
                   </a>
                 ) : (
-                  <Link href={store.website?(`${store.website.replace(/\/$/, '')}/about`) : "/about"} onClick={() => setMobileMenuOpen(false)} className="hover:opacity-80 py-1 transition">
+                  <Link href={store.website ? (`${store.website.replace(/\/$/, '')}/about`) : "/about"} onClick={() => setMobileMenuOpen(false)} className="hover:opacity-80 py-1 transition">
                     About Us
                   </Link>
                 )}
@@ -825,22 +866,20 @@ export default function PublicOrderPage() {
       )}
 
       {/* MOBILE CATEGORIES HORIZONTAL SLIDER */}
-      <div 
-        className={`lg:hidden sticky top-[96px] z-30 border-b px-6 py-3 overflow-x-auto whitespace-nowrap flex gap-2 custom-scrollbar ${
-          layoutStyle === 'modern_dark'
+      <div
+        className={`lg:hidden sticky top-[96px] z-30 border-b px-6 py-3 overflow-x-auto whitespace-nowrap flex gap-2 custom-scrollbar ${layoutStyle === 'modern_dark'
             ? 'bg-[#0c101b] border-[#1e293b]/60'
             : 'bg-white border-slate-200'
-        }`}
+          }`}
       >
         <button
           onClick={() => setSelectedCategoryId('all')}
-          className={`px-4 py-2 rounded-full text-xs font-bold transition shrink-0 ${
-            selectedCategoryId === 'all'
+          className={`px-4 py-2 rounded-full text-xs font-bold transition shrink-0 ${selectedCategoryId === 'all'
               ? 'text-white'
               : layoutStyle === 'modern_dark'
-              ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
-              : 'text-slate-600 bg-slate-50 border border-slate-100'
-          }`}
+                ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
+                : 'text-slate-600 bg-slate-50 border border-slate-100'
+            }`}
           style={selectedCategoryId === 'all' ? { backgroundColor: primaryColor } : undefined}
         >
           All Items
@@ -849,13 +888,12 @@ export default function PublicOrderPage() {
           <button
             key={cat.id}
             onClick={() => setSelectedCategoryId(cat.id)}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition shrink-0 ${
-              selectedCategoryId === cat.id
+            className={`px-4 py-2 rounded-full text-xs font-bold transition shrink-0 ${selectedCategoryId === cat.id
                 ? 'text-white'
                 : layoutStyle === 'modern_dark'
-                ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
-                : 'text-slate-600 bg-slate-50 border border-slate-100'
-            }`}
+                  ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
+                  : 'text-slate-600 bg-slate-50 border border-slate-100'
+              }`}
             style={selectedCategoryId === cat.id ? { backgroundColor: primaryColor } : undefined}
           >
             {cat.name}
@@ -865,26 +903,24 @@ export default function PublicOrderPage() {
 
       {/* BODY LAYOUT */}
       <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col lg:flex-row gap-8">
-        
+
         {/* COLUMN 1: CATEGORY SIDEBAR (LEFT) */}
         <div className="w-64 shrink-0 hidden lg:block">
           <div
-            className={`sticky top-24 border rounded-2xl p-4 shadow-sm space-y-1 overflow-y-auto max-h-[calc(100vh-140px)] custom-scrollbar ${
-              layoutStyle === 'modern_dark'
+            className={`sticky top-24 border rounded-2xl p-4 shadow-sm space-y-1 overflow-y-auto max-h-[calc(100vh-140px)] custom-scrollbar ${layoutStyle === 'modern_dark'
                 ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
                 : 'bg-white border-slate-200 text-slate-800'
-            }`}
+              }`}
           >
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">Categories</h3>
             <button
               onClick={() => setSelectedCategoryId('all')}
-              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition ${
-                selectedCategoryId === 'all'
+              className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition ${selectedCategoryId === 'all'
                   ? 'text-white font-extrabold'
                   : layoutStyle === 'modern_dark'
-                  ? 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
-                  : 'text-slate-600 hover:bg-slate-50'
-              }`}
+                    ? 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
               style={selectedCategoryId === 'all' ? { backgroundColor: primaryColor } : undefined}
             >
               All Items
@@ -893,13 +929,12 @@ export default function PublicOrderPage() {
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategoryId(cat.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition ${
-                  selectedCategoryId === cat.id
+                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition ${selectedCategoryId === cat.id
                     ? 'text-white border-l-4 font-extrabold'
                     : layoutStyle === 'modern_dark'
-                    ? 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
-                    : 'text-slate-600 hover:bg-slate-50'
-                }`}
+                      ? 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+                      : 'text-slate-600 hover:bg-slate-50'
+                  }`}
                 style={
                   selectedCategoryId === cat.id
                     ? { backgroundColor: primaryColor, borderLeftColor: accentColor }
@@ -914,26 +949,52 @@ export default function PublicOrderPage() {
 
         {/* COLUMN 2: MENU CATALOG (CENTER) */}
         <div className="flex-1 space-y-6">
+
+          {/* Promotion Banners Carousel */}
+          {offers.filter(o => o.banner_url).length > 0 && (
+            <div className="w-full rounded-2xl overflow-hidden space-y-3">
+              {/* <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 animate-pulse" style={{ color: accentColor }}>
+                  <Sparkles className="h-4 w-4" /> Special Deals & Offers
+                </span>
+              </div> */}
+
+              <div className="flex gap-4 overflow-x-auto  custom-scrollbar snap-x">
+                {offers.filter(o => o.banner_url).map(promo => (
+                  <div
+                    key={promo.id}
+                    className="min-w-[300px] md:min-w-[420px] flex-1 max-w-xxl rounded-2xl overflow-hidden border   backdrop-blur-md shadow-xl snap-start flex flex-col group hover:shadow-2xl transition-shadow duration-300"
+                    style={{ backgroundColor: `${primaryColor}10` }}
+                  >
+                    <div className="relative h-36 md:h-48 overflow-hidden rounded-t-2xl">
+                      <img src={promo.banner_url} alt={promo.code} className="w-full h-full object-cover   transition-transform duration-500" />
+                    </div>
+
+
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Order Type & Search Bar */}
           <div
-            className={`border rounded-2xl p-6 shadow-sm ${
-              layoutStyle === 'modern_dark'
+            className={`border rounded-2xl p-6 shadow-sm ${layoutStyle === 'modern_dark'
                 ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
                 : 'bg-white border-slate-200 text-slate-800'
-            }`}
+              }`}
           >
             <h3 className="text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Select Order Type</h3>
             <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
               <button
                 type="button"
                 onClick={() => setOrderType('takeaway')}
-                className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${
-                  orderType === 'takeaway'
+                className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${orderType === 'takeaway'
                     ? 'border-transparent text-white font-extrabold shadow-md'
                     : layoutStyle === 'modern_dark'
-                    ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
+                      ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
                 style={orderType === 'takeaway' ? { backgroundColor: primaryColor } : undefined}
               >
                 <span className="text-sm uppercase tracking-wide">Take Away</span>
@@ -942,13 +1003,12 @@ export default function PublicOrderPage() {
               <button
                 type="button"
                 onClick={() => setOrderType('delivery')}
-                className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${
-                  orderType === 'delivery'
+                className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${orderType === 'delivery'
                     ? 'border-transparent text-white font-extrabold shadow-md'
                     : layoutStyle === 'modern_dark'
-                    ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
-                    : 'border-slate-200 hover:border-slate-300'
-                }`}
+                      ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
                 style={orderType === 'delivery' ? { backgroundColor: primaryColor } : undefined}
               >
                 <span className="text-sm uppercase tracking-wide">Delivery</span>
@@ -963,11 +1023,10 @@ export default function PublicOrderPage() {
                 placeholder="Search items..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className={`w-full rounded-xl border py-3 pl-10 pr-4 text-sm outline-none transition ${
-                  layoutStyle === 'modern_dark'
+                className={`w-full rounded-xl border py-3 pl-10 pr-4 text-sm outline-none transition ${layoutStyle === 'modern_dark'
                     ? 'border-[#1e293b] bg-slate-950 text-white focus:border-slate-700 focus:bg-slate-950/90'
                     : 'border-slate-200 bg-slate-50 text-slate-800 focus:border-slate-400 focus:bg-white'
-                }`}
+                  }`}
               />
             </div>
           </div>
@@ -975,11 +1034,10 @@ export default function PublicOrderPage() {
           {/* Menu Sections */}
           {categoriesWithFilteredItems.length === 0 ? (
             <div
-              className={`text-center py-12 border rounded-2xl ${
-                layoutStyle === 'modern_dark'
+              className={`text-center py-12 border rounded-2xl ${layoutStyle === 'modern_dark'
                   ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-slate-400 shadow-xl'
                   : 'bg-white border-slate-200 text-slate-400'
-              }`}
+                }`}
             >
               <p className="font-semibold">No food items found matching your filter.</p>
             </div>
@@ -987,11 +1045,10 @@ export default function PublicOrderPage() {
             categoriesWithFilteredItems.map((cat) => (
               <div
                 key={cat.id}
-                className={`border rounded-2xl shadow-sm overflow-hidden mb-6 ${
-                  layoutStyle === 'modern_dark'
+                className={`border rounded-2xl shadow-sm overflow-hidden mb-6 ${layoutStyle === 'modern_dark'
                     ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
                     : 'bg-white border-slate-200 text-slate-805'
-                }`}
+                  }`}
               >
                 <div
                   className="px-4 py-3 border-b flex justify-between items-center"
@@ -1011,9 +1068,8 @@ export default function PublicOrderPage() {
                       <div
                         key={item.id}
                         onClick={() => handleOpenItem(item)}
-                        className={`flex items-center gap-4 p-4 transition cursor-pointer ${
-                          layoutStyle === 'modern_dark' ? 'hover:bg-slate-900/20' : 'hover:bg-slate-50/50'
-                        }`}
+                        className={`flex items-center gap-4 p-4 transition cursor-pointer ${layoutStyle === 'modern_dark' ? 'hover:bg-slate-900/20' : 'hover:bg-slate-50/50'
+                          }`}
                       >
                         {/* Thumbnail / Initials */}
                         {item.image_url ? (
@@ -1127,16 +1183,14 @@ export default function PublicOrderPage() {
         {/* COLUMN 3: DESKTOP CART PANEL (RIGHT) */}
         <div className="w-full lg:w-80 shrink-0 hidden lg:block">
           <div
-            className={`sticky top-24 border rounded-2xl shadow-sm overflow-hidden flex flex-col max-h-[80vh] ${
-              layoutStyle === 'modern_dark'
+            className={`sticky top-24 border rounded-2xl shadow-sm overflow-hidden flex flex-col max-h-[80vh] ${layoutStyle === 'modern_dark'
                 ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
                 : 'bg-white border-slate-200 text-slate-805'
-            }`}
+              }`}
           >
             <div
-              className={`p-4 border-b flex items-center justify-between ${
-                layoutStyle === 'modern_dark' ? 'border-[#1e293b]/60 bg-slate-950/50' : 'border-slate-100 bg-slate-50'
-              }`}
+              className={`p-4 border-b flex items-center justify-between ${layoutStyle === 'modern_dark' ? 'border-[#1e293b]/60 bg-slate-950/50' : 'border-slate-100 bg-slate-50'
+                }`}
             >
               <h2 className={`text-xs font-bold flex items-center gap-2 ${layoutStyle === 'modern_dark' ? 'text-white' : 'text-slate-705'}`}>
                 <ShoppingBag className="h-4 w-4" style={{ color: accentColor }} />
@@ -1171,12 +1225,12 @@ export default function PublicOrderPage() {
                       )}
                       {item.addons.length > 0 && (
                         <p className={`text-[10px] truncate mt-0.5 font-semibold ${layoutStyle === 'modern_dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                          Addons: {item.addons.map((a) => a.name).join(', ')}
+                          Addons: {item.addons.map((a) => a.name.toUpperCase()).join(', ')}
                         </p>
                       )}
                       <p className={`text-xs font-black mt-1 ${layoutStyle === 'modern_dark' ? 'text-white' : 'text-slate-805'}`}>${(item.price * item.quantity).toFixed(2)}</p>
                     </div>
-                    
+
                     <div className={`flex items-center gap-1.5 border rounded-lg p-0.5 ${layoutStyle === 'modern_dark' ? 'border-[#1e293b] bg-slate-950' : 'border-slate-200 bg-slate-50'}`}>
                       <button
                         onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -1198,9 +1252,8 @@ export default function PublicOrderPage() {
             </div>
 
             <div
-              className={`p-4 border-t space-y-3 ${
-                layoutStyle === 'modern_dark' ? 'border-[#1e293b]/60 bg-slate-950/50' : 'border-slate-100 bg-slate-50'
-              }`}
+              className={`p-4 border-t space-y-3 ${layoutStyle === 'modern_dark' ? 'border-[#1e293b]/60 bg-slate-950/50' : 'border-slate-100 bg-slate-50'
+                }`}
             >
               <div className="flex justify-between text-xs text-slate-500 font-semibold">
                 <span>Subtotal</span>
@@ -1293,6 +1346,30 @@ export default function PublicOrderPage() {
                 <p className="text-xs text-slate-500 mt-1">{selectedItem.description}</p>
               </div>
 
+              {selectedItem.bases && selectedItem.bases.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Base</h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {selectedItem.bases.map((b: any) => {
+                      const isSelected = selectedBase?.id === b.id;
+                      return (
+                        <button
+                          key={b.id}
+                          onClick={() => setSelectedBase(b)}
+                          className={`p-3 rounded-xl border text-left text-xs uppercase font-bold transition ${isSelected
+                              ? 'border-[#C39A3C] bg-[#C39A3C]/10 text-[#2A0E07]'
+                              : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                            }`}
+                        >
+                          <p>{b.name}</p>
+                          {/* <p className="text-[10px] text-slate-400 mt-0.5">+${parseFloat(b.extraPrice).toFixed(2)}</p> */}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
               {selectedItem.variants && selectedItem.variants.length > 0 && (
                 <div>
                   <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Select Variant</h4>
@@ -1303,11 +1380,10 @@ export default function PublicOrderPage() {
                         <button
                           key={v.id}
                           onClick={() => setSelectedVariant(v)}
-                          className={`p-3 rounded-xl border text-left text-xs font-bold transition ${
-                            isSelected
+                          className={`p-3 rounded-xl border text-left text-xs uppercase font-bold transition ${isSelected
                               ? 'border-[#C39A3C] bg-[#C39A3C]/10 text-[#2A0E07]'
                               : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
-                          }`}
+                            }`}
                         >
                           <p>{v.name}</p>
                           {/* <p className="text-[10px] text-slate-400 mt-0.5">
@@ -1330,13 +1406,12 @@ export default function PublicOrderPage() {
                         <div
                           key={addon.id}
                           onClick={() => handleToggleAddon(addon)}
-                          className={`flex items-center justify-between p-3 rounded-xl border text-xs font-semibold cursor-pointer transition ${
-                            isSelected
+                          className={`flex items-center justify-between p-3 rounded-xl border text-xs font-semibold cursor-pointer transition ${isSelected
                               ? 'border-[#C39A3C] bg-[#C39A3C]/5 text-[#2A0E07]'
                               : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
-                          }`}
+                            }`}
                         >
-                          <span>{addon.name}</span>
+                          <span className="uppercase">{addon.name}</span>
                           {/* <span className="font-bold text-slate-600">+${parseFloat(addon.price).toFixed(2)}</span> */}
                         </div>
                       );
@@ -1352,12 +1427,13 @@ export default function PublicOrderPage() {
                 <p className="text-xl font-black text-slate-800 mt-0.5">
                   ${(
                     parseFloat(selectedItem.price) +
+                    parseFloat(selectedBase?.extraPrice || 0) +
                     parseFloat(selectedVariant?.additional_price || 0) +
                     selectedAddons.reduce((sum, a) => sum + parseFloat(a.price || 0), 0)
                   ).toFixed(2)}
                 </p>
               </div>
-              
+
               <button
                 onClick={handleAddToCart}
                 className="rounded-xl bg-[#2A0E07] px-6 py-3 text-xs font-bold text-white hover:bg-[#3E1A10] transition shadow-lg shadow-[#2A0E07]/20"
@@ -1524,11 +1600,10 @@ export default function PublicOrderPage() {
                     <button
                       key={mode} type="button"
                       onClick={() => setOrderType(mode)}
-                      className={`py-2 rounded-lg border text-[10px] font-bold uppercase tracking-wide transition ${
-                        orderType === mode
+                      className={`py-2 rounded-lg border text-[10px] font-bold uppercase tracking-wide transition ${orderType === mode
                           ? 'border-slate-800 bg-slate-800 text-white'
                           : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
-                      }`}
+                        }`}
                     >
                       {mode === 'dine_in' ? 'Dine In' : mode === 'takeaway' ? 'Takeaway' : 'Delivery'}
                     </button>
@@ -1585,11 +1660,10 @@ export default function PublicOrderPage() {
                       <button
                         key={method} type="button"
                         onClick={() => { setPaymentMethod(method); setCardError(null); }}
-                        className={`py-2.5 rounded-lg border text-[11px] font-bold uppercase tracking-wide transition flex items-center justify-center gap-1.5 ${
-                          paymentMethod === method
+                        className={`py-2.5 rounded-lg border text-[11px] font-bold uppercase tracking-wide transition flex items-center justify-center gap-1.5 ${paymentMethod === method
                             ? 'border-slate-800 bg-slate-800 text-white'
                             : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
-                        }`}
+                          }`}
                       >
                         {method === 'card' ? '💳 Card' : '💵 Cash'}
                       </button>
@@ -1660,7 +1734,7 @@ export default function PublicOrderPage() {
       {activeModal === 'success' && recentOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
-            
+
             {/* Header */}
             <div className="bg-emerald-50 px-6 pt-8 pb-6 text-center border-b border-emerald-100">
               <CheckCircle className="h-14 w-14 text-emerald-500 mx-auto mb-3 animate-bounce" />
@@ -1721,18 +1795,18 @@ export default function PublicOrderPage() {
         </div>
       )}
 
-    <footer 
+      <footer
         className="py-6 border-t text-center text-[10px] text-slate-400 flex flex-col justify-center gap-3"
         style={{ borderColor: `${primaryColor}1a` }}
       >
-        <div className=' '> 
-         <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
-        
-        <div className="flex justify-center gap-3 mt-2 text-[9px] font-semibold text-slate-405">
-          <a href="#" className="hover:underline">Privacy Policy</a>
-          <span>•</span>
-          <a href="#" className="hover:underline">Terms & Conditions</a>
-        </div></div>
+        <div className=' '>
+          <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
+
+          <div className="flex justify-center gap-3 mt-2 text-[9px] font-semibold text-slate-405">
+            <a href="#" className="hover:underline">Privacy Policy</a>
+            <span>•</span>
+            <a href="#" className="hover:underline">Terms & Conditions</a>
+          </div></div>
       </footer>
 
       {/* Toast Notification Container */}
@@ -1745,19 +1819,18 @@ export default function PublicOrderPage() {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9, y: -10 }}
               transition={{ duration: 0.2 }}
-              className={`pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-xl backdrop-blur-md border ${
-                layoutStyle === 'modern_dark'
+              className={`pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-xl backdrop-blur-md border ${layoutStyle === 'modern_dark'
                   ? toast.type === 'success'
                     ? 'bg-emerald-950/95 border-emerald-900/50 text-emerald-100'
                     : toast.type === 'error'
-                    ? 'bg-rose-950/95 border-rose-900/50 text-rose-100'
-                    : 'bg-slate-900/95 border-slate-800/80 text-slate-100'
+                      ? 'bg-rose-950/95 border-rose-900/50 text-rose-100'
+                      : 'bg-slate-900/95 border-slate-800/80 text-slate-100'
                   : toast.type === 'success'
-                  ? 'bg-emerald-50/95 border-emerald-100 text-emerald-800'
-                  : toast.type === 'error'
-                  ? 'bg-rose-50/95 border-rose-100 text-rose-800'
-                  : 'bg-slate-50/95 border-slate-100 text-slate-800'
-              }`}
+                    ? 'bg-emerald-50/95 border-emerald-100 text-emerald-800'
+                    : toast.type === 'error'
+                      ? 'bg-rose-50/95 border-rose-100 text-rose-800'
+                      : 'bg-slate-50/95 border-slate-100 text-slate-800'
+                }`}
             >
               {toast.type === 'success' && <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />}
               {toast.type === 'error' && <AlertCircle className="h-5 w-5 text-rose-500 shrink-0" />}

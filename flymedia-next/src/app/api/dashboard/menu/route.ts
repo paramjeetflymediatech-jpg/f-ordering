@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { MenuCategory, MenuItem, MenuVariant, MenuAddon, Organization } from '../../../../models';
+import { MenuCategory, MenuItem, MenuVariant, MenuAddon, MenuBase, Organization } from '../../../../models';
 import { getTenantModels } from '../../../../lib/tenant-db';
 import { deleteUploadedFile } from '../../../../lib/file-utils';
 
@@ -67,7 +67,8 @@ export async function POST(request: Request) {
       stockCount,
       unit,
       variants,
-      addons
+      addons,
+      bases
     } = body;
 
     if (type === 'category') {
@@ -212,6 +213,17 @@ export async function POST(request: Request) {
         }
       }
 
+      // Create Menu Bases (Main DB)
+      if (bases && Array.isArray(bases)) {
+        for (const b of bases) {
+          await MenuBase.create({
+            menu_item_id: item.id,
+            name: b.name,
+            extraPrice: parseFloat(b.extraPrice) || 0.00,
+          });
+        }
+      }
+
       // Sync to tenant database
       try {
         const org = await Organization.findByPk(organization_id);
@@ -257,6 +269,17 @@ export async function POST(request: Request) {
                 menu_item_id: item.id,
                 name: a.name,
                 price: parseFloat(a.price) || 0.00,
+              });
+            }
+          }
+
+          // Sync bases to tenant DB
+          if (bases && Array.isArray(bases)) {
+            for (const b of bases) {
+              await tenantModels.MenuBase.create({
+                menu_item_id: item.id,
+                name: b.name,
+                extraPrice: parseFloat(b.extraPrice) || 0.00,
               });
             }
           }
@@ -312,7 +335,8 @@ export async function PUT(request: Request) {
       unit,
       categoryId,
       variants,
-      addons
+      addons,
+      bases
     } = body;
 
     if (!id) {
@@ -391,6 +415,17 @@ export async function PUT(request: Request) {
         }
       }
 
+      if (bases && Array.isArray(bases)) {
+        await MenuBase.destroy({ where: { menu_item_id: id } });
+        for (const b of bases) {
+          await MenuBase.create({
+            menu_item_id: id,
+            name: b.name,
+            extraPrice: parseFloat(b.extraPrice) || 0.00,
+          });
+        }
+      }
+
       // Sync to tenant database
       try {
         const org = await Organization.findByPk(organization_id);
@@ -440,6 +475,18 @@ export async function PUT(request: Request) {
                 menu_item_id: id,
                 name: a.name,
                 price: parseFloat(a.price) || 0.00,
+              });
+            }
+          }
+
+          // Sync bases to tenant DB (delete & recreate)
+          if (bases && Array.isArray(bases)) {
+            await tenantModels.MenuBase.destroy({ where: { menu_item_id: id } });
+            for (const b of bases) {
+              await tenantModels.MenuBase.create({
+                menu_item_id: id,
+                name: b.name,
+                extraPrice: parseFloat(b.extraPrice) || 0.00,
               });
             }
           }

@@ -70,6 +70,12 @@ export async function POST(request: Request) {
         discount_value: parseFloat(coupon.discount_value as any),
         min_order_amount: minAmount,
         is_global: !coupon.store_id,
+        type: coupon.type,
+        buy_item_id: coupon.buy_item_id,
+        buy_qty: coupon.buy_qty,
+        get_item_id: coupon.get_item_id,
+        get_qty: coupon.get_qty,
+        banner_url: coupon.banner_url,
       },
     });
   } catch (error: any) {

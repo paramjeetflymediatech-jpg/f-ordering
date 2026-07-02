@@ -9,6 +9,12 @@ export class Coupon extends Model {
   declare discount_value: number;
   declare min_order_amount: number;
   declare is_active: boolean;
+  declare banner_url: string | null;
+  declare type: 'discount' | 'buy_x_get_y';
+  declare buy_item_id: string | null;
+  declare buy_qty: number;
+  declare get_item_id: string | null;
+  declare get_qty: number;
 }
 
 Coupon.init(
@@ -45,6 +51,33 @@ Coupon.init(
       type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: true,
+    },
+    banner_url: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    type: {
+      type: DataTypes.ENUM('discount', 'buy_x_get_y'),
+      allowNull: false,
+      defaultValue: 'discount',
+    },
+    buy_item_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    buy_qty: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+    },
+    get_item_id: {
+      type: DataTypes.UUID,
+      allowNull: true,
+    },
+    get_qty: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
     },
   },
   {

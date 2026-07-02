@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { MenuCategory, MenuItem, MenuVariant, MenuAddon, Organization, Store } from '../../../../models';
+import { MenuCategory, MenuItem, MenuVariant, MenuAddon, MenuBase, Organization, Store } from '../../../../models';
 
 export async function GET(request: Request) {
   try {
@@ -40,6 +40,7 @@ export async function GET(request: Request) {
           include: [
             { model: MenuVariant, as: 'variants' },
             { model: MenuAddon, as: 'addons' },
+            { model: MenuBase, as: 'bases' },
           ],
         },
       ],

@@ -8,6 +8,7 @@ import { MenuCategory } from './MenuCategory';
 import { MenuItem } from './MenuItem';
 import { MenuVariant } from './MenuVariant';
 import { MenuAddon } from './MenuAddon';
+import { MenuBase } from './MenuBase';
 import { RestaurantTable } from './RestaurantTable';
 import { Order } from './Order';
 import { OrderItem } from './OrderItem';
@@ -59,6 +60,10 @@ MenuVariant.belongsTo(MenuItem, { foreignKey: 'menu_item_id' });
 
 MenuItem.hasMany(MenuAddon, { foreignKey: 'menu_item_id', as: 'addons', onDelete: 'CASCADE' });
 MenuAddon.belongsTo(MenuItem, { foreignKey: 'menu_item_id' });
+
+// Menu Items, Bases
+MenuItem.hasMany(MenuBase, { foreignKey: 'menu_item_id', as: 'bases', onDelete: 'CASCADE' });
+MenuBase.belongsTo(MenuItem, { foreignKey: 'menu_item_id' });
 
 // Tables & Stores
 Store.hasMany(RestaurantTable, { foreignKey: 'store_id', onDelete: 'CASCADE' });
@@ -134,6 +139,7 @@ export {
   MenuItem,
   MenuVariant,
   MenuAddon,
+  MenuBase,
   RestaurantTable,
   Order,
   OrderItem,
