@@ -216,7 +216,7 @@ export default function CustomerRegisterPage() {
       </main>
 
      <footer 
-        className="py-6 border-t text-center text-[14px] text-black flex flex-col justify-center gap-3"
+        className="py-2 border-t text-center text-[14px] text-black flex flex-col justify-center gap-3"
         style={{ borderColor: `${primaryColor}1a`,backgroundColor:"white" }}
       >
         <div className=' '> 

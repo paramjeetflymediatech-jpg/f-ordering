@@ -181,8 +181,8 @@ export default function BookTablePage() {
           >
             <div className="space-y-1">
               <div className="flex justify-between items-center">
-                <h1 className="text-2xl font-black" style={{ color: primaryColor }}>Book a Table</h1>
-                <span className="text-[14px] font-black uppercase px-2.5 py-1 rounded-full" style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}>
+                <h1 className="text-2xl font-black" style={{ color: accentColor }}>Book a Table</h1>
+                <span className="text-[14px] font-black uppercase px-2.5 py-1 rounded-full" style={{ backgroundColor: `${primaryColor}`, color: accentColor }}>
                   Step {step} of 2
                 </span>
               </div>
@@ -406,7 +406,7 @@ export default function BookTablePage() {
       </main>
 
       <footer
-        className="py-6 border-t text-center text-[14px] text-black flex flex-col justify-center gap-3"
+        className="py-2 border-t text-center text-[14px] text-black flex flex-col justify-center gap-3"
         style={{ borderColor: `${primaryColor}1a`, backgroundColor:"white" }}
       >
         <div className=' '>
