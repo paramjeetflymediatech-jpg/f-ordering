@@ -150,16 +150,16 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
             <div className="flex items-center gap-4">
               <Link
                 href={`/order-online/${orgSlug}/customer/login`}
-                className={`transition flex items-center gap-1 ${activePage === 'login' ? 'text-white' : 'text-white/75 hover:text-white'}`}
-                style={activePage === 'login' ? { color: accentColor } : undefined}
+                className={`transition flex items-center gap-1 ${activePage === 'login' ? 'text-white' : 'text-white hover:text-white'}`}
+                style={activePage === 'login' ? { color: accentColor,display:'none' } : undefined}
               >
                 Sign In
               </Link>
               <Link
                 href={`/order-online/${orgSlug}/customer/register`}
                 className="text-white px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider hover:opacity-90 transition"
-                style={{ backgroundColor: accentColor }}
-              >
+                style={activePage === 'register' ? { backgroundColor: primaryColor, display: 'none' } : undefined}
+>
                 Sign Up
               </Link>
             </div>

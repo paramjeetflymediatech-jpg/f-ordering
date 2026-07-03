@@ -1883,7 +1883,7 @@ export default function PublicOrderPage() {
 
       <footer
         className="py-6 border-t text-center text-[10px] text-slate-400 flex flex-col justify-center gap-3"
-        style={{ borderColor: `${primaryColor}1a` }}
+        style={{ borderColor: `${primaryColor}1a`,backgroundColor:"white" }}
       >
         <div className=' '>
           <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>

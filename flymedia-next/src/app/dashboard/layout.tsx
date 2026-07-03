@@ -4,19 +4,13 @@ import React, { useState, Suspense } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import {
+import { 
   TrendingUp,
   Users,
   Utensils,
   Tag,
   MonitorPlay,
   LogOut,
-  Menu as MenuIcon,
-  X,
-  Building,
-  Table,
-  History,
-  BarChart3,
   CreditCard,
   Layers,
   Calendar,
@@ -25,6 +19,13 @@ import {
   Truck,
   Sun,
   Moon,
+  Image,
+  Menu as MenuIcon,
+  X,
+  Building,
+  Table,
+  History,
+  BarChart3,
 } from 'lucide-react';
 
 function NavigationItems({
@@ -64,7 +65,8 @@ function NavigationItems({
       { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },
       { name: 'Payment Settings', href: '/dashboard/settings/payment', icon: CreditCard },
       { name: 'Taxes & Fees', href: '/dashboard/taxes', icon: Percent },
-    ];
+      { name: 'Upload Background', href: '/dashboard/upload-background', icon: Image },
+];
 
   return (
     <>

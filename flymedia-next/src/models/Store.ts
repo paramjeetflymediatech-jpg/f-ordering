@@ -19,6 +19,20 @@ export class Store extends Model {
   declare city: string | null;
   declare description: string | null;
   declare banner: string | null;
+  declare bg_dashboard: string | null;
+  declare bg_login: string | null;
+  declare bg_menu: string | null;
+  declare bg_customer_login: string | null;
+  declare bg_register: string | null;
+  declare bg_customer_register: string | null;
+  declare bg_book: string | null;
+  declare bg_color_dashboard: string | null;
+  declare bg_color_login: string | null;
+  declare bg_color_menu: string | null;
+  declare bg_color_customer_login: string | null;
+  declare bg_color_register: string | null;
+  declare bg_color_customer_register: string | null;
+  declare bg_color_book: string | null;
   declare theme_primary_color: string | null;
   declare theme_accent_color: string | null;
   declare theme_bg_color: string | null;
@@ -97,6 +111,62 @@ Store.init(
       allowNull: true,
     },
     banner: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_dashboard: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_login: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_menu: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_customer_login: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_register: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_book: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_color_dashboard: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_color_login: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_color_menu: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_color_customer_login: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_color_register: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_customer_register: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_color_customer_register: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    bg_color_book: {
       type: DataTypes.STRING,
       allowNull: true,
     },

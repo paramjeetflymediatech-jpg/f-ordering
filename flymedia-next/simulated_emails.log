@@ -935,3 +935,40 @@ SIMULATED DISPATCH DETAIL:
 ========================================================================
 
 
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/3/2026, 10:47:16 AM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00006
+Order Type: TAKEAWAY
+Timestamp: 7/3/2026, 10:47:16 AM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: dimple
+Phone: +155542265
+Email: dimple@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Triple Patty] @ $22.99 each = $22.99
+    + Add-ons: Bacon Stripe (+$2.00)
+
+Subtotal: $22.99
+Tax: $1.90
+Total Amount: $24.89
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $24.89
+Transaction Reference: ONL-TX-1783055836337
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: dimple@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+

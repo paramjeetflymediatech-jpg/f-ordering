@@ -87,24 +87,38 @@ export default function CustomerRegisterPage() {
 
   return (
     <div 
-      className="min-h-screen flex flex-col justify-between font-sans transition-colors duration-350"
-      style={{ backgroundColor: bgColor, fontFamily: getFontFamily() }}
+  className="relative min-h-screen flex flex-col justify-between font-sans transition-colors duration-350 bg-cover bg-center"
+      style={{
+        backgroundColor: store?.bg_color_customer_register || bgColor,
+        backgroundImage: store?.bg_customer_register 
+          ? `url(${store.bg_customer_register})` 
+          : store?.bg_color_customer_register 
+            ? 'none' 
+            : store?.banner 
+              ? `url(${store.banner})` 
+              : "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        fontFamily: getFontFamily(),
+      }}
     >
       <RestaurantNavbar orgSlug={orgSlug} activePage="register" />
+      <div className="absolute inset-0 bg-black/30 pointer-events-none" />
 
-      <main className="flex-1 flex items-center justify-center px-4 py-12">
+      <main className="flex-1 flex items-center justify-center px-4 py-12 relative z-10">
         <div className="w-full max-w-lg">
-          <div className="text-center mb-8">
+          <div className="text-center mb-8  backdrop-blur-xl rounded-2xl p-4"  style={{ color: accentColor }}>
             <h1 
-              className="text-2xl font-black tracking-tight"
-              style={{ color: primaryColor }}
+              className="text-2xl font-black "
+             style={{ color: accentColor }}
             >
               Create Account
             </h1>
-            <p className="text-sm text-slate-500 mt-1">Earn loyalty points and track your orders</p>
+            <p className="text-sm   mt-1">Earn loyalty points and track your orders</p>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-lg p-6">
+          <div className="border border-slate-200 rounded-2xl shadow-lg p-6 backdrop-blur-xl">
             {success ? (
               <div className="text-center py-6 space-y-3">
                 <CheckCircle2 className="h-14 w-14 text-emerald-500 mx-auto animate-bounce" />
@@ -112,7 +126,7 @@ export default function CustomerRegisterPage() {
                 <p className="text-xs text-slate-500">Redirecting to login...</p>
               </div>
             ) : (
-              <form className="space-y-4" onSubmit={handleSubmit}>
+              <form className="space-y-4 " onSubmit={handleSubmit}>
                 {error && (
                   <div className="flex items-center gap-2 rounded-xl bg-red-50 border border-red-200 p-3 text-xs font-semibold text-red-600">
                     <AlertCircle className="h-4 w-4 shrink-0" />
@@ -121,7 +135,9 @@ export default function CustomerRegisterPage() {
                 )}
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Full Name *</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"
+                  style={{ color: accentColor }} 
+                  >Full Name *</label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input type="text" required placeholder="John Doe" value={name}
@@ -132,7 +148,7 @@ export default function CustomerRegisterPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Phone *</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Phone *</label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input type="tel" required placeholder="+1 555-0100" value={phone}
@@ -142,7 +158,7 @@ export default function CustomerRegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Email (optional)</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Email (optional)</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input type="email" placeholder="john@example.com" value={email}
@@ -154,7 +170,7 @@ export default function CustomerRegisterPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Password *</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Password *</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input type="password" required placeholder="••••••••" value={password}
@@ -164,7 +180,7 @@ export default function CustomerRegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Confirm Password *</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Confirm Password *</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input type="password" required placeholder="••••••••" value={confirmPassword}
@@ -185,7 +201,7 @@ export default function CustomerRegisterPage() {
               </form>
             )}
 
-            <div className="mt-5 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
+            <div className="mt-5 p-4 rounded-xl border border-slate-100 text-center text-sm backdrop-blur-xs" style={{ color: accentColor }}>
               Already have an account?{' '}
               <Link 
                 href={`/order-online/${orgSlug}/customer/login`} 
@@ -200,13 +216,13 @@ export default function CustomerRegisterPage() {
       </main>
 
      <footer 
-        className="py-6 border-t text-center text-[10px] text-slate-400 flex flex-col justify-center gap-3"
-        style={{ borderColor: `${primaryColor}1a` }}
+        className="py-6 border-t text-center text-[14px] text-black flex flex-col justify-center gap-3"
+        style={{ borderColor: `${primaryColor}1a`,backgroundColor:"white" }}
       >
         <div className=' '> 
          <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
         
-        <div className="flex justify-center gap-3 mt-2 text-[9px] font-semibold text-slate-405">
+        <div className="flex justify-center gap-3 mt-2 text-[14px] font-semibold text-black">
           <a href="#" className="hover:underline">Privacy Policy</a>
           <span>•</span>
           <a href="#" className="hover:underline">Terms & Conditions</a>

@@ -34,6 +34,22 @@ async function run() {
     // 2. Modify store_id column in coupons table to be nullable to support global coupons
     console.log("Altering 'store_id' column in 'coupons' table to be nullable...");
     await sequelize.query("ALTER TABLE `coupons` MODIFY COLUMN `store_id` CHAR(36) BINARY NULL");
+
+    // 3. Add background image and color columns to stores table if not exists
+    const bgColumns = [
+      'bg_dashboard', 'bg_login', 'bg_menu', 'bg_customer_login', 'bg_register', 'bg_customer_register', 'bg_book',
+      'bg_color_dashboard', 'bg_color_login', 'bg_color_menu', 'bg_color_customer_login', 'bg_color_register', 'bg_color_customer_register', 'bg_color_book'
+    ];
+    for (const col of bgColumns) {
+      const [colResults] = await sequelize.query(`SHOW COLUMNS FROM \`stores\` LIKE '${col}'`);
+      if (colResults.length === 0) {
+        console.log(`Adding column '${col}' to 'stores' table...`);
+        await sequelize.query(`ALTER TABLE \`stores\` ADD COLUMN \`${col}\` VARCHAR(255) NULL`);
+        console.log(`Column '${col}' added successfully.`);
+      } else {
+        console.log(`Column '${col}' already exists on 'stores' table.`);
+      }
+    }
     console.log("Table alterations complete.");
   } catch (err) {
     console.error("Migration error:", err);

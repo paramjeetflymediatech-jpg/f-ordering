@@ -117,28 +117,43 @@ export default function CustomerLoginPage() {
 
   return (
     <div 
-      className="min-h-screen flex flex-col justify-between font-sans transition-colors duration-350"
-      style={{ backgroundColor: bgColor, fontFamily: getFontFamily() }}
+      className="relative min-h-screen flex flex-col justify-between font-sans transition-colors duration-350 bg-cover bg-center"
+      style={{
+        backgroundColor: store?.bg_color_customer_login || bgColor,
+        backgroundImage: store?.bg_customer_login 
+          ? `url(${store.bg_customer_login})` 
+          : store?.bg_color_customer_login 
+            ? 'none' 
+            : store?.banner 
+              ? `url(${store.banner})` 
+              : "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        fontFamily: getFontFamily(),
+      }}
     >
       <RestaurantNavbar orgSlug={orgSlug} activePage="login" />
+      <div className="absolute inset-0 bg-black/30 pointer-events-none" />
 
       <main className="flex-1 flex items-center justify-center px-4 py-12">
-        <div className="w-full max-w-sm">
-          <div className="text-center mb-8">
+        <div className="w-full max-w-sm z-10">
+          {/*  hero section */}
+          <div className="text-center mb-8  backdrop-blur-xl rounded-2xl p-4">
             <h1 
               className="text-2xl font-black tracking-tight"
-              style={{ color: primaryColor }}
+              style={{ color: accentColor }}
             >
               {isForgotMode ? 'Reset Password' : 'Welcome Back'}
             </h1>
-            <p className="text-sm text-slate-500 mt-1">
+            <p className="text-sm   mt-1"  style={{ color: accentColor }}>
               {isForgotMode 
                 ? 'Enter your phone or email to recover your account' 
                 : 'Sign in to view your orders & earn loyalty points'}
             </p>
           </div>
 
-          <div className="bg-white border border-slate-200 rounded-2xl shadow-lg p-6">
+          <div className="  backdrop-blur-xl border border-slate-200 rounded-2xl shadow-lg p-6" >
             {success ? (
               <div className="text-center py-6 space-y-3">
                 <CheckCircle2 className="h-14 w-14 text-emerald-500 mx-auto animate-bounce" />
@@ -149,7 +164,7 @@ export default function CustomerLoginPage() {
               <div>
                 {forgotSuccess ? (
                   <div className="space-y-4 py-2">
-                    <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-3 text-xs font-semibold text-emerald-600">
+                    <div className="flex items-center gap-2 rounded-xl bg-emerald-50  border border-emerald-200 p-3 text-xs font-semibold text-emerald-600">
                       <CheckCircle2 className="h-4 w-4 shrink-0" />
                       <span>{forgotSuccess}</span>
                     </div>
@@ -227,7 +242,7 @@ export default function CustomerLoginPage() {
                 )}
 
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                  <label className="block text-[10px] font-bold  uppercase tracking-wider mb-1" style={{ color: accentColor }}>
                     Phone or Email *
                   </label>
                   <div className="relative">
@@ -245,7 +260,7 @@ export default function CustomerLoginPage() {
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <label className="block text-[10px] font-bold  uppercase tracking-wider" style={{color:accentColor}}>
                       Password *
                     </label>
                     <button
@@ -284,7 +299,7 @@ export default function CustomerLoginPage() {
               </form>
             )}
 
-            <div className="mt-5 pt-4 border-t border-slate-100 text-center text-xs text-slate-500">
+            <div className="mt-5 p-2 border rounded-xl text-center text-sm backdrop-blur" style={{ color: accentColor }}>
               Don&apos;t have an account?{' '}
               <Link 
                 href={`/order-online/${orgSlug}/customer/register`} 
@@ -299,13 +314,13 @@ export default function CustomerLoginPage() {
       </main>
 
      <footer 
-        className="py-6 border-t text-center text-[10px] text-slate-400 flex flex-col justify-center gap-3"
-        style={{ borderColor: `${primaryColor}1a` }}
+        className="py-6 border-t text-center text-[14px] text-black flex flex-col justify-center gap-3"
+        style={{ borderColor: `${primaryColor}1a`, backgroundColor:"white"}}
       >
         <div className=' '> 
          <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
         
-        <div className="flex justify-center gap-3 mt-2 text-[9px] font-semibold text-slate-405">
+        <div className="flex justify-center gap-3 mt-2 text-[14px] font-semibold text-black">
           <a href="#" className="hover:underline">Privacy Policy</a>
           <span>•</span>
           <a href="#" className="hover:underline">Terms & Conditions</a>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
@@ -73,15 +73,57 @@ export default function RegisterPage() {
     }
   };
 
+  // State for store (to get banner & theme colors)
+  const [store, setStore] = useState<any>(null);
+
+  // Load store details on mount (based on subdomain slug)
+  useEffect(() => {
+    const fetchStore = async () => {
+      try {
+        const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
+        const parts = hostname.split('.');
+        let slug = '';
+        if (parts.length > 1 && parts[0] !== 'www') slug = parts[0];
+        if (!slug) return;
+        const res = await fetch(`/api/public/store?orgSlug=${slug}`);
+        const data = await res.json();
+        if (data.success && data.store) setStore(data.store);
+      } catch (e) {
+        console.error('Failed to fetch store for register background', e);
+      }
+    };
+    fetchStore();
+  }, []);
+
+  const primaryColor = store?.theme_primary_color || '#2A0E07';
+  const bgColor = store?.theme_bg_color || '#F9F6F0';
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-12 sm:px-6 lg:px-8 relative">
+    <div
+      className="relative min-h-screen flex items-center justify-center bg-slate-950 px-4 py-12 sm:px-6 lg:px-8 bg-cover bg-center"
+      style={{
+        backgroundColor: store?.bg_color_register || bgColor,
+        backgroundImage: store?.bg_register 
+          ? `url(${store.bg_register})` 
+          : store?.bg_color_register 
+            ? 'none' 
+            : store?.banner 
+              ? `url(${store.banner})` 
+              : "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        color: primaryColor,
+      }}
+    >
       <Link
         href="/"
-        className="absolute top-6 left-6 flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2.5 text-xs font-bold text-slate-300 hover:text-white hover:bg-slate-800 transition backdrop-blur z-20"
+        className="absolute top-6 left-6 flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2.5 text-xs font-bold text-white hover:text-white hover:bg-slate-800 transition backdrop-blur z-20"
       >
         ← Back to Home
       </Link>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(59,130,246,0.15),transparent_40%),radial-gradient(circle_at_70%_80%,rgba(249,115,22,0.15),transparent_40%)]" />
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-black/30 pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-2xl space-y-8 rounded-2xl border border-slate-800 bg-slate-900/60 p-8 backdrop-blur-xl shadow-2xl">
         <div className="text-center">
@@ -112,11 +154,11 @@ export default function RegisterPage() {
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             {/* Business Info */}
             <div className="space-y-4">
-              <h3 className="text-lg font-bold text-orange-500 border-b border-slate-800 pb-1">
+              <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-1">
                 1. Organization Details
               </h3>
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-white">
                   Organization/Brand Name *
                 </label>
                 <input
@@ -129,7 +171,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-white">
                   Initial Branch/Store Name *
                 </label>
                 <input
@@ -142,7 +184,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-white">
                   Store Address
                 </label>
                 <input
@@ -154,7 +196,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-white">
                   Store Phone
                 </label>
                 <input
@@ -169,11 +211,11 @@ export default function RegisterPage() {
 
             {/* Owner Info */}
             <div className="space-y-4">
-              <h3 className="text-lg font-bold text-orange-500 border-b border-slate-800 pb-1">
+              <h3 className="text-lg font-bold text-white border-b border-slate-800 pb-1">
                 2. Owner Credentials
               </h3>
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-white">
                   Owner Full Name *
                 </label>
                 <input
@@ -186,7 +228,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-white">
                   Email Address *
                 </label>
                 <input
@@ -200,7 +242,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-white">
                   Password *
                 </label>
                 <input
@@ -214,7 +256,7 @@ export default function RegisterPage() {
                 />
               </div>
               <div>
-                <label className="text-xs font-semibold text-slate-300">
+                <label className="text-xs font-semibold text-white">
                   Owner Phone Number
                 </label>
                 <input
@@ -239,9 +281,9 @@ export default function RegisterPage() {
           </div>
         </form>
 
-        <div className="text-center text-sm text-slate-400">
-          Already registered?{' '}
-          <Link href="/login" className="font-semibold text-orange-500 hover:text-orange-400">
+        <div className="text-center text-sm text-white">
+          Already registered ?{' '}
+          <Link href="/login" className="font-semibold text-white hover:text-orange-400">
             Sign In Here
           </Link>
         </div>

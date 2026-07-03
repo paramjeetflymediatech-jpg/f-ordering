@@ -151,29 +151,44 @@ export default function BookTablePage() {
   }
 
   return (
-    <div 
-      className="min-h-screen flex flex-col justify-between transition-colors duration-350"
-      style={{ backgroundColor: bgColor, fontFamily: getFontFamily(), color: primaryColor }}
+    <div className="relative min-h-screen flex flex-col justify-between font-sans transition-colors duration-350 bg-cover bg-center"
+      style={{
+        backgroundColor: store?.bg_color_book || bgColor,
+        backgroundImage: store?.bg_book 
+          ? `url(${store.bg_book})` 
+          : store?.bg_color_book 
+            ? 'none' 
+            : store?.banner 
+              ? `url(${store.banner})` 
+              : "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        fontFamily: getFontFamily(),
+        color: primaryColor,
+      }}
     >
-      
       <RestaurantNavbar orgSlug={orgSlug} />
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-black/30 pointer-events-none" />
 
-      <main className="flex-1 max-w-lg mx-auto w-full px-6 py-12 flex flex-col justify-center">
+
+      <main className="flex-1 max-w-lg mx-auto w-full px-6 py-12 flex flex-col justify-center relative z-10">
         {!isSuccess ? (
-          <div 
-            className="rounded-2xl border bg-white p-8 shadow-2xl space-y-6"
+          <div
+            className="rounded-2xl border border-white/20 bg-white/10 backdrop-blur-xl p-8 shadow-2xl space-y-6"
             style={{ borderColor: `${primaryColor}1a` }}
           >
             <div className="space-y-1">
               <div className="flex justify-between items-center">
                 <h1 className="text-2xl font-black" style={{ color: primaryColor }}>Book a Table</h1>
-                <span className="text-[10px] font-black uppercase px-2.5 py-1 rounded-full" style={{ backgroundColor: `${accentColor}15`, color: accentColor }}>
+                <span className="text-[14px] font-black uppercase px-2.5 py-1 rounded-full" style={{ backgroundColor: `${primaryColor}10`, color: primaryColor }}>
                   Step {step} of 2
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
-                {step === 1 
-                  ? 'Enter your contact details to start your booking.' 
+              <p className="text-xs text-white">
+                {step === 1
+                  ? 'Enter your contact details to start your booking.'
                   : 'Select your preferred date, time and details.'
                 }
               </p>
@@ -183,7 +198,7 @@ export default function BookTablePage() {
               {step === 1 && (
                 <div className="space-y-4">
                   <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Full Name *</label>
+                    <label className="text-xs font-semibold text-white uppercase tracking-wider">Full Name *</label>
                     <input
                       type="text"
                       required
@@ -196,7 +211,7 @@ export default function BookTablePage() {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Phone Number *</label>
+                      <label className="text-xs font-semibold text-white uppercase tracking-wider">Phone Number *</label>
                       <input
                         type="tel"
                         required
@@ -207,7 +222,7 @@ export default function BookTablePage() {
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Email Address</label>
+                      <label className="text-xs font-semibold text-white uppercase tracking-wider">Email Address</label>
                       <input
                         type="email"
                         placeholder="jane@example.com"
@@ -221,7 +236,7 @@ export default function BookTablePage() {
                   <button
                     type="submit"
                     className="w-full mt-6 rounded-xl py-3.5 text-sm font-extrabold text-white transition shadow-lg"
-                    style={{ 
+                    style={{
                       backgroundColor: primaryColor,
                       boxShadow: `0 4px 14px 0 ${primaryColor}22`
                     }}
@@ -235,10 +250,10 @@ export default function BookTablePage() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label 
-                        className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"
+                      <label
+                        className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-1.5"
                       >
-                        <Calendar className="h-4 w-4" style={{ color: accentColor }} />
+                        <Calendar className="h-5 w-5 " style={{ color: accentColor }} />
                         Booking Date *
                       </label>
                       <input
@@ -251,8 +266,8 @@ export default function BookTablePage() {
                       />
                     </div>
                     <div>
-                      <label 
-                        className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"
+                      <label
+                        className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-1.5"
                       >
                         <Clock className="h-4 w-4" style={{ color: accentColor }} />
                         Select Time *
@@ -268,7 +283,7 @@ export default function BookTablePage() {
                   </div>
 
                   <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <label className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-1.5">
                       <Users className="h-4 w-4" style={{ color: accentColor }} />
                       Guest Count: {guestCount} Guests
                     </label>
@@ -281,7 +296,7 @@ export default function BookTablePage() {
                       className="w-full mt-3 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer"
                       style={{ accentColor: accentColor }}
                     />
-                    <div className="flex justify-between text-[10px] text-slate-400 font-bold px-1 mt-1">
+                    <div className="flex justify-between text-[10px] text-white font-bold px-1 mt-1">
                       <span>1 Guest</span>
                       <span>10 Guests</span>
                       <span>20 Guests</span>
@@ -289,8 +304,8 @@ export default function BookTablePage() {
                   </div>
 
                   <div>
-                    <label 
-                      className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5"
+                    <label
+                      className="text-xs font-semibold text-white uppercase tracking-wider flex items-center gap-1.5"
                     >
                       <MessageSquare className="h-4 w-4" style={{ color: accentColor }} />
                       Special Requests
@@ -307,15 +322,15 @@ export default function BookTablePage() {
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      className="w-1/3 rounded-xl border py-3.5 text-sm font-semibold hover:bg-slate-50 transition text-slate-600"
-                      style={{ borderColor: `${primaryColor}20` }}
+                      className={`w-1/3 rounded-xl border py-3.5 text-sm font-semibold  transition text-white  `}
+                      style={{ borderColor: `${primaryColor}` }}
                     >
                       Back
                     </button>
                     <button
                       type="submit"
-                      className="w-2/3 rounded-xl py-3.5 text-sm font-extrabold text-white transition shadow-lg"
-                      style={{ 
+                      className="w-2/3 rounded-xl py-3.5 text-sm font-extrabold text-white  transition shadow-lg"
+                      style={{
                         backgroundColor: primaryColor,
                         boxShadow: `0 4px 14px 0 ${primaryColor}22`
                       }}
@@ -328,12 +343,12 @@ export default function BookTablePage() {
             </form>
           </div>
         ) : (
-          <div 
+          <div
             className="rounded-2xl border bg-white p-8 shadow-2xl text-center space-y-6"
             style={{ borderColor: `${primaryColor}1a` }}
           >
             <CheckCircle className="h-16 w-16 mx-auto animate-bounce" style={{ color: accentColor }} />
-            
+
             <div className="space-y-2">
               <h2 className="text-2xl font-black" style={{ color: primaryColor }}>Booking Requested!</h2>
               <p className="text-xs text-slate-500">
@@ -341,7 +356,7 @@ export default function BookTablePage() {
               </p>
             </div>
 
-            <div 
+            <div
               className="bg-slate-50 border rounded-xl p-4 space-y-3 text-xs text-left font-semibold text-slate-700"
               style={{ borderColor: `${primaryColor}1a` }}
             >
@@ -361,7 +376,7 @@ export default function BookTablePage() {
               </div>
               <div className="flex justify-between items-center">
                 <span>Status:</span>
-                <span 
+                <span
                   className="rounded px-2 py-0.5 text-[10px] uppercase font-black"
                   style={{ backgroundColor: `${accentColor}1a`, color: accentColor }}
                 >
@@ -390,18 +405,18 @@ export default function BookTablePage() {
         )}
       </main>
 
-      <footer 
-        className="py-6 border-t text-center text-[10px] text-slate-400 flex flex-col justify-center gap-3"
-        style={{ borderColor: `${primaryColor}1a` }}
+      <footer
+        className="py-6 border-t text-center text-[14px] text-black flex flex-col justify-center gap-3"
+        style={{ borderColor: `${primaryColor}1a`, backgroundColor:"white" }}
       >
-        <div className=' '> 
-         <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
-        
-        <div className="flex justify-center gap-3 mt-2 text-[9px] font-semibold text-slate-405">
-          <a href="#" className="hover:underline">Privacy Policy</a>
-          <span>•</span>
-          <a href="#" className="hover:underline">Terms & Conditions</a>
-        </div></div>
+        <div className=' '>
+          <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
+
+          <div className="flex justify-center gap-3 mt-2 text-[14px] font-semibold text-black">
+            <a href="#" className="hover:underline">Privacy Policy</a>
+            <span>•</span>
+            <a href="#" className="hover:underline">Terms & Conditions</a>
+          </div></div>
       </footer>
 
     </div>
