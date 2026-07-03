@@ -262,8 +262,8 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
                   <Link
                     href={`/order-online/${orgSlug}/customer/register`}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider"
-                    style={{ backgroundColor: accentColor }}
+                    className="w-full text-center py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider"
+                    style={{ backgroundColor: primaryColor, color: accentColor   }}
                   >
                     Sign Up
                   </Link>
