@@ -807,8 +807,8 @@ export default function PublicOrderPage() {
                 </Link>
                 <Link
                   href={`/order-online/${orgSlug}/customer/register`}
-                  className="text-white px-3 py-1.5 rounded-lg transition text-xs font-bold uppercase tracking-wider hover:opacity-90"
-                  style={{ backgroundColor: accentColor }}
+                  className="px-3 py-1.5 rounded-lg transition text-xs font-bold uppercase tracking-wider hover:opacity-90"
+                  style={{ backgroundColor: primaryColor,color:accentColor }}
                 >
                   Sign Up
                 </Link>

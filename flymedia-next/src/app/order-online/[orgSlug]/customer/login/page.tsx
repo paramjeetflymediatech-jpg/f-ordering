@@ -194,7 +194,7 @@ export default function CustomerLoginPage() {
                     )}
 
                     <div>
-                      <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                      <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1">
                         Phone or Email *
                       </label>
                       <div className="relative">
@@ -225,7 +225,8 @@ export default function CustomerLoginPage() {
                         setIsForgotMode(false);
                         setForgotError(null);
                       }}
-                      className="w-full rounded-xl py-2.5 text-xs font-bold text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
+                      className="w-full rounded-xl py-2.5 text-xs font-bold transition"
+                      style={{ color: accentColor,backgroundColor:primaryColor }}
                     >
                       Back to Sign In
                     </button>
