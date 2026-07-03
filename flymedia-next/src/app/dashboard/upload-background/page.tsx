@@ -239,32 +239,47 @@ export default function UploadBackgroundPage() {
               )}
             </AnimatePresence>
 
-            {/* Mode Tab Switcher */}
-            <div className="grid grid-cols-2 p-1.5 bg-slate-950/80 rounded-2xl border border-slate-800/80">
-              <button
-                type="button"
-                onClick={() => setUploadMode('image')}
-                className={`flex items-center justify-center gap-2 py-3.5 text-xs font-bold uppercase tracking-wider rounded-xl transition duration-300 ${
-                  uploadMode === 'image'
-                    ? 'bg-gradient-to-r from-violet-650 to-indigo-650 text-white shadow-lg shadow-violet-500/5'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <ImageIcon className="h-4 w-4" />
-                Image Background
-              </button>
-              <button
-                type="button"
-                onClick={() => setUploadMode('color')}
-                className={`flex items-center justify-center gap-2 py-3.5 text-xs font-bold uppercase tracking-wider rounded-xl transition duration-300 ${
-                  uploadMode === 'color'
-                    ? 'bg-gradient-to-r from-violet-650 to-indigo-650 text-white shadow-lg shadow-violet-500/5'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <Palette className="h-4 w-4" />
-                Solid Color
-              </button>
+            {/* Mode Tab Switcher — Beautiful Sliding Pill */}
+            <div className="relative flex items-center gap-1 p-1.5 rounded-2xl border border-slate-800/80 bg-slate-950/90 backdrop-blur-sm shadow-inner">
+              {/* Sliding Background Pill */}
+              {(['image', 'color'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setUploadMode(mode)}
+                  className="relative flex-1 flex items-center justify-center gap-2.5 py-3.5 z-10 cursor-pointer"
+                >
+                  {uploadMode === mode && (
+                    <motion.div
+                      layoutId="tab-pill"
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 shadow-lg shadow-violet-500/25"
+                      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                    />
+                  )}
+                  <span className="relative z-10 flex items-center gap-2.5">
+                    <span
+                      className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-300 ${
+                        uploadMode === mode
+                          ? 'bg-white/15 text-white'
+                          : 'bg-slate-800/80 text-slate-500 group-hover:text-slate-300'
+                      }`}
+                    >
+                      {mode === 'image' ? (
+                        <ImageIcon className="h-3.5 w-3.5" />
+                      ) : (
+                        <Palette className="h-3.5 w-3.5" />
+                      )}
+                    </span>
+                    <span
+                      className={`text-[11px] font-extrabold uppercase tracking-widest transition-colors duration-300 ${
+                        uploadMode === mode ? 'text-white' : 'text-slate-500'
+                      }`}
+                    >
+                      {mode === 'image' ? 'Image' : 'Color'}
+                    </span>
+                  </span>
+                </button>
+              ))}
             </div>
 
             <form className="space-y-6" onSubmit={handleSubmit}>
