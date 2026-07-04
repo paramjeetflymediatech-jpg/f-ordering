@@ -53,8 +53,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Store not found' }, { status: 404 });
     }
 
-    // Validate table is not reserved for QR orders
+    // Validate table is not reserved or occupied for QR orders
     if (orderType === 'qr_order' && tableId) {
+      // 1. Check reservation
       const activeRes = await Reservation.findOne({
         where: {
           table_id: tableId,
@@ -70,6 +71,15 @@ export async function POST(request: Request) {
         const guestName = (activeRes as any).customer?.name || 'a guest';
         return NextResponse.json({
           error: `Table is reserved for ${guestName} at ${resTime}. Please check in at the counter.`,
+        }, { status: 409 });
+      }
+
+      // 2. Check occupancy
+      const table = await RestaurantTable.findByPk(tableId, { transaction });
+      if (table && table.status === 'occupied') {
+        await transaction.rollback();
+        return NextResponse.json({
+          error: 'This table is currently occupied. Please scan a different table or check with our staff.',
         }, { status: 409 });
       }
     }

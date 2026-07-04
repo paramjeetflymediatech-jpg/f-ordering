@@ -43,7 +43,7 @@ export function POSHeader({ session, logoUrl, companyName, theme = 'dark', toggl
         {toggleTheme && (
           <button
             onClick={toggleTheme}
-            className="rounded-xl border border-slate-800 bg-[#090d16] p-2 text-slate-400 hover:text-white hover:bg-slate-900 hover:border-slate-700 transition duration-200"
+            className="rounded-xl border border-slate-800 bg-slate-900 p-2 text-slate-400 hover:text-white hover:bg-slate-800 hover:border-slate-700 transition duration-200"
             title={theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'}
           >
             {theme === 'dark' ? (
@@ -56,7 +56,7 @@ export function POSHeader({ session, logoUrl, companyName, theme = 'dark', toggl
 
         <button
           onClick={onNotificationClick}
-          className={`rounded-xl border bg-[#090d16] p-2 text-slate-400 hover:text-white hover:bg-slate-900 hover:border-slate-700 transition duration-200 relative ${
+          className={`rounded-xl border bg-slate-900 p-2 text-slate-400 hover:text-white hover:bg-slate-800 hover:border-slate-700 transition duration-200 relative ${
             unreadCount > 0 ? 'border-rose-500/50 text-rose-500' : 'border-slate-800'
           }`}
           title="Unread Orders Notifications"

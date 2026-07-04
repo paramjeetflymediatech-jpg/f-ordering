@@ -34,7 +34,7 @@ export function POSTableGrid({
         </div>
         <button
           onClick={() => setActiveModal('table')}
-          className="rounded-lg border border-slate-800 bg-[#090d16] px-2.5 py-1.5 text-[10px] font-bold text-slate-400 hover:text-white transition"
+          className="rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-[10px] font-bold text-slate-400 hover:text-white transition"
         >
           Floor map
         </button>
@@ -67,7 +67,7 @@ export function POSTableGrid({
       </div>
 
       {/* Table Map grid */}
-      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-4 overflow-y-auto max-h-[360px] pr-1 py-1 flex-1">
+      <div className="grid grid-cols-3 min-[380px]:grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 xl:grid-cols-12 gap-3.5 overflow-y-auto max-h-[360px] pr-1 py-1 flex-1">
         {filteredTables.map((table) => {
           const isSelected = selectedTable?.id === table.id;
 
@@ -93,7 +93,7 @@ export function POSTableGrid({
               key={table.id}
               onClick={() => handleTableSelection(table)}
               className={`relative flex flex-col items-center justify-center p-2 transition duration-150 active:scale-95 border ${borderStyle} ${ringGlow} ${
-                isRound ? 'rounded-full w-[62px] h-[62px] mx-auto' : 'rounded-xl w-[64px] h-[58px]'
+                isRound ? 'rounded-full w-14 h-14 mx-auto' : 'rounded-xl w-full max-w-[72px] h-14 mx-auto'
               }`}
             >
               {/* Seats indicators */}

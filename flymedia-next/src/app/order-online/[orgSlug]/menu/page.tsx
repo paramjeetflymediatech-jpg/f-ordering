@@ -384,6 +384,49 @@ export default function PublicOrderPage() {
     };
   }, [orgSlug]);
 
+  // Real-time table status updates
+  useEffect(() => {
+    if (!store?.id) return;
+
+    const socket = io({
+      transports: ['websocket', 'polling']
+    });
+
+    socket.on('connect', () => {
+      console.log('[Public Menu Socket] Connected, joining store room:', store.id);
+      socket.emit('join_store', store.id);
+    });
+
+    socket.on('table_status_update', async () => {
+      console.log('[Public Menu Socket] Table status updated, refetching tables...');
+      try {
+        const storeRes = await fetch(`/api/public/store?orgSlug=${orgSlug}`);
+        const storeData = await storeRes.json();
+        if (storeRes.ok && storeData.success) {
+          const updatedTables = storeData.tables || [];
+          setTables(updatedTables);
+
+          // Check if selected table is no longer available
+          setSelectedTableId((currentId) => {
+            if (!currentId) return currentId;
+            const chosen = updatedTables.find((t: any) => String(t.id) === String(currentId));
+            if (chosen && chosen.status !== 'available') {
+              showToast(`Table ${chosen.table_number} is no longer available. Please select another table.`, 'error');
+              return '';
+            }
+            return currentId;
+          });
+        }
+      } catch (err) {
+        console.error('[Public Menu Socket] Failed to refetch tables:', err);
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [store?.id, orgSlug]);
+
   const handleLogout = async () => {
     try {
       const res = await fetch('/api/public/customer/logout', { method: 'POST' });

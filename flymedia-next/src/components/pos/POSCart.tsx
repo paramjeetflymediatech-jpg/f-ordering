@@ -55,9 +55,9 @@ export function POSCart({
   onClose,
 }: POSCartProps) {
   return (
-    <aside className="w-full lg:w-96 h-full shrink-0 border-l border-[#1e293b]/60 bg-[#0c101b] flex flex-col justify-between overflow-hidden shadow-2xl">
+    <aside className="w-full lg:w-96 h-full shrink-0 border-l border-slate-800/80 bg-slate-950/80 backdrop-blur-md flex flex-col justify-between overflow-hidden shadow-2xl">
       {/* Header receipt metadata */}
-      <div className="p-4 border-b border-[#1e293b]/60 bg-[#0f1524]/60">
+      <div className="p-4 border-b border-slate-800 bg-slate-950/40">
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-2">
             {onClose && (
@@ -69,13 +69,13 @@ export function POSCart({
                 <X className="h-4 w-4" />
               </button>
             )}
-            <h3 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-2">
-              <Receipt className="h-4.5 w-4.5 text-[#f59e0b]" /> Checkout & Receipt
+            <h3 className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center gap-2">
+              <Receipt className="h-4.5 w-4.5 text-orange-400" /> Checkout & Receipt
             </h3>
           </div>
           <button
             onClick={clearCart}
-            className="text-[10px] text-slate-400 hover:text-red-400 font-bold uppercase"
+            className="text-[10px] text-slate-400 hover:text-red-400 font-bold uppercase transition duration-150"
           >
             Clear All
           </button>
@@ -85,28 +85,28 @@ export function POSCart({
         <div className="grid grid-cols-3 gap-2 mt-2">
           <button
             onClick={() => onOrderTypeClick?.()}
-            className="rounded-xl border border-[#1e293b] bg-slate-900/40 py-2 px-1 text-[10px] font-bold text-slate-400 hover:text-white hover:bg-slate-900 transition flex flex-col items-center justify-center min-h-[46px] outline-none"
+            className="rounded-xl border border-slate-800 bg-slate-950/50 py-2 px-1 text-[10px] font-bold text-slate-400 hover:text-white hover:bg-slate-900 hover:border-slate-700 transition flex flex-col items-center justify-center min-h-[46px] outline-none"
           >
             <span>Customer</span>
-            <span className="text-[8.5px] text-[#f59e0b] font-medium truncate max-w-[80px] mt-0.5">
+            <span className="text-[8.5px] text-orange-400 font-medium truncate max-w-[80px] mt-0.5">
               {customerName ? customerName : 'Add Guest'}
             </span>
           </button>
           <button
             onClick={() => onOrderTypeClick?.()}
-            className="rounded-xl border border-[#1e293b] bg-slate-900/40 py-2 px-1 text-[10px] font-bold text-slate-400 hover:text-white hover:bg-slate-900 transition flex flex-col items-center justify-center min-h-[46px] outline-none"
+            className="rounded-xl border border-slate-800 bg-slate-950/50 py-2 px-1 text-[10px] font-bold text-slate-400 hover:text-white hover:bg-slate-900 hover:border-slate-700 transition flex flex-col items-center justify-center min-h-[46px] outline-none"
           >
             <span className="capitalize">{orderType === 'dine_in' ? 'Dine-In' : orderType === 'takeaway' ? 'Take Away' : 'Delivery'}</span>
-            <span className="text-[8.5px] text-[#f59e0b] font-bold truncate max-w-[80px] mt-0.5">
+            <span className="text-[8.5px] text-orange-400 font-bold truncate max-w-[80px] mt-0.5">
               {orderType === 'dine_in' ? (selectedTable ? selectedTable.table_number : 'Select Table') : (cartRef || 'MA-001')}
             </span>
           </button>
           <button
             onClick={() => setActiveModal('resume')}
-            className="rounded-xl border border-[#1e293b] bg-slate-900/40 py-2 px-1 text-[10px] font-bold text-slate-400 hover:text-white hover:bg-slate-900 transition flex flex-col items-center justify-center min-h-[46px] outline-none"
+            className="rounded-xl border border-slate-800 bg-slate-950/50 py-2 px-1 text-[10px] font-bold text-slate-400 hover:text-white hover:bg-slate-900 hover:border-slate-700 transition flex flex-col items-center justify-center min-h-[46px] outline-none"
           >
             <span>Hold</span>
-            <span className="text-[8.5px] text-[#f59e0b] font-semibold mt-0.5">Queue</span>
+            <span className="text-[8.5px] text-orange-400 font-semibold mt-0.5">Queue</span>
           </button>
         </div>
       </div>
@@ -115,8 +115,8 @@ export function POSCart({
       <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-slate-950/20">
         {cart.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center text-center text-slate-600 py-16">
-            <ShoppingBag className="h-12 w-12 stroke-[1.5] mb-2 text-[#1e293b]" />
-            <p className="text-xs font-bold">Checkout cart is empty</p>
+            <ShoppingBag className="h-12 w-12 stroke-[1.5] mb-2 text-slate-800/80" />
+            <p className="text-xs font-bold text-slate-500">Checkout cart is empty</p>
             <p className="text-[10px] mt-1 opacity-70">Add items from the menu grid</p>
           </div>
         ) : (
@@ -135,17 +135,17 @@ export function POSCart({
             return (
               <div
                 key={cartItem.id}
-                className="flex items-start justify-between rounded-xl border border-[#1e293b]/60 bg-[#0f1524]/40 p-2.5 hover:border-slate-800 transition"
+                className="flex items-start justify-between rounded-xl border border-slate-800 bg-slate-900/10 p-2.5 hover:border-slate-700/80 hover:bg-slate-900/20 transition-all duration-300"
               >
                 <div className="flex items-start gap-2.5 min-w-0 flex-1 pr-2">
                   {menuItem?.image_url ? (
                     <img
                       src={menuItem.image_url}
                       alt={cartItem.name}
-                      className="h-10 w-10 rounded-lg object-cover shrink-0 mt-0.5"
+                      className="h-10 w-10 rounded-lg object-cover shrink-0 mt-0.5 border border-slate-800/60"
                     />
                   ) : (
-                    <div className="h-10 w-10 rounded-lg bg-slate-800 flex items-center justify-center text-[9px] text-slate-600 shrink-0 mt-0.5">
+                    <div className="h-10 w-10 rounded-lg bg-slate-950 border border-slate-850 flex items-center justify-center text-[9px] text-slate-650 shrink-0 mt-0.5">
                       No Img
                     </div>
                   )}
@@ -156,7 +156,7 @@ export function POSCart({
                       {resolvedVariant?.name && ` (${resolvedVariant.name})`}
                     </p>
                     {addonsList.length > 0 && (
-                      <p className="text-[10px] text-slate-400 mt-0.5 leading-tight italic">
+                      <p className="text-[10px] text-slate-450 mt-0.5 leading-tight italic">
                         + {addonsList.map((a: any) => a.name).join(', ')}
                       </p>
                     )}
@@ -166,10 +166,10 @@ export function POSCart({
                       </p>
                     )}
                     <div className="flex items-center gap-2 mt-1.5">
-                      <div className="flex items-center gap-1.5 bg-slate-900 border border-[#1e293b]/60 rounded-md px-1 py-0.5">
+                      <div className="flex items-center gap-1.5 bg-slate-950 border border-slate-850 rounded-lg px-1.5 py-0.5">
                         <button
                           onClick={() => updateQuantity(cartItem.id, cartItem.quantity - 1)}
-                          className="text-[#f59e0b] hover:text-white transition px-1 font-bold text-[10px]"
+                          className="text-orange-400 hover:text-white transition px-1 font-bold text-[10px]"
                         >
                           -
                         </button>
@@ -178,7 +178,7 @@ export function POSCart({
                         </span>
                         <button
                           onClick={() => updateQuantity(cartItem.id, cartItem.quantity + 1)}
-                          className="text-[#f59e0b] hover:text-white transition px-1 font-bold text-[10px]"
+                          className="text-orange-400 hover:text-white transition px-1 font-bold text-[10px]"
                         >
                           +
                         </button>
@@ -191,10 +191,10 @@ export function POSCart({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0 mt-0.5">
-                  <p className="text-xs font-bold text-white">${(cartItem.price * cartItem.quantity).toFixed(2)}</p>
+                  <p className="text-xs font-bold text-slate-200">${(cartItem.price * cartItem.quantity).toFixed(2)}</p>
                   <button
                     onClick={() => removeFromCart(cartItem.id)}
-                    className="rounded-lg p-1 text-slate-600 hover:text-red-400 hover:bg-slate-900 transition"
+                    className="rounded-lg p-1 text-slate-600 hover:text-red-400 hover:bg-slate-900 transition-colors"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>
@@ -206,7 +206,7 @@ export function POSCart({
       </div>
 
       {/* Pricing calculations footer */}
-      <div className="p-4 border-t border-[#1e293b]/60 bg-[#0c101b] space-y-2.5">
+      <div className="p-4 border-t border-slate-805 bg-slate-950/40 space-y-2.5">
         <div className="flex justify-between text-xs text-slate-400">
           <span>Subtotal</span>
           <span className="font-semibold text-white">${subtotal.toFixed(2)}</span>
@@ -231,9 +231,9 @@ export function POSCart({
           </div>
         )}
 
-        <div className="flex justify-between border-t border-[#1e293b]/60 pt-2.5 text-base font-black text-white">
+        <div className="flex justify-between border-t border-slate-800/80 pt-2.5 text-base font-black text-white">
           <span>Total Payable</span>
-          <span className="text-[#f59e0b]">${total.toFixed(2)}</span>
+          <span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent font-extrabold">${total.toFixed(2)}</span>
         </div>
 
         {/* Quick billing utility modifiers */}
@@ -241,14 +241,14 @@ export function POSCart({
           <button
             onClick={() => setActiveModal('hold')}
             disabled={cart.length === 0}
-            className="rounded-xl border border-[#1e293b] bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 transition disabled:opacity-50"
+            className="rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white transition disabled:opacity-50"
           >
             Hold Bill
           </button>
           <button
             onClick={() => setActiveModal('split')}
             disabled={cart.length === 0}
-            className="rounded-xl border border-[#1e293b] bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 transition disabled:opacity-50"
+            className="rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white transition disabled:opacity-50"
           >
             Split ({splitCount})
           </button>
@@ -260,7 +260,7 @@ export function POSCart({
                 alert('No orders placed in this session yet.');
               }
             }}
-            className="rounded-xl border border-[#1e293b] bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 transition"
+            className="rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white transition"
           >
             Print Ticket
           </button>
@@ -270,9 +270,9 @@ export function POSCart({
         <button
           onClick={() => setActiveModal('checkout')}
           disabled={cart.length === 0}
-          className="w-full rounded-xl bg-gradient-to-r from-teal-400 to-emerald-400 hover:from-teal-300 hover:to-emerald-300 py-3.5 text-xs font-black text-slate-950 shadow-lg shadow-emerald-500/10 transition duration-150 disabled:opacity-50 mt-2 flex justify-center items-center gap-1.5"
+          className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-650 hover:from-emerald-450 hover:to-teal-600 py-3.5 text-xs font-black text-slate-950 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all mt-2 flex justify-center items-center gap-1.5"
         >
-          <DollarSign className="h-4 w-4" />
+          <DollarSign className="h-4 w-4 animate-pulse" />
           Proceed to Payment
         </button>
       </div>

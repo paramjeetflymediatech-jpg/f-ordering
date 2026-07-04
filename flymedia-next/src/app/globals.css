@@ -505,4 +505,16 @@ img {
   color: #0f172a !important;
 }
 
+/* SVG grid lines override for Light Theme */
+.light-theme line[stroke="#1e293b"],
+.light-theme path[stroke="#1e293b"] {
+  stroke: #e2e8f0 !important;
+}
+
+/* Custom background overrides for Light Theme */
+.light-theme .bg-\[\#0a0f1d\]\/20,
+.light-theme [class*="bg-[#0a0f1d]/"] {
+  background-color: #f1f5f9 !important;
+}
+
 
