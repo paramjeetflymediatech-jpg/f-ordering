@@ -1215,7 +1215,7 @@ export default function PublicOrderPage() {
                                     style={{
                                       backgroundColor: `${accentColor}12`,
                                       borderColor: `${accentColor}40`,
-                                      color: accentColor,
+                                      
                                     }}
                                   >
                                     <Plus className="h-3.5 w-3.5" />
