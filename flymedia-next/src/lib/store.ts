@@ -27,6 +27,7 @@ export interface HeldOrder {
   discountAmount: number;
   orderType: 'dine_in' | 'takeaway' | 'delivery';
   selectedTable: { id: string; table_number: string } | null;
+  tableId?: string | null;
   notes?: string;
   customer?: {
     name?: string;

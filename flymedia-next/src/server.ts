@@ -59,6 +59,8 @@ app.prepare().then(() => {
     },
   });
 
+  (global as any).__socketIo = io;
+
   // Socket.IO Connection Event handlers
   io.on('connection', (socket) => {
     console.log(`[Socket.IO] Client connected: ${socket.id}`);
@@ -81,6 +83,13 @@ app.prepare().then(() => {
       const { storeId, orderId, status } = data;
       console.log(`[Socket.IO] Order ${orderId} updated to: ${status}`);
       io.to(storeId).emit('order_status_changed', { orderId, status });
+    });
+
+    // Notify POS when a reservation table assignment changes (table reserved/freed)
+    socket.on('reservation_table_update', (data) => {
+      const { storeId, tableId } = data;
+      console.log(`[Socket.IO] Table status updated for table ${tableId} in store ${storeId}`);
+      io.to(storeId).emit('table_status_update', { tableId });
     });
 
     socket.on('disconnect', () => {

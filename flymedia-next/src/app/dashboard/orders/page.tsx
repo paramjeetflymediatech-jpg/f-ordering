@@ -15,6 +15,7 @@ import {
   User,
   UtensilsCrossed,
   Filter,
+  Trash2
 } from 'lucide-react';
 
 export default function OrderHistoryPage() {
@@ -31,11 +32,37 @@ export default function OrderHistoryPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'completed' | 'active' | 'on_hold' | 'cancelled'>('all');
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [updatingStatus, setUpdatingStatus] = useState<string | null>(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const itemsPerPage = 10;
+
+  const handleDeleteSelectedOrders = async () => {
+    if (selectedOrderIds.length === 0) return;
+    const confirmMsg = `Are you sure you want to permanently delete the ${selectedOrderIds.length} selected order(s)? This action cannot be undone.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch(`/api/orders?ids=${selectedOrderIds.join(',')}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert(data.message || 'Orders deleted successfully.');
+        setSelectedOrderIds([]);
+        fetchOrders();
+      } else {
+        alert(data.error || 'Failed to delete orders.');
+      }
+    } catch (err) {
+      console.error('Failed to delete orders:', err);
+      alert('Error occurred while deleting orders.');
+    }
+  };
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     setUpdatingStatus(orderId);
@@ -65,6 +92,13 @@ export default function OrderHistoryPage() {
   };
 
 
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setFromDate('');
+    setToDate('');
+    setSelectedStatus('all');
+  };
+
   const fetchOrders = async () => {
     setLoading(true);
     try {
@@ -88,7 +122,8 @@ export default function OrderHistoryPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedStatus, searchQuery]);
+    setSelectedOrderIds([]);
+  }, [selectedStatus, searchQuery, fromDate, toDate]);
 
   if (status === 'loading') {
     return null; // Layout handles spinner
@@ -116,7 +151,22 @@ export default function OrderHistoryPage() {
     else if (selectedStatus === 'on_hold') matchesStatus = order.status === 'on_hold';
     else if (selectedStatus === 'cancelled') matchesStatus = order.status === 'cancelled';
 
-    return matchesSearch && matchesStatus;
+    // Date Range Filter
+    let matchesDate = true;
+    const orderDate = new Date(order.createdAt);
+    
+    if (fromDate) {
+      const start = new Date(fromDate);
+      start.setHours(0, 0, 0, 0);
+      if (orderDate < start) matchesDate = false;
+    }
+    if (toDate) {
+      const end = new Date(toDate);
+      end.setHours(23, 59, 59, 999);
+      if (orderDate > end) matchesDate = false;
+    }
+
+    return matchesSearch && matchesStatus && matchesDate;
   });
 
   const totalPages = Math.ceil(filteredOrders.length / itemsPerPage) || 1;
@@ -214,34 +264,87 @@ export default function OrderHistoryPage() {
       {/* Main Interactive Table */}
       <div className="rounded-2xl border border-[#1e293b]/60 bg-[#0c101b] shadow-2xl overflow-hidden flex flex-col">
         {/* Filters and search header */}
-        <div className="p-4 border-b border-[#1e293b]/60 bg-slate-950/20 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          {/* Tabs */}
-          <div className="flex flex-wrap gap-1.5">
-            {(['all', 'completed', 'active', 'on_hold', 'cancelled'] as const).map((tab) => (
+        <div className="p-5 border-b border-[#1e293b]/60 bg-slate-950/20 space-y-4">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Tabs */}
+            <div className="flex flex-wrap gap-1.5">
+              {(['all', 'completed', 'active', 'on_hold', 'cancelled'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setSelectedStatus(tab)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-bold transition duration-150 capitalize ${
+                    selectedStatus === tab
+                      ? 'bg-[#1a2336] text-[#f59e0b] border-l border-[#f59e0b]'
+                      : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+                  }`}
+                >
+                  {tab === 'active' ? 'Active / In Prep' : tab === 'on_hold' ? 'Held Bills' : tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Bulk Actions */}
+            {selectedOrderIds.length > 0 && (
               <button
-                key={tab}
-                onClick={() => setSelectedStatus(tab)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold transition duration-150 capitalize ${
-                  selectedStatus === tab
-                    ? 'bg-[#1a2336] text-[#f59e0b] border-l border-[#f59e0b]'
-                    : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
-                }`}
+                onClick={handleDeleteSelectedOrders}
+                className="flex items-center gap-1.5 rounded-xl bg-red-950/60 border border-red-500/30 text-red-400 px-3.5 py-2 text-xs font-black hover:bg-red-900/30 transition shadow uppercase tracking-wider shrink-0"
+                title={`Delete ${selectedOrderIds.length} Selected Orders`}
               >
-                {tab === 'active' ? 'Active / In Prep' : tab === 'on_hold' ? 'Held Bills' : tab}
+                <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                Delete Selected ({selectedOrderIds.length})
               </button>
-            ))}
+            )}
           </div>
 
-          {/* Search */}
-          <div className="relative w-full md:w-72">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-            <input
-              type="text"
-              placeholder="Search order #, table, cashier..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-xl border border-[#1e293b] bg-slate-950/80 pl-9 pr-4 py-2.5 text-xs text-white outline-none focus:border-[#f59e0b] transition placeholder-slate-500"
-            />
+          {/* Search & Dates Row */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Search order #, table, cashier..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl border border-[#1e293b] bg-slate-950/80 pl-9 pr-4 py-2 text-xs text-white outline-none focus:border-[#f59e0b] transition placeholder-slate-500"
+              />
+            </div>
+
+            {/* From Date Filter */}
+            <div className="flex items-center gap-2.5">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">From</span>
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => setFromDate(e.target.value)}
+                className="w-full rounded-xl border border-[#1e293b] bg-slate-950/80 px-3 py-2 text-xs text-slate-300 outline-none focus:border-[#f59e0b] transition cursor-pointer [color-scheme:dark]"
+              />
+            </div>
+
+            {/* To Date Filter */}
+            <div className="flex items-center gap-2.5">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider shrink-0">To</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => setToDate(e.target.value)}
+                className="w-full rounded-xl border border-[#1e293b] bg-slate-955/80 px-3 py-2 text-xs text-slate-300 outline-none focus:border-[#f59e0b] transition cursor-pointer [color-scheme:dark]"
+              />
+            </div>
+
+            {/* Clear Filters Button */}
+            <div className="flex justify-end">
+              {(searchQuery || fromDate || toDate || selectedStatus !== 'all') && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="w-full md:w-auto flex items-center justify-center gap-1.5 bg-slate-950 hover:bg-slate-900 border border-[#1e293b] text-slate-400 hover:text-white text-xs font-bold px-4 py-2 rounded-xl transition"
+                >
+                  <X className="h-4 w-4 text-orange-500" />
+                  Clear Filters
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -262,6 +365,22 @@ export default function OrderHistoryPage() {
             <table className="w-full text-left text-xs text-slate-300">
               <thead>
                 <tr className="border-b border-[#1e293b]/60 bg-slate-950/45 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  <th className="py-3.5 px-4 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={paginatedOrders.length > 0 && paginatedOrders.every(o => selectedOrderIds.includes(o.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          const pageIds = paginatedOrders.map(o => o.id);
+                          setSelectedOrderIds(prev => Array.from(new Set([...prev, ...pageIds])));
+                        } else {
+                          const pageIds = paginatedOrders.map(o => o.id);
+                          setSelectedOrderIds(prev => prev.filter(id => !pageIds.includes(id)));
+                        }
+                      }}
+                      className="rounded border-[#1e293b] bg-slate-950 text-[#f59e0b] focus:ring-[#f59e0b] cursor-pointer"
+                    />
+                  </th>
                   <th className="py-3.5 px-6">Order Number</th>
                   <th className="py-3.5 px-4">Date & Time</th>
                   <th className="py-3.5 px-4">Type</th>
@@ -281,6 +400,20 @@ export default function OrderHistoryPage() {
                       key={order.id}
                       className="hover:bg-slate-900/20 transition duration-100 font-medium"
                     >
+                      <td className="py-4 px-4 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedOrderIds.includes(order.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedOrderIds(prev => [...prev, order.id]);
+                            } else {
+                              setSelectedOrderIds(prev => prev.filter(id => id !== order.id));
+                            }
+                          }}
+                          className="rounded border-[#1e293b] bg-slate-950 text-[#f59e0b] focus:ring-[#f59e0b] cursor-pointer"
+                        />
+                      </td>
                       <td className="py-4 px-6 font-extrabold text-white">{order.order_number}</td>
                       <td className="py-4 px-4 text-slate-400">
                         {new Date(order.createdAt).toLocaleDateString()} at{' '}

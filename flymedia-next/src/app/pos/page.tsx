@@ -91,6 +91,12 @@ export default function POSPage() {
           playNotificationSound();
         });
 
+        // Bug 6 fix: Listen for table status changes from the reservations dashboard
+        socket.on('table_status_update', () => {
+          console.log('[POS Socket] Table status updated from reservation. Refreshing tables...');
+          fetchTables();
+        });
+
         return () => {
           socket.disconnect();
         };
@@ -255,7 +261,8 @@ export default function POSPage() {
             selectedTable: order.RestaurantTable
               ? { id: order.table_id, table_number: order.RestaurantTable.table_number }
               : null,
-            selectedCustomer: order.customer
+            tableId: order.table_id || null,
+            customer: order.customer
               ? { name: order.customer.name, phone: order.customer.phone, email: order.customer.email }
               : null,
           }));
@@ -437,6 +444,16 @@ export default function POSPage() {
       fetchStats();
       fetchHeldOrders();
 
+      // Bug 6 fix: Poll table statuses every 30s so reservation changes from the
+      // dashboard are reflected in the POS without a full page reload.
+      const tablePollingInterval = setInterval(() => {
+        fetchTables();
+      }, 30000);
+
+      return () => {
+        clearInterval(tablePollingInterval);
+      };
+
       fetch('/api/dashboard/profile')
         .then((res) => res.json())
         .then((data) => {
@@ -567,7 +584,7 @@ export default function POSPage() {
         fetchHeldOrders(); // Refresh held orders list in POS screen
         setActiveModal('receipt');
       } else {
-        alert(data.message || 'Checkout failed.');
+        alert(data.error || data.message || 'Checkout failed.');
       }
     } catch (err) {
       console.error(err);
@@ -610,7 +627,7 @@ export default function POSPage() {
         fetchStats();
         fetchHeldOrders();
       } else {
-        alert(data.message || 'Failed to hold order.');
+        alert(data.error || data.message || 'Failed to hold order.');
       }
     } catch (err) {
       console.error(err);
@@ -638,41 +655,23 @@ export default function POSPage() {
     }
   };
 
-  const getDummyTableBill = (table: any) => {
-    if (table.status !== 'occupied' && table.status !== 'reserved') return null;
-    
-    // If the table has an active cart, calculate the total from it
-    if (tableCarts[table.id]) {
+  const getTableBill = (table: any) => {
+    // 1. Check if the cashier has started modifying table's cart in client memory
+    if (tableCarts[table.id] && tableCarts[table.id].length > 0) {
       const subtotal = tableCarts[table.id].reduce((sum, item) => sum + item.price * item.quantity, 0);
       const tax = (subtotal * taxRate) / 100;
       return (subtotal + tax).toFixed(2);
     }
 
-    if (allItems.length > 0) {
-      const index1 = (table.table_number.charCodeAt(0) || 0) % allItems.length;
-      const index2 = ((table.table_number.charCodeAt(table.table_number.length - 1) || 0) + 1) % allItems.length;
-
-      const item1 = allItems[index1];
-      const item2 = allItems[index2 % allItems.length];
-
-      const price1 = parseFloat(item1.price) || 0;
-      const price2 = parseFloat(item2.price) || 0;
-
-      let subtotal = price1 * 2;
-      if (item1.id !== item2.id) {
-        subtotal += price2 * 1;
-      }
-
+    // 2. Check if there is an active sync order for this table from database/heldOrders
+    const activeOrder = heldOrders.find(o => o.tableId === table.id);
+    if (activeOrder && activeOrder.items.length > 0) {
+      const subtotal = activeOrder.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
       const tax = (subtotal * taxRate) / 100;
       return (subtotal + tax).toFixed(2);
     }
 
-    let hash = 0;
-    for (let i = 0; i < table.table_number.length; i++) {
-      hash += table.table_number.charCodeAt(i);
-    }
-    const amount = (hash % 150) + 35.5;
-    return amount.toFixed(2);
+    return null;
   };
 
   const handleTableSelection = (table: any) => {
@@ -685,8 +684,14 @@ export default function POSPage() {
         table_number: table.table_number,
       });
 
-      // Load table's cart if already stored, otherwise initialize it
-      if (tableCarts[table.id]) {
+      // Check if there is an active order in heldOrders database sync for this table
+      const activeTableOrder = heldOrders.find(o => o.tableId === table.id);
+
+      if (activeTableOrder) {
+        // Resume that active order automatically!
+        handleResumeOrder(activeTableOrder.id);
+      } else if (tableCarts[table.id]) {
+        // Load table's cart if already stored in memory
         usePOSStore.setState({
           cart: tableCarts[table.id],
           discountRate: 0,
@@ -694,51 +699,12 @@ export default function POSPage() {
           splitCount: 1,
         });
       } else {
-        if ((table.status === 'occupied' || table.status === 'reserved') && allItems.length > 0) {
-          const index1 = (table.table_number.charCodeAt(0) || 0) % allItems.length;
-          const index2 = ((table.table_number.charCodeAt(table.table_number.length - 1) || 0) + 1) % allItems.length;
-
-          const item1 = allItems[index1];
-          const item2 = allItems[index2 % allItems.length];
-
-          const dummyCartItems = [
-            {
-              id: `${item1.id}--`,
-              menuItemId: item1.id,
-              name: item1.name,
-              price: parseFloat(item1.price),
-              quantity: 2,
-            }
-          ];
-
-          if (item1.id !== item2.id) {
-            dummyCartItems.push({
-              id: `${item2.id}--`,
-              menuItemId: item2.id,
-              name: item2.name,
-              price: parseFloat(item2.price),
-              quantity: 1,
-            });
-          }
-
-          usePOSStore.setState({
-            cart: dummyCartItems,
-            discountRate: 0,
-            discountAmount: 0,
-            splitCount: 1,
-          });
-
-          setTableCarts((prev) => ({
-            ...prev,
-            [table.id]: dummyCartItems,
-          }));
-        } else {
-          usePOSStore.setState({ cart: [] });
-          setTableCarts((prev) => ({
-            ...prev,
-            [table.id]: [],
-          }));
-        }
+        // Initialize to clean empty cart (completely removing dummy pre-selection)
+        usePOSStore.setState({ cart: [] });
+        setTableCarts((prev) => ({
+          ...prev,
+          [table.id]: [],
+        }));
       }
       // Transition immediately to the Menu Tab!
       setPosTab('menu');
@@ -869,7 +835,7 @@ export default function POSPage() {
                   tables={tables}
                   selectedTable={selectedTable}
                   handleTableSelection={handleTableSelection}
-                  getDummyTableBill={getDummyTableBill}
+                  getTableBill={getTableBill}
                   setActiveModal={setActiveModal}
                 />
               </div>

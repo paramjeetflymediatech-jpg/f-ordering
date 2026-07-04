@@ -18,26 +18,34 @@ export async function POST(request: Request) {
 
     // 1. Validations
     if (!storeId) {
-      return NextResponse.json({ error: 'Store ID is required' }, { status: 400 });
+      await transaction.rollback();
+      return NextResponse.json({ success: false, error: 'Store ID is required' }, { status: 400 });
     }
     if (!customerName || !customerPhone) {
-      return NextResponse.json({ error: 'Customer name and phone number are required' }, { status: 400 });
+      await transaction.rollback();
+      return NextResponse.json({ success: false, error: 'Customer name and phone number are required' }, { status: 400 });
     }
     if (!reservationTime) {
-      return NextResponse.json({ error: 'Reservation date and time are required' }, { status: 400 });
+      await transaction.rollback();
+      return NextResponse.json({ success: false, error: 'Reservation date and time are required' }, { status: 400 });
     }
 
     const store = await Store.findByPk(storeId);
     if (!store) {
-      return NextResponse.json({ error: 'Store not found' }, { status: 404 });
+      await transaction.rollback();
+      return NextResponse.json({ success: false, error: 'Store not found' }, { status: 404 });
     }
 
-    // 2. Find or Create Customer Profile
+    // 2. Find or Create Customer Profile scoped by organization
     const [customer] = await Customer.findOrCreate({
-      where: { phone: customerPhone },
+      where: { 
+        phone: customerPhone,
+        organization_id: store.organization_id 
+      },
       defaults: {
         name: customerName,
         email: customerEmail || null,
+        organization_id: store.organization_id
       },
       transaction,
     });

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Op } from 'sequelize';
-import { sequelize, Store, Customer, Order, OrderItem, Payment, RestaurantTable, User, Role, Coupon } from '../../../../models';
+import { sequelize, Store, Customer, Order, OrderItem, Payment, RestaurantTable, User, Role, Coupon, Reservation } from '../../../../models';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
@@ -35,18 +35,43 @@ export async function POST(request: Request) {
 
     // 1. Validations
     if (!storeId) {
+      await transaction.rollback();
       return NextResponse.json({ error: 'Store ID is required' }, { status: 400 });
     }
     if (!customerName || !customerPhone) {
+      await transaction.rollback();
       return NextResponse.json({ error: 'Customer name and phone number are required' }, { status: 400 });
     }
     if (!items || items.length === 0) {
+      await transaction.rollback();
       return NextResponse.json({ error: 'Shopping cart is empty' }, { status: 400 });
     }
 
     const store = await Store.findByPk(storeId);
     if (!store) {
+      await transaction.rollback();
       return NextResponse.json({ error: 'Store not found' }, { status: 404 });
+    }
+
+    // Validate table is not reserved for QR orders
+    if (orderType === 'qr_order' && tableId) {
+      const activeRes = await Reservation.findOne({
+        where: {
+          table_id: tableId,
+          status: { [Op.in]: ['pending', 'confirmed'] },
+        },
+        include: [{ model: Customer, as: 'customer', attributes: ['name'] }],
+        transaction,
+      });
+
+      if (activeRes) {
+        await transaction.rollback();
+        const resTime = new Date((activeRes as any).reservation_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        const guestName = (activeRes as any).customer?.name || 'a guest';
+        return NextResponse.json({
+          error: `Table is reserved for ${guestName} at ${resTime}. Please check in at the counter.`,
+        }, { status: 409 });
+      }
     }
 
     // 2. Find or Create Customer Profile (Support Logged In Sessions)
@@ -245,6 +270,13 @@ export async function POST(request: Request) {
     }
 
     await transaction.commit();
+
+    try {
+      const io = (request as any).io || (global as any).__socketIo;
+      if (io && tableId) {
+        io.to(storeId).emit('table_status_update', { tableId });
+      }
+    } catch (_) {}
 
     // 9. Send Simulated Email Receipt after committing transaction
     try {

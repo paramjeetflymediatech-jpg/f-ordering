@@ -73,16 +73,18 @@ export default function BookTablePage() {
     }
 
     try {
-      const reservationTimeISO = new Date(`${reservationDate}T${reservationTime}`).toISOString();
-      const payload = {
-        storeId: store.id,
-        customerName,
-        customerPhone,
-        customerEmail,
-        reservationTime: reservationTimeISO,
-        guestCount,
-        notes,
-      };
+    // Bug 3 fix: Send local datetime string directly — do NOT call .toISOString()
+    // which would convert to UTC and shift the displayed time for the manager.
+    const reservationTimeLocal = `${reservationDate}T${reservationTime}`;
+    const payload = {
+      storeId: store.id,
+      customerName,
+      customerPhone,
+      customerEmail,
+      reservationTime: reservationTimeLocal,
+      guestCount,
+      notes,
+    };
 
       const res = await fetch('/api/public/bookings', {
         method: 'POST',
@@ -387,7 +389,7 @@ export default function BookTablePage() {
 
             <div className="flex gap-2">
               <Link
-                href={`/menu`}
+                href={`/order-online/${orgSlug}/menu`}
                 className="w-1/2 rounded-xl py-3 text-xs font-bold text-white hover:opacity-90 transition text-center"
                 style={{ backgroundColor: primaryColor }}
               >

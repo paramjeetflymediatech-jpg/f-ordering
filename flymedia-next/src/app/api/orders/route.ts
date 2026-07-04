@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth';
 import { Op } from 'sequelize';
-import { sequelize, Order, OrderItem, Payment, RestaurantTable, MenuItem, Customer } from '../../../models';
+import { sequelize, Order, OrderItem, Payment, RestaurantTable, MenuItem, Customer, Reservation } from '../../../models';
 
 export async function GET() {
   try {
@@ -85,7 +85,29 @@ export async function POST(request: Request) {
     } = body;
 
     if (!items || items.length === 0) {
+      await transaction.rollback();
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
+    }
+
+    // Validate table is not reserved for dine-in orders
+    if (orderType === 'dine_in' && tableId) {
+      const activeRes = await Reservation.findOne({
+        where: {
+          table_id: tableId,
+          status: { [Op.in]: ['pending', 'confirmed'] },
+        },
+        include: [{ model: Customer, as: 'customer', attributes: ['name'] }],
+        transaction,
+      });
+
+      if (activeRes) {
+        await transaction.rollback();
+        const resTime = new Date((activeRes as any).reservation_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
+        const guestName = (activeRes as any).customer?.name || 'a guest';
+        return NextResponse.json({
+          error: `Table is reserved for ${guestName} at ${resTime}. Please seat the reservation in the dashboard first.`,
+        }, { status: 409 });
+      }
     }
 
     // Resolve Customer Profile
@@ -141,7 +163,7 @@ export async function POST(request: Request) {
           cashier_id,
           customer_id: customerId,
           order_type: orderType,
-          status: orderType === 'dine_in' ? 'preparing' : 'ready',
+          status: status === 'on_hold' ? 'on_hold' : status,
           subtotal,
           tax_amount: tax,
           discount_amount: totalDiscount,
@@ -167,7 +189,7 @@ export async function POST(request: Request) {
           customer_id: customerId,
           order_number: orderNumber,
           order_type: orderType,
-          status: status === 'on_hold' ? 'on_hold' : (orderType === 'dine_in' ? 'preparing' : 'ready'),
+          status: status === 'on_hold' ? 'on_hold' : status,
           subtotal,
           tax_amount: tax,
           discount_amount: totalDiscount,
@@ -217,8 +239,17 @@ export async function POST(request: Request) {
       );
 
       if (orderType === 'dine_in' && tableId) {
+        const activeRes = await Reservation.findOne({
+          where: {
+            table_id: tableId,
+            status: { [Op.in]: ['pending', 'confirmed'] },
+          },
+          transaction,
+        });
+        const targetStatus = activeRes ? 'reserved' : 'available';
+
         await RestaurantTable.update(
-          { status: 'available' },
+          { status: targetStatus },
           { where: { id: tableId }, transaction }
         );
       }
@@ -236,6 +267,13 @@ export async function POST(request: Request) {
     }
 
     await transaction.commit();
+
+    try {
+      const io = (request as any).io || (global as any).__socketIo;
+      if (io && tableId) {
+        io.to(store_id).emit('table_status_update', { tableId });
+      }
+    } catch (_) {}
 
     return NextResponse.json({
       success: true,
@@ -271,3 +309,106 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export async function DELETE(request: Request) {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !(session.user as any).organization_id) {
+      await transaction.rollback();
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { store_id } = session.user as any;
+    const { searchParams } = new URL(request.url);
+    const idsParam = searchParams.get('ids');
+
+    if (!idsParam) {
+      await transaction.rollback();
+      return NextResponse.json({ error: 'Order IDs are required' }, { status: 400 });
+    }
+
+    const ids = idsParam.split(',');
+
+    const orders = await Order.findAll({
+      where: {
+        id: { [Op.in]: ids },
+        store_id,
+      },
+      transaction,
+    });
+
+    const affectedTableIds = Array.from(
+      new Set(orders.map(o => o.table_id).filter(Boolean))
+    ) as string[];
+
+    await Payment.destroy({
+      where: {
+        order_id: { [Op.in]: ids },
+      },
+      transaction,
+    });
+
+    await OrderItem.destroy({
+      where: {
+        order_id: { [Op.in]: ids },
+      },
+      transaction,
+    });
+
+    const deletedCount = await Order.destroy({
+      where: {
+        id: { [Op.in]: ids },
+        store_id,
+      },
+      transaction,
+    });
+
+    for (const tableId of affectedTableIds) {
+      const activeOrder = await Order.findOne({
+        where: {
+          table_id: tableId,
+          status: { [Op.in]: ['on_hold', 'pending', 'preparing', 'accepted'] },
+        },
+        transaction,
+      });
+
+      if (!activeOrder) {
+        const activeRes = await Reservation.findOne({
+          where: {
+            table_id: tableId,
+            status: { [Op.in]: ['pending', 'confirmed', 'seated'] },
+          },
+          transaction,
+        });
+        const targetStatus = activeRes ? 'reserved' : 'available';
+        await RestaurantTable.update(
+          { status: targetStatus },
+          { where: { id: tableId }, transaction }
+        );
+      }
+    }
+
+    await transaction.commit();
+
+    try {
+      const io = (request as any).io || (global as any).__socketIo;
+      if (io && affectedTableIds.length > 0) {
+        for (const tableId of affectedTableIds) {
+          io.to(store_id).emit('table_status_update', { tableId });
+        }
+      }
+    } catch (_) {}
+
+    return NextResponse.json({
+      success: true,
+      message: `${deletedCount} orders deleted successfully.`,
+    });
+  } catch (error: any) {
+    await transaction.rollback();
+    console.error('Delete Orders Error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+

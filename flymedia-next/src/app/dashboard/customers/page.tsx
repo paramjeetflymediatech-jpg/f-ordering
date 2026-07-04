@@ -23,7 +23,8 @@ import {
   MessageSquare,
   CheckCircle,
   Receipt,
-  Truck
+  Truck,
+  Trash2
 } from 'lucide-react';
 
 export default function CustomersPage() {
@@ -39,6 +40,7 @@ export default function CustomersPage() {
 
   // Active Detail Customer
   const [selectedCustomer, setSelectedCustomer] = useState<any | null>(null);
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
   const [detailTab, setDetailTab] = useState<'detail' | 'orders' | 'ledger' | 'loyalty' | 'communication'>('detail');
 
   // Add Customer Modal
@@ -143,6 +145,10 @@ export default function CustomersPage() {
       setEditShippingMode(false);
     }
   }, [selectedCustomer]);
+
+  useEffect(() => {
+    setSelectedCustomerIds([]);
+  }, [searchName, searchContact, searchAddress, selectedCustomer]);
 
   // Form field helpers
   const handleNewCustChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -312,6 +318,54 @@ export default function CustomersPage() {
     }
   };
 
+  const handleDeleteCustomer = async (customerId: string) => {
+    if (!window.confirm('Are you sure you want to permanently delete this customer and all associated reservations?')) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/dashboard/customers?id=${customerId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSuccess('Customer deleted successfully.');
+        setSelectedCustomer(null);
+        setSelectedCustomerIds(prev => prev.filter(id => id !== customerId));
+        await fetchCustomers();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        alert(data.error || 'Failed to delete customer.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while deleting customer.');
+    }
+  };
+
+  const handleDeleteSelectedCustomers = async () => {
+    if (selectedCustomerIds.length === 0) return;
+    const confirmMsg = `Are you sure you want to permanently delete the ${selectedCustomerIds.length} selected customer(s) and all their associated reservations? This action cannot be undone.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch(`/api/dashboard/customers?id=${selectedCustomerIds.join(',')}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccess(data.message || 'Selected customers deleted successfully.');
+        setSelectedCustomerIds([]);
+        await fetchCustomers();
+        setTimeout(() => setSuccess(null), 3000);
+      } else {
+        alert(data.error || 'Failed to delete selected customers.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred while deleting customers.');
+    }
+  };
+
   // Calculations for list view columns
   const getCustomerStats = (cust: any) => {
     const orders = cust.Orders || [];
@@ -377,58 +431,82 @@ export default function CustomersPage() {
         // --- CUSTOMER LIST DIRECTORY VIEW ---
         <div className="space-y-6">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#1e293b]/60 pb-5">
-            <div className="flex items-center gap-2">
-              <span className="text-slate-400 hover:text-white cursor-pointer transition text-xs font-bold flex items-center gap-1">
-                &lt; Back
-              </span>
-              <h1 className="text-xl font-black text-white ml-2 tracking-wide">
-                Manage Customers
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+            <div>
+              <h1 className="text-xl font-black text-white tracking-wider flex items-center gap-2.5">
+                <Users className="h-6 w-6 text-orange-500" />
+                Customer Directory
               </h1>
+              <p className="text-xs text-slate-400 mt-1">Manage guest profiles, check loyalty balances, ledger balances, and order frequency.</p>
             </div>
             
             <button
               onClick={() => setShowAddModal(true)}
-              className="bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#d97706] hover:to-[#dd571c] text-white font-bold py-2 px-5 rounded-xl text-xs shadow-md transition duration-150 flex items-center gap-1.5 self-start sm:self-auto"
+              className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-bold py-2.5 px-5 rounded-xl text-xs shadow-lg transition duration-150 flex items-center gap-1.5 self-start md:self-auto"
             >
               <Plus className="h-4 w-4" />
-              Add Customer
+              Add Customer Profile
             </button>
           </div>
 
           {/* Sub Header (Sort, Count, Exports) */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-[#0c101b] border border-[#1e293b]/60 p-4 rounded-2xl">
-            <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
-              <span>Sort By :</span>
-              <select className="bg-[#080b11] border border-[#1e293b] text-white rounded-lg px-2.5 py-1.5 outline-none focus:border-[#f59e0b] cursor-pointer">
-                <option>Total Row Count : {filteredCustomers.length}</option>
-              </select>
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-900/40 border border-slate-800 p-4 rounded-2xl">
+            <div className="flex items-center gap-2.5 text-xs text-slate-400 font-bold">
+              <span className="bg-orange-600/10 border border-orange-500/20 text-orange-400 px-3 py-1.5 rounded-xl font-black">
+                {filteredCustomers.length} Total Customers
+              </span>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
+              {selectedCustomerIds.length > 0 && (
+                <button
+                  onClick={handleDeleteSelectedCustomers}
+                  className="flex items-center gap-1.5 rounded-xl bg-red-950/60 border border-red-500/30 text-red-400 px-3.5 py-1.5 text-xs font-black hover:bg-red-900/30 transition shadow uppercase tracking-wider shrink-0 mr-2"
+                  title={`Delete ${selectedCustomerIds.length} Selected Customers`}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                  Delete Selected ({selectedCustomerIds.length})
+                </button>
+              )}
               <button
                 onClick={() => alert('Exporting to XLS format...')}
-                className="flex items-center gap-1 bg-slate-900 border border-[#1e293b] text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                className="flex items-center gap-1.5 bg-slate-950 border border-slate-850 hover:bg-slate-900 text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow"
               >
-                <Download className="h-3.5 w-3.5" />
+                <Download className="h-3.5 w-3.5 text-orange-500" />
                 .XLS
               </button>
               <button
                 onClick={() => alert('Exporting to CSV format...')}
-                className="flex items-center gap-1 bg-slate-900 border border-[#1e293b] text-slate-300 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition"
+                className="flex items-center gap-1.5 bg-slate-950 border border-slate-850 hover:bg-slate-900 text-slate-300 hover:text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow"
               >
-                <Download className="h-3.5 w-3.5" />
+                <Download className="h-3.5 w-3.5 text-orange-500" />
                 .CSV
               </button>
             </div>
           </div>
 
           {/* Directory Table Area */}
-          <div className="bg-[#0c101b] border border-[#1e293b]/60 rounded-2xl overflow-hidden shadow-xl">
+          <div className="bg-slate-900/20 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="border-b border-[#1e293b]/60 bg-[#0f1524] text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                    <th className="p-4 w-10 text-center">
+                      <input
+                        type="checkbox"
+                        checked={filteredCustomers.length > 0 && filteredCustomers.every(c => selectedCustomerIds.includes(c.id))}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            const pageIds = filteredCustomers.map(c => c.id);
+                            setSelectedCustomerIds(prev => Array.from(new Set([...prev, ...pageIds])));
+                          } else {
+                            const pageIds = filteredCustomers.map(c => c.id);
+                            setSelectedCustomerIds(prev => prev.filter(id => !pageIds.includes(id)));
+                          }
+                        }}
+                        className="rounded border-[#1e293b] bg-slate-950 text-[#f59e0b] focus:ring-[#f59e0b] cursor-pointer"
+                      />
+                    </th>
                     <th className="p-4 w-12 text-center">Seq</th>
                     <th className="p-4">Customer Name</th>
                     <th className="p-4">Contact</th>
@@ -436,11 +514,12 @@ export default function CustomersPage() {
                     <th className="p-4 text-center">Order Count</th>
                     <th className="p-4 text-right">Total Amount</th>
                     <th className="p-4 text-right">Payment due</th>
-                    <th className="p-4 text-center">Edit</th>
+                    <th className="p-4 text-center">Actions</th>
                   </tr>
                   
                   {/* Inline Column Searches */}
                   <tr className="bg-slate-950/20 border-b border-[#1e293b]/40">
+                    <td className="p-2"></td>
                     <td className="p-2"></td>
                     <td className="p-2">
                       <div className="relative">
@@ -478,21 +557,21 @@ export default function CustomersPage() {
                         />
                       </div>
                     </td>
-                    <td className="p-2" colSpan={4}></td>
+                    <td className="p-2" colSpan={5}></td>
                   </tr>
                 </thead>
                 
                 <tbody className="divide-y divide-[#1e293b]/40">
                   {loading ? (
                     <tr>
-                      <td colSpan={8} className="p-12 text-center text-slate-500 font-semibold">
+                      <td colSpan={9} className="p-12 text-center text-slate-500 font-semibold">
                         <div className="h-7 w-7 animate-spin rounded-full border-t-2 border-[#f59e0b] mx-auto mb-2"></div>
                         Loading Customer Profiles...
                       </td>
                     </tr>
                   ) : filteredCustomers.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="p-12 text-center text-slate-500 font-semibold">
+                      <td colSpan={9} className="p-12 text-center text-slate-500 font-semibold">
                         No customer profiles match your search criteria.
                       </td>
                     </tr>
@@ -501,6 +580,20 @@ export default function CustomersPage() {
                       const { orderCount, totalAmount, paymentDue } = getCustomerStats(cust);
                       return (
                         <tr key={cust.id} className="hover:bg-slate-900/40 transition">
+                          <td className="p-4 w-10 text-center" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={selectedCustomerIds.includes(cust.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedCustomerIds(prev => [...prev, cust.id]);
+                                } else {
+                                  setSelectedCustomerIds(prev => prev.filter(id => id !== cust.id));
+                                }
+                              }}
+                              className="rounded border-[#1e293b] bg-slate-950 text-[#f59e0b] focus:ring-[#f59e0b] cursor-pointer"
+                            />
+                          </td>
                           <td className="p-4 text-center font-bold text-slate-400">{idx + 1}</td>
                           <td className="p-4">
                             <div className="flex items-center gap-3">
@@ -522,15 +615,24 @@ export default function CustomersPage() {
                           <td className="p-4 text-right font-extrabold text-white">${totalAmount.toFixed(2)}</td>
                           <td className="p-4 text-right font-extrabold text-red-400">${paymentDue.toFixed(2)}</td>
                           <td className="p-4 text-center">
-                            <button
-                              onClick={() => {
-                                setSelectedCustomer(cust);
-                                setDetailTab('detail');
-                              }}
-                              className="bg-[#1d4ed8] hover:bg-blue-600 text-white font-bold px-3.5 py-1 rounded-lg text-xs transition"
-                            >
-                              Edit
-                            </button>
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => {
+                                  setSelectedCustomer(cust);
+                                  setDetailTab('detail');
+                                }}
+                                className="bg-[#1d4ed8] hover:bg-blue-600 text-white font-bold px-3.5 py-1 rounded-lg text-xs transition"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteCustomer(cust.id)}
+                                className="bg-red-950/40 p-2 text-red-400 hover:bg-red-900/40 border border-red-950/50 hover:text-white rounded-lg transition"
+                                title="Delete Customer"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
@@ -545,17 +647,26 @@ export default function CustomersPage() {
         // --- CUSTOMER DETAIL TABS VIEW (SCREENSHOT 2) ---
         <div className="space-y-6">
           {/* Header */}
-          <div className="flex items-center gap-2 border-b border-[#1e293b]/60 pb-5">
+          <div className="flex items-center justify-between border-b border-[#1e293b]/60 pb-5">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedCustomer(null)}
+                className="bg-slate-900 border border-[#1e293b] text-slate-400 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Back
+              </button>
+              <h1 className="text-lg font-black text-white ml-2 tracking-wide uppercase">
+                Customer : <span className="text-[#f59e0b]">{selectedCustomer.name}</span>
+              </h1>
+            </div>
             <button
-              onClick={() => setSelectedCustomer(null)}
-              className="bg-slate-900 border border-[#1e293b] text-slate-400 hover:text-white px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1"
+              onClick={() => handleDeleteCustomer(selectedCustomer.id)}
+              className="bg-red-950/60 border border-red-500/30 text-red-400 hover:bg-red-900/30 px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              Back
+              <Trash2 className="h-4 w-4 text-red-500" />
+              Delete Customer
             </button>
-            <h1 className="text-lg font-black text-white ml-2 tracking-wide uppercase">
-              Customer : <span className="text-[#f59e0b]">{selectedCustomer.name}</span>
-            </h1>
           </div>
 
           {/* Detailed Navigation Tabs */}
@@ -1145,15 +1256,15 @@ export default function CustomersPage() {
       {/* --- ADD CUSTOMER MODAL DIALOG --- */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-2xl border border-[#1e293b] bg-[#0c101b] p-6 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-            <div className="flex justify-between items-center border-b border-[#1e293b] pb-4 shrink-0">
+          <div className="w-full max-w-2xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-4 shrink-0">
               <h3 className="text-base font-black text-white flex items-center gap-2">
-                <Users className="h-5 w-5 text-[#f59e0b]" />
+                <Users className="h-5 w-5 text-orange-500" />
                 Add New Customer Profile
               </h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="rounded-lg border border-[#1e293b] bg-slate-900 p-1 text-slate-400 hover:text-white transition"
+                className="rounded-lg border border-slate-800 bg-slate-950 p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 transition"
               >
                 <X className="h-4.5 w-4.5" />
               </button>
@@ -1170,7 +1281,7 @@ export default function CustomersPage() {
                     value={newCustomerForm.name}
                     onChange={handleNewCustChange}
                     placeholder="e.g. Warrick Jordan"
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div>
@@ -1182,7 +1293,7 @@ export default function CustomersPage() {
                     value={newCustomerForm.phone}
                     onChange={handleNewCustChange}
                     placeholder="e.g. 0451633197"
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div>
@@ -1193,7 +1304,7 @@ export default function CustomersPage() {
                     value={newCustomerForm.email}
                     onChange={handleNewCustChange}
                     placeholder="e.g. email@gmail.com"
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div>
@@ -1204,7 +1315,7 @@ export default function CustomersPage() {
                     value={newCustomerForm.first_name}
                     onChange={handleNewCustChange}
                     placeholder="Warrick"
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div>
@@ -1215,7 +1326,7 @@ export default function CustomersPage() {
                     value={newCustomerForm.last_name}
                     onChange={handleNewCustChange}
                     placeholder="Jordan"
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div>
@@ -1225,7 +1336,7 @@ export default function CustomersPage() {
                     name="company_name"
                     value={newCustomerForm.company_name}
                     onChange={handleNewCustChange}
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div>
@@ -1236,7 +1347,7 @@ export default function CustomersPage() {
                     value={newCustomerForm.date_of_birth}
                     onChange={handleNewCustChange}
                     placeholder="1990-12-05"
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div>
@@ -1246,7 +1357,7 @@ export default function CustomersPage() {
                     name="loyalty_points"
                     value={newCustomerForm.loyalty_points}
                     onChange={handleNewCustChange}
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div className="md:col-span-2">
@@ -1256,7 +1367,7 @@ export default function CustomersPage() {
                     name="address"
                     value={newCustomerForm.address}
                     onChange={handleNewCustChange}
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div>
@@ -1266,7 +1377,7 @@ export default function CustomersPage() {
                     name="city"
                     value={newCustomerForm.city}
                     onChange={handleNewCustChange}
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div>
@@ -1276,7 +1387,7 @@ export default function CustomersPage() {
                     name="state"
                     value={newCustomerForm.state}
                     onChange={handleNewCustChange}
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div>
@@ -1286,7 +1397,7 @@ export default function CustomersPage() {
                     name="country"
                     value={newCustomerForm.country}
                     onChange={handleNewCustChange}
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
                 <div>
@@ -1296,22 +1407,22 @@ export default function CustomersPage() {
                     name="zip_code"
                     value={newCustomerForm.zip_code}
                     onChange={handleNewCustChange}
-                    className="w-full bg-[#080b11] border border-[#1e293b] rounded-lg px-3 py-2 text-white outline-none focus:border-[#f59e0b]"
+                    className="w-full bg-slate-950 border border-slate-850 rounded-xl px-3.5 py-2.5 text-slate-200 outline-none focus:border-orange-500 transition"
                   />
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[#1e293b] flex justify-end gap-2 shrink-0">
+              <div className="pt-4 border-t border-slate-800 flex justify-end gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="rounded-xl bg-slate-900 border border-[#1e293b] px-5 py-2.5 font-bold text-slate-400 hover:text-white transition"
+                  className="rounded-xl bg-slate-950 hover:bg-slate-900 border border-slate-850 px-5 py-2.5 font-bold text-slate-400 hover:text-white transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#d97706] hover:to-[#dd571c] text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition"
+                  className="bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-bold px-6 py-2.5 rounded-xl shadow-lg transition"
                 >
                   Create Profile
                 </button>

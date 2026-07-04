@@ -161,16 +161,16 @@ export function POSMenuGrid({
 
   return (
     <>
-      <div className="w-full rounded-2xl border border-slate-800/80 bg-[#0c101b]/60 backdrop-blur-md p-6 flex flex-col min-h-[calc(100vh-180px)] justify-between shadow-xl">
+      <div className="w-full rounded-2xl border border-slate-800 bg-slate-900/40 backdrop-blur-md p-6 flex flex-col min-h-[calc(100vh-180px)] justify-between shadow-xl">
         {/* Category tabs & Search bar row */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between mb-3.5">
-          <div className="flex overflow-x-auto scrollbar-none whitespace-nowrap gap-1.5 max-w-full pb-1.5">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between mb-4">
+          <div className="flex overflow-x-auto scrollbar-none whitespace-nowrap gap-2 max-w-full pb-1.5">
             <button
               onClick={() => setSelectedCategoryId('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 ${
+              className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition shrink-0 ${
                 selectedCategoryId === 'all'
-                  ? 'bg-[#f59e0b] text-slate-950 shadow-md shadow-[#f59e0b]/15'
-                  : 'bg-slate-900 text-slate-400 hover:text-white'
+                  ? 'bg-orange-600 text-white shadow-md shadow-orange-600/15'
+                  : 'bg-slate-950 border border-slate-850 text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
               All Items
@@ -179,10 +179,10 @@ export function POSMenuGrid({
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategoryId(cat.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition shrink-0 ${
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition shrink-0 ${
                   selectedCategoryId === cat.id
-                    ? 'bg-[#f59e0b] text-slate-950 shadow-md shadow-[#f59e0b]/15'
-                    : 'bg-slate-900 text-slate-400 hover:text-white'
+                    ? 'bg-orange-600 text-white shadow-md shadow-orange-600/15'
+                    : 'bg-slate-950 border border-slate-850 text-slate-400 hover:text-white hover:bg-slate-900'
                 }`}
               >
                 {cat.name}
@@ -191,14 +191,14 @@ export function POSMenuGrid({
           </div>
 
           {/* mini Search input */}
-          <div className="relative w-full sm:w-44 shrink-0">
-            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-500" />
+          <div className="relative w-full sm:w-52 shrink-0">
+            <Search className="absolute left-3 top-3 h-3.5 w-3.5 text-slate-500" />
             <input
               type="text"
               placeholder="Search dishes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-[#1e293b] bg-slate-950 py-1.5 pl-8 pr-3 text-xs text-white outline-none focus:border-[#f59e0b] transition"
+              className="w-full rounded-xl border border-slate-855 bg-slate-950 py-2.5 pl-9 pr-4 text-xs text-slate-200 outline-none focus:border-orange-500 transition shadow-inner placeholder:text-slate-600"
             />
           </div>
         </div>
@@ -212,10 +212,10 @@ export function POSMenuGrid({
               <div
                 key={item.id}
                 onClick={() => handleItemClick(item)}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-800/60 bg-gradient-to-b from-[#0e1422]/90 to-[#070b13]/95 p-4.5 transition-all duration-300 hover:border-amber-500/40 hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-500/5 cursor-pointer h-[340px]"
+                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-slate-850 bg-slate-950 p-4 transition-all duration-300 hover:border-orange-500/30 hover:-translate-y-1 hover:shadow-xl hover:shadow-orange-500/5 cursor-pointer h-[340px]"
               >
                 {/* Image / Icon container */}
-                <div className="relative h-36 w-full rounded-xl overflow-hidden bg-slate-950 shrink-0">
+                <div className="relative h-36 w-full rounded-xl overflow-hidden bg-slate-900 shrink-0">
                   {item.image_url ? (
                     <img
                       src={item.image_url}
@@ -223,8 +223,8 @@ export function POSMenuGrid({
                       className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     />
                   ) : (
-                    <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-950 text-slate-650">
-                      <Utensils className="h-8 w-8 opacity-45 mb-1" />
+                    <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-955 text-slate-500">
+                      <Utensils className="h-8 w-8 opacity-45 mb-1.5" />
                       <span className="text-[10px] font-black uppercase tracking-wider opacity-45">
                         {item.categoryName || 'Dishes'}
                       </span>
@@ -232,22 +232,22 @@ export function POSMenuGrid({
                   )}
                   
                   {/* Category overlay */}
-                  <div className="absolute top-2 left-2 px-2.5 py-0.5 rounded-md bg-slate-950/80 backdrop-blur-sm border border-slate-900/60 text-[9.5px] font-bold text-slate-400 shadow-sm">
+                  <div className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-lg bg-slate-955/90 backdrop-blur-sm border border-slate-800 text-[10px] font-bold text-slate-400 shadow">
                     {item.categoryName || 'Menu'}
                   </div>
 
                   {/* Customization label overlay if present */}
                   {hasCustomization(item) && (
-                    <div className="absolute top-2 right-2 px-2.5 py-0.5 rounded-md bg-[#f59e0b] text-slate-950 text-[9.5px] font-black uppercase tracking-wider shadow-sm">
+                    <div className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-lg bg-orange-600 text-white text-[9.5px] font-black uppercase tracking-wider shadow">
                       Custom
                     </div>
                   )}
                 </div>
 
                 {/* Content Section */}
-                <div className="mt-3 flex-1 flex flex-col justify-between min-h-0">
-                  <div className="space-y-1">
-                    <h4 className="text-[14px] sm:text-[15px] font-black text-white group-hover:text-amber-400 transition-colors leading-snug line-clamp-1">
+                <div className="mt-3.5 flex-1 flex flex-col justify-between min-h-0">
+                  <div className="space-y-1.5">
+                    <h4 className="text-sm font-black text-white group-hover:text-orange-400 transition-colors leading-snug line-clamp-1">
                       {item.name}
                     </h4>
                     {item.description ? (
@@ -255,20 +255,20 @@ export function POSMenuGrid({
                         {item.description}
                       </p>
                     ) : (
-                      <p className="text-[11.5px] text-slate-650 italic">
+                      <p className="text-[11.5px] text-slate-600 italic">
                         Delicious signature dish.
                       </p>
                     )}
                   </div>
 
                   {/* Price & Action Row */}
-                  <div className="space-y-2.5 mt-2.5">
+                  <div className="space-y-3 mt-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm sm:text-[15px] font-black text-amber-400">
+                      <p className="text-sm sm:text-base font-extrabold text-orange-400">
                         ${parseFloat(item.price).toFixed(2)}
                       </p>
                       {item.variants && item.variants.length > 0 && (
-                        <span className="text-[9.5px] font-bold text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-900">
+                        <span className="text-[9.5px] font-bold text-slate-400 bg-slate-900 px-2 py-0.5 rounded-lg border border-slate-850">
                           {item.variants.length} options
                         </span>
                       )}
@@ -283,27 +283,27 @@ export function POSMenuGrid({
                             e.stopPropagation();
                             handleItemClick(item);
                           }}
-                          className="flex items-center justify-center gap-1.5 w-full py-2 rounded-xl border border-slate-800 bg-slate-950/40 hover:bg-[#f59e0b] hover:text-slate-950 hover:border-transparent transition-all duration-300 font-extrabold text-[12px] text-slate-200 group-hover:border-amber-500/25"
+                          className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-orange-600 hover:text-white hover:border-transparent hover:shadow-lg hover:shadow-orange-600/15 transition-all duration-300 font-extrabold text-xs text-slate-200"
                         >
                           <Plus className="h-3.5 w-3.5" />
-                          Add
+                          Add to Cart
                         </button>
                       ) : (
-                        <div className="flex items-center justify-between bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/25 p-0.5 rounded-xl shadow-inner shadow-black/10">
+                        <div className="flex items-center justify-between bg-gradient-to-r from-orange-600/10 to-amber-500/10 border border-orange-500/25 p-0.5 rounded-xl shadow-inner shadow-black/10">
                           <button
                             type="button"
                             onClick={(e) => handleQtyDecrement(e, item)}
-                            className="flex items-center justify-center h-7 w-7 rounded-lg bg-slate-950 hover:bg-slate-900 border border-slate-800 text-[#f59e0b] active:scale-95 transition-all"
+                            className="flex items-center justify-center h-7 w-7 rounded-lg bg-slate-950 hover:bg-slate-900 border border-slate-850 text-orange-400 active:scale-95 transition-all"
                           >
                             <Minus className="h-3.5 w-3.5" />
                           </button>
-                          <span className="text-[12.5px] font-black text-white px-2">
+                          <span className="text-xs font-black text-white px-2">
                             {qtyInCart}
                           </span>
                           <button
                             type="button"
                             onClick={(e) => handleQtyIncrement(e, item)}
-                            className="flex items-center justify-center h-7 w-7 rounded-lg bg-slate-950 hover:bg-slate-900 border border-slate-800 text-[#f59e0b] active:scale-95 transition-all"
+                            className="flex items-center justify-center h-7 w-7 rounded-lg bg-slate-955 hover:bg-slate-900 border border-slate-850 text-orange-400 active:scale-95 transition-all"
                           >
                             <Plus className="h-3.5 w-3.5" />
                           </button>
@@ -322,12 +322,12 @@ export function POSMenuGrid({
       {/* CUSTOMIZATION DIALOG MODAL */}
       {customizingItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-[#1e293b] bg-[#0c101b] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
             {/* Header */}
-            <div className="flex justify-between items-center border-b border-[#1e293b] p-4 bg-slate-950/40">
+            <div className="flex justify-between items-center border-b border-slate-800 p-4 bg-slate-950/40">
               <div>
-                <h3 className="text-base font-black text-white">
+                <h3 className="text-sm font-black text-white uppercase tracking-wide">
                   Customize {customizingItem.name}
                 </h3>
                 <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">
@@ -336,9 +336,9 @@ export function POSMenuGrid({
               </div>
               <button
                 onClick={() => setCustomizingItem(null)}
-                className="text-slate-400 hover:text-white rounded-lg p-1.5 hover:bg-slate-900 transition"
+                className="text-slate-400 hover:text-white rounded-lg p-1.5 hover:bg-slate-800 transition"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4.5 w-4.5" />
               </button>
             </div>
 
@@ -350,7 +350,7 @@ export function POSMenuGrid({
                 <img
                   src={customizingItem.image_url}
                   alt={customizingItem.name}
-                  className="h-28 w-full rounded-xl object-cover border border-[#1e293b]/60"
+                  className="h-28 w-full rounded-xl object-cover border border-slate-800"
                 />
               )}
 
@@ -369,13 +369,13 @@ export function POSMenuGrid({
                           onClick={() => setSelectedVariant(v)}
                           className={`p-3 rounded-xl border text-left text-xs font-bold transition duration-150 ${
                             isSelected
-                              ? 'border-[#f59e0b] bg-[#f59e0b]/10 text-white shadow-md shadow-[#f59e0b]/5'
-                              : 'border-[#1e293b] bg-slate-950 text-slate-400 hover:bg-slate-900/50'
+                              ? 'border-orange-500 bg-orange-600/10 text-white shadow-md shadow-orange-500/5'
+                              : 'border-slate-850 bg-slate-950 text-slate-400 hover:bg-slate-900'
                           }`}
                         >
                           <div className="flex justify-between items-center">
                             <span>{v.name}</span>
-                            {isSelected && <Check className="h-3.5 w-3.5 text-[#f59e0b]" />}
+                            {isSelected && <Check className="h-3.5 w-3.5 text-orange-500" />}
                           </div>
                           <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">
                             +{parseFloat(v.additional_price) === 0 ? 'Free' : `$${parseFloat(v.additional_price).toFixed(2)}`}
@@ -402,12 +402,12 @@ export function POSMenuGrid({
                           onClick={() => handleToggleAddon(addon)}
                           className={`flex items-center justify-between p-3 rounded-xl border text-left text-xs font-semibold transition duration-150 ${
                             isSelected
-                              ? 'border-[#f59e0b] bg-[#f59e0b]/5 text-white shadow-sm'
-                              : 'border-[#1e293b] bg-slate-950 text-slate-400 hover:bg-slate-900/50'
+                              ? 'border-orange-500 bg-orange-600/5 text-white shadow-sm'
+                              : 'border-slate-850 bg-slate-950 text-slate-400 hover:bg-slate-900'
                           }`}
                         >
                           <span>{addon.name}</span>
-                          <span className={`text-[10px] font-bold ${isSelected ? 'text-[#f59e0b]' : 'text-slate-500'}`}>
+                          <span className={`text-[10px] font-bold ${isSelected ? 'text-orange-400' : 'text-slate-550'}`}>
                             +${parseFloat(addon.price).toFixed(2)}
                           </span>
                         </button>
@@ -426,19 +426,19 @@ export function POSMenuGrid({
                   placeholder="e.g. Extra spicy, sauce on the side, well-done..."
                   value={specialNotes}
                   onChange={(e) => setSpecialNotes(e.target.value)}
-                  className="w-full mt-2 rounded-xl border border-[#1e293b] bg-slate-950 px-3 py-2 text-xs text-white h-16 outline-none resize-none focus:border-[#f59e0b] transition"
+                  className="w-full mt-2 rounded-xl border border-slate-850 bg-slate-955 px-3.5 py-2.5 text-xs text-slate-200 h-16 outline-none resize-none focus:border-orange-500 transition placeholder:text-slate-650"
                 />
               </div>
 
               {/* Quantity Stepper */}
-              <div className="flex items-center justify-between pt-2 border-t border-[#1e293b]/40">
+              <div className="flex items-center justify-between pt-2 border-t border-slate-800">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                   Quantity
                 </span>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setCustomQuantity(Math.max(1, customQuantity - 1))}
-                    className="rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold px-3 py-1 text-sm border border-[#1e293b]/60 transition"
+                    className="rounded-lg bg-slate-955 hover:bg-slate-900 text-slate-300 font-bold px-3 py-1 text-sm border border-slate-850 transition"
                   >
                     -
                   </button>
@@ -447,7 +447,7 @@ export function POSMenuGrid({
                   </span>
                   <button
                     onClick={() => setCustomQuantity(customQuantity + 1)}
-                    className="rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold px-3 py-1 text-sm border border-[#1e293b]/60 transition"
+                    className="rounded-lg bg-slate-955 hover:bg-slate-900 text-slate-300 font-bold px-3 py-1 text-sm border border-slate-850 transition"
                   >
                     +
                   </button>
@@ -457,16 +457,16 @@ export function POSMenuGrid({
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-[#1e293b] bg-slate-950/40 flex gap-3">
+            <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex gap-3">
               <button
                 onClick={() => setCustomizingItem(null)}
-                className="w-1/3 rounded-xl bg-slate-900 py-3 text-xs font-semibold text-slate-400 hover:bg-slate-800 transition"
+                className="w-1/3 rounded-xl bg-slate-955 border border-slate-850 py-3 text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-900 transition"
               >
                 Cancel
               </button>
               <button
                 onClick={handleAddCustomToCart}
-                className="w-2/3 rounded-xl bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#f59e0b]/90 hover:to-[#ea580c]/90 py-3 text-xs font-extrabold text-slate-950 shadow-md shadow-[#f59e0b]/10 transition flex justify-center items-center gap-1"
+                className="w-2/3 rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 py-3 text-xs font-extrabold text-white shadow-md shadow-orange-500/10 transition flex justify-center items-center gap-1"
               >
                 Add to Order • ${getCustomizingTotalPrice().toFixed(2)}
               </button>

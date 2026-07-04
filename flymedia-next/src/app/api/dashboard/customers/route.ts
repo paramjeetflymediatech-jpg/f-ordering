@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { Customer, Order, Payment } from '../../../../models';
+import { Customer, Order, Payment, Reservation, RestaurantTable, sequelize } from '../../../../models';
+import { Op } from 'sequelize';
 
 export async function GET() {
   try {
@@ -148,6 +149,109 @@ export async function PUT(request: Request) {
     return NextResponse.json({ success: true, customer });
   } catch (error: any) {
     console.error('Update Customer Error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  const transaction = await sequelize.transaction();
+
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !(session.user as any).organization_id) {
+      await transaction.rollback();
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const { organization_id } = session.user as any;
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+
+    if (!id) {
+      await transaction.rollback();
+      return NextResponse.json({ error: 'Customer ID is required' }, { status: 400 });
+    }
+
+    const ids = id.split(',');
+
+    const customers = await Customer.findAll({
+      where: { id: { [Op.in]: ids }, organization_id },
+      transaction,
+    });
+
+    if (customers.length === 0) {
+      await transaction.rollback();
+      return NextResponse.json({ error: 'No customers found to delete.' }, { status: 404 });
+    }
+
+    const reservations = await Reservation.findAll({
+      where: { customer_id: { [Op.in]: ids } },
+      transaction,
+    });
+
+    const affectedTableIds = Array.from(
+      new Set(reservations.map(r => r.table_id).filter(Boolean))
+    ) as string[];
+
+    await Reservation.destroy({
+      where: { customer_id: { [Op.in]: ids } },
+      transaction,
+    });
+
+    for (const tableId of affectedTableIds) {
+      const activeOrder = await Order.findOne({
+        where: {
+          table_id: tableId,
+          status: { [Op.in]: ['on_hold', 'pending', 'preparing', 'accepted'] },
+        },
+        transaction,
+      });
+
+      if (!activeOrder) {
+        const activeRes = await Reservation.findOne({
+          where: {
+            table_id: tableId,
+            status: { [Op.in]: ['pending', 'confirmed', 'seated'] },
+          },
+          transaction,
+        });
+        const targetStatus = activeRes ? 'reserved' : 'available';
+        await RestaurantTable.update(
+          { status: targetStatus },
+          { where: { id: tableId }, transaction }
+        );
+      }
+    }
+
+    await Order.update(
+      { customer_id: null },
+      { where: { customer_id: { [Op.in]: ids } }, transaction }
+    );
+
+    await Customer.destroy({
+      where: { id: { [Op.in]: ids }, organization_id },
+      transaction,
+    });
+
+    await transaction.commit();
+
+    try {
+      const io = (request as any).io || (global as any).__socketIo;
+      if (io && affectedTableIds.length > 0) {
+        const { store_id } = session.user as any;
+        for (const tableId of affectedTableIds) {
+          io.to(store_id).emit('table_status_update', { tableId });
+        }
+      }
+    } catch (_) {}
+
+    return NextResponse.json({
+      success: true,
+      message: 'Customer deleted successfully.',
+    });
+  } catch (error: any) {
+    await transaction.rollback();
+    console.error('Delete Customer Error:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

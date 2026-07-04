@@ -468,4 +468,41 @@ img {
   background-color: #f1f5f9 !important;
 }
 
+/* Color overrides for avatar text and custom colors in light theme */
+.light-theme .text-\[\#06b6d4\],
+.light-theme [class*="text-[#06b6d4]"] {
+  color: #0369a1 !important; /* sky-700 */
+}
+.light-theme .text-\[\#10b981\],
+.light-theme [class*="text-[#10b981]"] {
+  color: #047857 !important; /* emerald-700 */
+}
+.light-theme .text-\[\#f59e0b\],
+.light-theme [class*="text-[#f59e0b]"] {
+  color: #c2410c !important; /* orange-700 */
+}
+.light-theme .text-\[\#a855f7\],
+.light-theme [class*="text-[#a855f7]"] {
+  color: #7e22ce !important; /* purple-700 */
+}
+.light-theme .text-\[\#ea580c\],
+.light-theme [class*="text-[#ea580c]"] {
+  color: #c2410c !important; /* orange-700 */
+}
+
+/* Custom slate overrides */
+.light-theme .text-slate-450,
+.light-theme .text-slate-550,
+.light-theme .text-slate-650 {
+  color: #334155 !important;
+}
+
+/* Date input color scheme fixes for Light Theme */
+.light-theme input[type="date"],
+.light-theme input[type="time"],
+.light-theme input[type="datetime-local"] {
+  color-scheme: light !important;
+  color: #0f172a !important;
+}
+
 

@@ -18,7 +18,9 @@ import {
   ChevronRight,
   User,
   Edit2,
-  CalendarDays
+  CalendarDays,
+  Trash,
+  Trash2
 } from 'lucide-react';
 
 export default function ReservationsPage() {
@@ -32,7 +34,7 @@ export default function ReservationsPage() {
   const [tablesList, setTablesList] = useState<any[]>([]);
   
   // New State for Calendar Feature
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'history'>('calendar');
   const [selectedDate, setSelectedDate] = useState<string>(() => {
     const today = new Date();
     const y = today.getFullYear();
@@ -49,6 +51,7 @@ export default function ReservationsPage() {
   const [selectedCellTable, setSelectedCellTable] = useState<any | null>(null);
   const [selectedCellHour, setSelectedCellHour] = useState<number | null>(null);
   const [selectedReservation, setSelectedReservation] = useState<any | null>(null);
+  const [selectedReservationIds, setSelectedReservationIds] = useState<string[]>([]);
 
   // Form states for Quick Booking
   const [formName, setFormName] = useState('');
@@ -108,6 +111,10 @@ export default function ReservationsPage() {
     fetchReservations();
     fetchTables();
   }, [session]);
+
+  useEffect(() => {
+    setSelectedReservationIds([]);
+  }, [viewMode, statusFilter, searchQuery]);
 
   const triggerAlert = (msg: string, isError = false) => {
     if (isError) {
@@ -172,6 +179,79 @@ export default function ReservationsPage() {
     }
   };
 
+  const handleDeleteSingle = async (id: string) => {
+    if (!window.confirm('Are you sure you want to permanently delete this reservation record?')) return;
+
+    try {
+      const res = await fetch(`/api/dashboard/reservations?id=${id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        triggerAlert(data.message || 'Reservation deleted successfully.');
+        setSelectedReservationIds(prev => prev.filter(item => item !== id));
+        fetchReservations();
+        fetchTables();
+      } else {
+        triggerAlert(data.error || 'Failed to delete reservation.', true);
+      }
+    } catch (err: any) {
+      console.error(err);
+      triggerAlert('Network error deleting reservation.', true);
+    }
+  };
+
+  const handleDeleteSelectedReservations = async () => {
+    if (selectedReservationIds.length === 0) return;
+    const confirmMsg = `Are you sure you want to permanently delete the ${selectedReservationIds.length} selected reservation(s)? This action cannot be undone.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch(`/api/dashboard/reservations?id=${selectedReservationIds.join(',')}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        triggerAlert(data.message || 'Selected reservations deleted successfully.');
+        setSelectedReservationIds([]);
+        fetchReservations();
+        fetchTables();
+      } else {
+        triggerAlert(data.error || 'Failed to delete reservations.', true);
+      }
+    } catch (err: any) {
+      console.error(err);
+      triggerAlert('Network error deleting reservations.', true);
+    }
+  };
+
+  const handleBulkDeleteHistory = async () => {
+    if (statusFilter === 'all') {
+      triggerAlert('Please select a specific status filter (e.g. SEATED or CANCELLED) to bulk delete history.', true);
+      return;
+    }
+
+    const confirmMsg = `Are you sure you want to permanently delete ALL history records with status "${statusFilter.toUpperCase()}"? This action cannot be undone.`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch(`/api/dashboard/reservations?status=${statusFilter}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        triggerAlert(data.message || 'Selected history records deleted successfully.');
+        fetchReservations();
+        fetchTables();
+      } else {
+        triggerAlert(data.error || 'Failed to delete history.', true);
+      }
+    } catch (err: any) {
+      console.error(err);
+      triggerAlert('Network error deleting history.', true);
+    }
+  };
+
   const handleQuickBookSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName || !formPhone || !formDate || !formTime) {
@@ -180,7 +260,8 @@ export default function ReservationsPage() {
     }
 
     try {
-      const localISO = new Date(`${formDate}T${formTime}`).toISOString();
+      // Bug 3 fix: send local datetime — do NOT call .toISOString() to avoid UTC shift
+      const localISO = `${formDate}T${formTime}`;
       const payload = {
         customerName: formName,
         customerPhone: formPhone,
@@ -224,7 +305,8 @@ export default function ReservationsPage() {
     if (!selectedReservation) return;
 
     try {
-      const localISO = new Date(`${editDate}T${editTime}`).toISOString();
+      // Bug 3 fix: send local datetime — do NOT call .toISOString() to avoid UTC shift
+      const localISO = `${editDate}T${editTime}`;
       const payload = {
         id: selectedReservation.id,
         status: editStatus,
@@ -475,6 +557,17 @@ export default function ReservationsPage() {
                 <Table className="h-4 w-4" />
                 List View
               </button>
+              <button
+                onClick={() => setViewMode('history')}
+                className={`flex items-center gap-1.5 rounded-lg px-4 py-2 text-xs font-bold transition ${
+                  viewMode === 'history'
+                    ? 'bg-orange-600 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Clock className="h-4 w-4" />
+                History
+              </button>
             </div>
 
             <div className="relative w-full md:w-80">
@@ -522,21 +615,43 @@ export default function ReservationsPage() {
             </div>
           )}
 
-          {viewMode === 'list' && (
-            <div className="flex gap-1 overflow-x-auto text-xs pb-1 md:pb-0">
-              {(['all', 'pending', 'confirmed', 'seated', 'cancelled'] as const).map(status => (
+          {(viewMode === 'list' || viewMode === 'history') && (
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex gap-1 overflow-x-auto text-xs pb-1 md:pb-0">
+                {(['all', 'pending', 'confirmed', 'seated', 'cancelled'] as const).map(status => (
+                  <button
+                    key={status}
+                    onClick={() => setStatusFilter(status)}
+                    className={`rounded-xl px-3 py-1.5 font-bold uppercase tracking-wider border transition shrink-0 ${
+                      statusFilter === status
+                        ? 'bg-orange-600 border-orange-500 text-white shadow'
+                        : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+              {viewMode === 'history' && selectedReservationIds.length > 0 && (
                 <button
-                  key={status}
-                  onClick={() => setStatusFilter(status)}
-                  className={`rounded-xl px-3 py-1.5 font-bold uppercase tracking-wider border transition shrink-0 ${
-                    statusFilter === status
-                      ? 'bg-orange-600 border-orange-500 text-white shadow'
-                      : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-                  }`}
+                  onClick={handleDeleteSelectedReservations}
+                  className="flex items-center gap-1.5 rounded-xl bg-red-950/60 border border-red-500/30 text-red-400 px-3.5 py-1.5 text-[10px] font-black hover:bg-red-900/30 transition shadow uppercase tracking-wider shrink-0"
+                  title={`Delete ${selectedReservationIds.length} Selected Records`}
                 >
-                  {status}
+                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                  Delete Selected ({selectedReservationIds.length})
                 </button>
-              ))}
+              )}
+              {viewMode === 'history' && statusFilter !== 'all' && (
+                <button
+                  onClick={handleBulkDeleteHistory}
+                  className="flex items-center gap-1.5 rounded-xl bg-red-950/60 border border-red-500/30 text-red-400 px-3.5 py-1.5 text-[10px] font-black hover:bg-red-900/30 transition shadow uppercase tracking-wider shrink-0"
+                  title={`Bulk Delete All ${statusFilter.toUpperCase()} History`}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                  Clear All {statusFilter}
+                </button>
+              )}
             </div>
           )}
 
@@ -592,11 +707,14 @@ export default function ReservationsPage() {
                             className="bg-transparent text-xs text-slate-300 font-bold focus:outline-none cursor-pointer border-none p-0 pr-2"
                           >
                             <option value="" className="bg-slate-950 text-slate-400">Not Assigned</option>
-                            {tablesList.map((table) => (
-                              <option key={table.id} value={table.id} className="bg-slate-950 text-slate-200">
-                                T-{table.table_number} ({table.seating_capacity} Seats)
-                              </option>
-                            ))}
+                            {tablesList.map((table) => {
+                              const statusLabel = table.status !== 'available' ? ` [${table.status.toUpperCase()}]` : '';
+                              return (
+                                <option key={table.id} value={table.id} className="bg-slate-950 text-slate-200">
+                                  T-{table.table_number} ({table.seating_capacity} Seats){statusLabel}
+                                </option>
+                              );
+                            })}
                           </select>
                         </div>
                       </td>
@@ -658,7 +776,7 @@ export default function ReservationsPage() {
             </table>
           </div>
         </div>
-      ) : (
+      ) : viewMode === 'calendar' ? (
         <div className="flex flex-col lg:flex-row gap-6">
           
           <div className="flex-1 rounded-2xl border border-slate-800 bg-[#070b13]/60 p-4 shadow-xl overflow-hidden">
@@ -824,7 +942,146 @@ export default function ReservationsPage() {
           </div>
 
         </div>
-      )}
+      ) : viewMode === 'history' ? (
+        /* ── HISTORY VIEW ── */
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/20 overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-slate-800 bg-slate-950/40">
+            <div>
+              <h3 className="text-sm font-black text-white flex items-center gap-2">
+                <Clock className="h-4 w-4 text-orange-500" />
+                Reservation History Log
+              </h3>
+              <p className="text-[10px] text-slate-500 mt-0.5">All bookings sorted by most recent. Click any row to manage it.</p>
+            </div>
+            <span className="rounded-full bg-orange-600/10 border border-orange-500/20 text-orange-400 px-2.5 py-1 text-[10px] font-black">
+              {filteredReservations.length} records
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-950/60 border-b border-slate-800 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                  <th className="p-4 w-10 text-center">
+                    <input
+                      type="checkbox"
+                      checked={filteredReservations.length > 0 && filteredReservations.every(r => selectedReservationIds.includes(r.id))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          const pageIds = filteredReservations.map(r => r.id);
+                          setSelectedReservationIds(prev => Array.from(new Set([...prev, ...pageIds])));
+                        } else {
+                          const pageIds = filteredReservations.map(r => r.id);
+                          setSelectedReservationIds(prev => prev.filter(id => !pageIds.includes(id)));
+                        }
+                      }}
+                      className="rounded border-slate-800 bg-slate-950 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                    />
+                  </th>
+                  <th className="p-4">Guest</th>
+                  <th className="p-4">Contact</th>
+                  <th className="p-4">Booked On</th>
+                  <th className="p-4">Reservation Time</th>
+                  <th className="p-4 text-center">Party</th>
+                  <th className="p-4 text-center">Table</th>
+                  <th className="p-4 text-center">Status</th>
+                  <th className="p-4">Notes</th>
+                  <th className="p-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={10} className="text-center py-10 text-slate-500 font-bold">Loading history...</td>
+                  </tr>
+                ) : filteredReservations.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="text-center py-10 text-slate-600 font-bold">No reservation records found.</td>
+                  </tr>
+                ) : (
+                  filteredReservations.map((r) => (
+                    <tr
+                      key={r.id}
+                      onClick={() => openEditModal(r)}
+                      className="border-b border-slate-900 text-slate-300 hover:bg-slate-900/20 transition cursor-pointer"
+                    >
+                      <td className="p-4 w-10 text-center" onClick={(e) => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          checked={selectedReservationIds.includes(r.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedReservationIds(prev => [...prev, r.id]);
+                            } else {
+                              setSelectedReservationIds(prev => prev.filter(id => id !== r.id));
+                            }
+                          }}
+                          className="rounded border-slate-800 bg-slate-950 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                        />
+                      </td>
+                      <td className="p-4">
+                        <div className="font-bold text-white text-xs">{r.guest_name}</div>
+                      </td>
+                      <td className="p-4">
+                        <div className="text-[10px] text-slate-400">{r.guest_phone}</div>
+                        {r.guest_email && <div className="text-[10px] text-slate-500">{r.guest_email}</div>}
+                      </td>
+                      <td className="p-4 font-mono text-[10px] text-slate-500">
+                        {r.createdAt
+                          ? new Date(r.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: '2-digit' })
+                          : '—'}
+                      </td>
+                      <td className="p-4 font-mono font-bold text-slate-400 text-[10px]">
+                        <span className="flex items-center gap-1.5">
+                          <CalendarDays className="h-3 w-3 text-orange-500 shrink-0" />
+                          {r.reservation_time}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className="inline-flex items-center gap-1 rounded bg-slate-950 px-2 py-1 text-slate-300 font-bold border border-slate-800">
+                          <Users className="h-3 w-3 text-amber-500" />
+                          {r.party_size}
+                        </span>
+                      </td>
+                      <td className="p-4 text-center font-mono text-[10px] font-bold">
+                        {r.table_number !== 'Not Assigned'
+                          ? <span className="text-sky-400">T-{r.table_number}</span>
+                          : <span className="text-slate-600 italic">Unassigned</span>}
+                      </td>
+                      <td className="p-4 text-center">
+                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-extrabold uppercase ${
+                          r.status === 'confirmed'
+                            ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25'
+                            : r.status === 'seated'
+                            ? 'bg-sky-500/10 text-sky-400 border border-sky-500/25'
+                            : r.status === 'cancelled'
+                            ? 'bg-red-500/10 text-red-400 border border-red-500/25'
+                            : 'bg-amber-500/10 text-amber-400 border border-amber-500/25'
+                        }`}>
+                          {r.status}
+                        </span>
+                      </td>
+                      <td className="p-4 max-w-[180px]">
+                        {r.notes
+                          ? <span className="text-[10px] text-slate-400 italic line-clamp-2">{r.notes}</span>
+                          : <span className="text-[10px] text-slate-700">—</span>}
+                      </td>
+                      <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => handleDeleteSingle(r.id)}
+                          className="rounded-lg bg-red-950/40 p-2 text-red-400 hover:bg-red-900/40 border border-red-950/50 hover:text-white transition"
+                          title="Delete Record"
+                        >
+                          <Trash className="h-3.5 w-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
 
       {isBookModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4">
@@ -832,7 +1089,7 @@ export default function ReservationsPage() {
             <div className="flex justify-between items-center border-b border-slate-800 pb-3.5">
               <h2 className="text-lg font-black text-white flex items-center gap-1.5">
                 <Calendar className="h-5 w-5 text-orange-500" />
-                {selectedCellTable ? `Reserve Table T-${selectedCellTable.table_number}` : 'Create Table Reservation'}
+                {formTableId ? `Reserve Table T-${tablesList.find(t => t.id === formTableId)?.table_number || ''}` : 'Create Table Reservation'}
               </h2>
               <button
                 onClick={() => setIsBookModalOpen(false)}
@@ -924,11 +1181,14 @@ export default function ReservationsPage() {
                   className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-slate-200 outline-none focus:border-orange-500 transition"
                 >
                   <option value="">Not Assigned (Walk-in Hold)</option>
-                  {tablesList.map(t => (
-                    <option key={t.id} value={t.id}>
-                      T-{t.table_number} ({t.seating_capacity} seats)
-                    </option>
-                  ))}
+                  {tablesList.map(t => {
+                    const statusLabel = t.status !== 'available' ? ` [${t.status.toUpperCase()}]` : '';
+                    return (
+                      <option key={t.id} value={t.id}>
+                        T-{t.table_number} ({t.seating_capacity} seats){statusLabel}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
@@ -969,7 +1229,7 @@ export default function ReservationsPage() {
             <div className="flex justify-between items-center border-b border-slate-800 pb-3.5">
               <h2 className="text-lg font-black text-white flex items-center gap-1.5">
                 <Edit2 className="h-5 w-5 text-orange-500" />
-                Manage Booking
+                {editTableId ? `Manage Booking (Table T-${tablesList.find(t => t.id === editTableId)?.table_number || ''})` : 'Manage Booking'}
               </h2>
               <button
                 onClick={() => setIsEditModalOpen(false)}
@@ -1078,11 +1338,14 @@ export default function ReservationsPage() {
                     className="w-full rounded-xl border border-slate-800 bg-slate-950 px-3 py-2 text-xs text-slate-200 outline-none focus:border-orange-500 transition font-mono"
                   >
                     <option value="">Not Assigned (Hold)</option>
-                    {tablesList.map(t => (
-                      <option key={t.id} value={t.id}>
-                        T-{t.table_number} ({t.seating_capacity} Seats)
-                      </option>
-                    ))}
+                    {tablesList.map(t => {
+                      const statusLabel = t.status !== 'available' ? ` [${t.status.toUpperCase()}]` : '';
+                      return (
+                        <option key={t.id} value={t.id}>
+                          T-{t.table_number} ({t.seating_capacity} Seats){statusLabel}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
               </div>

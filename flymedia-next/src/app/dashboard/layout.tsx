@@ -26,6 +26,12 @@ import {
   Table,
   History,
   BarChart3,
+  LayoutDashboard,
+  FileText,
+  Megaphone,
+  Palette,
+  ChevronDown,
+  ChevronRight,
 } from 'lucide-react';
 
 function NavigationItems({
@@ -39,6 +45,18 @@ function NavigationItems({
 }) {
   const searchParams = useSearchParams();
   const activeTab = searchParams.get('tab') || 'organizations';
+  const [profileOpen, setProfileOpen] = useState(
+    pathname?.startsWith('/dashboard/profile') ?? false
+  );
+
+  const profileSubItems = [
+    { name: 'Dashboard', href: '/dashboard/profile?sub=dashboard', icon: LayoutDashboard },
+    { name: 'View Profile', href: '/dashboard/profile', icon: Building },
+    { name: 'Menu Card Styling', href: '/dashboard/profile?sub=styling', icon: Palette },
+    { name: 'EoD Report', href: '/dashboard/profile?sub=eod', icon: FileText },
+    { name: 'Delegated Accounts', href: '/dashboard/profile?sub=delegated', icon: Users },
+    { name: 'Campaigns', href: '/dashboard/profile?sub=campaigns', icon: Megaphone },
+  ];
 
   const navItems = isSuperAdmin
     ? [
@@ -52,7 +70,6 @@ function NavigationItems({
       { name: 'Overview', href: '/dashboard', icon: TrendingUp },
       { name: 'Sales & Bookings', href: '/dashboard/analytics', icon: BarChart3 },
       { name: 'Order History', href: '/dashboard/orders', icon: History },
-      { name: 'Business Profile', href: '/dashboard/profile', icon: Building },
       { name: 'Manage Menu', href: '/dashboard/menu', icon: Utensils },
       { name: 'Manage Item', href: '/dashboard/inventory', icon: Layers },
       { name: 'Suppliers & POs', href: '/dashboard/suppliers', icon: Truck },
@@ -66,14 +83,102 @@ function NavigationItems({
       { name: 'Payment Settings', href: '/dashboard/settings/payment', icon: CreditCard },
       { name: 'Taxes & Fees', href: '/dashboard/taxes', icon: Percent },
       { name: 'Upload Background', href: '/dashboard/upload-background', icon: Image },
-];
+    ];
 
   return (
     <>
-      {navItems.map((item) => {
-        const isActive = isSuperAdmin
-          ? pathname === '/dashboard/super-admin' && activeTab === (item as any).tab
-          : pathname === item.href;
+      {!isSuperAdmin && (
+        <>
+          {/* Overview, Analytics, Order History first */}
+          {navItems.slice(0, 3).map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setMobileOpen?.(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition duration-150 ${isActive
+                    ? 'bg-[#1a2336] text-[#f59e0b] border-l-2 border-[#f59e0b] shadow-md shadow-[#f59e0b]/5'
+                    : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+                  }`}
+              >
+                <Icon className="h-4.5 w-4.5" />
+                {item.name}
+              </Link>
+            );
+          })}
+
+          {/* Business Profile Collapsible Group */}
+          <div>
+            <button
+              onClick={() => setProfileOpen((v) => !v)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition duration-150 text-left ${
+                pathname?.startsWith('/dashboard/profile')
+                  ? 'bg-[#1a2336] text-[#f59e0b] border-l-2 border-[#f59e0b] shadow-md shadow-[#f59e0b]/5'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+              }`}
+            >
+              <Building className="h-4.5 w-4.5 shrink-0" />
+              <span className="flex-1">Business Profile</span>
+              {profileOpen
+                ? <ChevronDown className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                : <ChevronRight className="h-3.5 w-3.5 text-slate-500 shrink-0" />}
+            </button>
+            {profileOpen && (
+              <div className="ml-4 mt-0.5 pl-3.5 border-l border-[#1e293b]/60 space-y-0.5">
+                {profileSubItems.map((sub) => {
+                  const SubIcon = sub.icon;
+                  const currentSub = searchParams.get('sub');
+                  // "View Profile" is active when no ?sub= param; others match their ?sub= value
+                  const isSubActive = pathname === '/dashboard/profile' && (
+                    sub.href === '/dashboard/profile' && !currentSub
+                    || (sub.href.includes('?sub=') && currentSub === new URL(sub.href, 'http://x').searchParams.get('sub'))
+                  );
+                  return (
+                    <Link
+                      key={sub.name}
+                      href={sub.href}
+                      onClick={() => setMobileOpen?.(false)}
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] font-bold transition duration-150 ${
+                        isSubActive
+                          ? 'bg-[#f59e0b]/10 text-[#f59e0b]'
+                          : 'text-slate-500 hover:bg-slate-900/40 hover:text-slate-200'
+                      }`}
+                    >
+                      <SubIcon className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{sub.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Rest of nav items */}
+          {navItems.slice(3).map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                onClick={() => setMobileOpen?.(false)}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold transition duration-150 ${isActive
+                    ? 'bg-[#1a2336] text-[#f59e0b] border-l-2 border-[#f59e0b] shadow-md shadow-[#f59e0b]/5'
+                    : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+                  }`}
+              >
+                <Icon className="h-4.5 w-4.5" />
+                {item.name}
+              </Link>
+            );
+          })}
+        </>
+      )}
+
+      {isSuperAdmin && navItems.map((item) => {
+        const isActive = pathname === '/dashboard/super-admin' && activeTab === (item as any).tab;
         const Icon = item.icon;
         return (
           <Link

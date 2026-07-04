@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Building,
   LayoutDashboard,
@@ -36,7 +37,23 @@ import {
 } from 'lucide-react';
 
 export default function BusinessProfilePage() {
-  const [activeTab, setActiveTab] = useState<'profile' | 'dashboard' | 'info' | 'reservations' | 'eod' | 'delegated' | 'campaigns' | 'styling'>('profile');
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const validTabs = ['profile', 'dashboard', 'eod', 'delegated', 'campaigns', 'styling'] as const;
+  const subParam = searchParams.get('sub') as typeof validTabs[number] | null;
+  const initialTab = subParam && validTabs.includes(subParam as any) ? subParam : 'profile';
+
+  const [activeTab, setActiveTab] = useState<'profile' | 'dashboard' | 'eod' | 'delegated' | 'campaigns' | 'styling'>(initialTab);
+
+  // Sync tab when URL ?sub= param changes (from sidebar clicks)
+  useEffect(() => {
+    const sub = searchParams.get('sub') as typeof activeTab | null;
+    if (sub && validTabs.includes(sub as any)) {
+      setActiveTab(sub);
+    } else if (!sub) {
+      setActiveTab('profile');
+    }
+  }, [searchParams]);
 
   // Staff / Delegated Accounts State
   const [staff, setStaff] = useState<any[]>([]);
@@ -469,8 +486,6 @@ export default function BusinessProfilePage() {
     { id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard },
     { id: 'profile', name: 'View Profile', icon: Building },
     { id: 'styling', name: 'Menu Card Styling', icon: Palette },
-    { id: 'info', name: 'Additional Business Info.', icon: Info },
-    { id: 'reservations', name: 'Current Reservations', icon: Calendar },
     { id: 'eod', name: 'EoD Report.', icon: FileText },
     { id: 'delegated', name: 'Delegated Accounts', icon: Users },
     { id: 'campaigns', name: 'Campaigns', icon: Megaphone },
@@ -479,16 +494,43 @@ export default function BusinessProfilePage() {
   return (
     <div className="min-h-screen bg-[#080b11] text-slate-100 p-4 md:p-8">
       
-      {/* Header section */}
-      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-black tracking-wider text-white flex items-center gap-2">
-            <Building className="h-7 w-7 text-[#f59e0b]" />
-            BUSINESS PROFILE SETTINGS
-          </h1>
-          <p className="text-xs text-slate-400 font-medium mt-1 uppercase tracking-wider">
-            Manage your store attributes, contact info, operating details and layout.
-          </p>
+      {/* === PREMIUM HERO HEADER === */}
+      <div className="relative mb-8 overflow-hidden rounded-2xl border border-[#1e293b]/60 shadow-2xl">
+        <div className="relative z-10 px-8 py-7 flex flex-col sm:flex-row sm:items-center justify-between gap-5">
+          <div className="flex items-center gap-5">
+            {/* Icon badge */}
+            <div className="relative flex-shrink-0">
+              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-[#f59e0b] to-[#ea580c] flex items-center justify-center shadow-lg shadow-[#f59e0b]/30">
+                <Building className="h-7 w-7 text-white" />
+              </div>
+              <span className="absolute -bottom-1 -right-1 h-4 w-4 rounded-full bg-emerald-400 border-2 border-[#0c101b] animate-pulse" />
+            </div>
+            {/* Title block */}
+            <div>
+              <div className="flex items-center gap-2.5 mb-1">
+                <h1 className="text-xl md:text-2xl font-black text-white  tracking-wide">
+                  Business Profile
+                </h1>
+                <span className="bg-[#f59e0b]/15 text-[#f59e0b] text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border border-[#f59e0b]/20">
+                  Settings Hub
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 font-medium">
+                Manage store identity, operating hours, staff & campaigns — all in one place.
+              </p>
+            </div>
+          </div>
+          {/* Store quick stats */}
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="text-center px-4 py-2.5 rounded-xl bg-slate-900/60 border border-[#1e293b]/60">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Store</p>
+              <p className="text-sm font-black text-white mt-0.5 truncate max-w-[100px]">{formData.profileName || '—'}</p>
+            </div>
+            <div className="text-center px-4 py-2.5 rounded-xl bg-slate-900/60 border border-[#1e293b]/60">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Category</p>
+              <p className="text-sm font-black text-[#f59e0b] mt-0.5">{formData.category || '—'}</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -518,144 +560,114 @@ export default function BusinessProfilePage() {
           </div>
         </div>
       ) : (
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
-          
-          {/* Visual Tabs Sidebar */}
-          <div className="w-full lg:w-72 shrink-0 bg-[#0c101b] border border-[#1e293b]/60 rounded-2xl p-4 space-y-1.5 shadow-xl shadow-slate-950/50">
-            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider px-3 mb-2">Navigation Options</p>
-            {tabsList.map((tab) => {
-              const TabIcon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    setError(null);
-                    setSuccess(null);
-                  }}
-                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-xs font-bold transition duration-150 text-left ${
-                    isActive
-                      ? 'bg-[#1a2336] text-[#f59e0b] border-l-2 border-[#f59e0b] shadow-md shadow-[#f59e0b]/5'
-                      : 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
-                  }`}
-                >
-                  <TabIcon className="h-4.5 w-4.5" />
-                  {tab.name}
-                </button>
-              );
-            })}
-          </div>
+        <div className="w-full">
 
           {/* Main Tab Content Panel */}
-          <div className="flex-1 w-full bg-[#0c101b] border border-[#1e293b]/60 rounded-2xl shadow-xl shadow-slate-950/50 overflow-hidden">
+          <div className="w-full bg-[#0c101b] border border-[#1e293b]/60 rounded-2xl shadow-xl shadow-slate-950/50 overflow-hidden">
             
             {/* View Profile Tab */}
             {activeTab === 'profile' && (
               <div>
-                {/* Banner Preview Block */}
-                <div className="relative h-44 md:h-56 bg-slate-900 overflow-hidden group">
-                  {formData.banner && (
+                {/* === PREMIUM BANNER BLOCK === */}
+                <div className="relative h-80 overflow-hidden group">
+                  {formData.banner ? (
                     <img
                       src={formData.banner}
                       alt="Store Banner"
-                      className="w-full h-full  opacity-80"
+                      className="w-full h-full object-contain opacity-85 transition-transform duration-700 group-hover:scale-105"
                     />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#0f1524] via-[#1a2336] to-[#0c101b] flex items-center justify-center">
+                      <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'repeating-linear-gradient(45deg, #f59e0b 0, #f59e0b 1px, transparent 0, transparent 50%)', backgroundSize: '20px 20px' }} />
+                      <span className="text-slate-700 text-xs font-bold uppercase tracking-widest">Add a banner image to personalize your profile</span>
+                    </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#0c101b] via-[#0c101b]/20 to-transparent"></div>
+                  {/* Gradient overlay */}
+                  {/* <div className="absolute inset-0 bg-gradient-to-t from-[#000000]/50 via-[#000000]/10 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#000000]/40 to-transparent" /> */}
+
                   {editMode && (
-                    <div className="absolute top-4 right-4 bg-slate-950/85 backdrop-blur-sm border border-[#1e293b] rounded-xl p-3 max-w-xs transition shadow-lg flex flex-col gap-2">
+                    <div className="absolute top-4 right-4 bg-slate-950/90 backdrop-blur-md border border-[#1e293b]/80 rounded-2xl p-4 max-w-xs shadow-2xl flex flex-col gap-3">
                       <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Upload Banner Image</p>
-                        <label className="flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#1e293b] bg-[#080b11] hover:bg-slate-900 text-slate-200 hover:text-white cursor-pointer transition text-xs font-semibold">
-                          <Upload className={`h-3.5 w-3.5 text-[#f59e0b] ${bannerUploading ? 'animate-bounce' : ''}`} />
-                          <span>{bannerUploading ? 'Uploading...' : 'Choose Image'}</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleBannerUpload}
-                            disabled={bannerUploading}
-                            className="hidden"
-                          />
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Banner Image</p>
+                        <label className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl border border-[#f59e0b]/30 bg-[#f59e0b]/10 hover:bg-[#f59e0b]/15 text-[#f59e0b] cursor-pointer transition text-xs font-bold">
+                          <Upload className={`h-3.5 w-3.5 ${bannerUploading ? 'animate-bounce' : ''}`} />
+                          <span>{bannerUploading ? 'Uploading...' : 'Upload Banner'}</span>
+                          <input type="file" accept="image/*" onChange={handleBannerUpload} disabled={bannerUploading} className="hidden" />
                         </label>
-                        {bannerUploadError && (
-                          <p className="text-[9px] font-semibold text-red-400 mt-1 max-w-[180px]">
-                            {bannerUploadError}
-                          </p>
-                        )}
+                        {bannerUploadError && <p className="text-[9px] font-semibold text-red-400 mt-1">{bannerUploadError}</p>}
                       </div>
-                      <div className="border-t border-[#1e293b]/60 my-0.5"></div>
+                      <div className="border-t border-[#1e293b]/40" />
                       <div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Or Banner URL</p>
+                        <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Or Paste URL</p>
                         <input
                           type="text"
                           name="banner"
                           value={formData.banner}
                           onChange={handleInputChange}
-                          placeholder="Banner Image URL"
-                          className="w-full bg-[#080b11] border border-[#1e293b] text-slate-100 rounded-lg px-2.5 py-1 text-xs focus:border-[#f59e0b] outline-none"
+                          placeholder="https://..."
+                          className="w-full bg-[#080b11]/80 border border-[#1e293b] text-slate-100 rounded-xl px-3 py-2 text-xs focus:border-[#f59e0b] outline-none placeholder-slate-600"
                         />
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* Profile Header (Logo + Title Block) */}
-                <div className="relative px-6 pb-6 border-b border-[#1e293b]/60">
-                  <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 -mt-16 sm:-mt-20">
+                {/* === PROFILE HEADER (Logo + Title + Actions) === */}
+                <div className="relative px-6 pb-5 pt-4 border-b border-[#1e293b]/60">
+                  {/* Frosted glass background — always readable over the banner */}
+                  <div className="absolute inset-0 bg-[#0c101b]/80 backdrop-blur-md border-t border-white/5" />
+                  
+                  <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center gap-5 -mt-14 sm:-mt-16 backdrop-blur-2xl">
                     {/* Logo wrapper */}
-                    <div className="relative h-28 w-28 md:h-32 md:w-32 rounded-2xl overflow-hidden border-4 border-[#0c101b] bg-[#0c101b] shadow-xl shrink-0 group flex flex-col items-center justify-center">
-                      {formData.logo && (
-                        <img
-                          src={formData.logo}
-                          alt="Store Logo"
-                          className="w-full h-full object-contain"
-                        />
+                    <div className="relative h-28 w-28 rounded-2xl overflow-hidden border-4 border-[#0c101b] bg-gradient-to-br from-[#0f1524] to-[#1a2336] shadow-2xl shrink-0 group flex items-center justify-center">
+                      {formData.logo ? (
+                        <img src={formData.logo} alt="Store Logo" className="w-full h-full object-contain" />
+                      ) : (
+                        <Building className="h-10 w-10 text-slate-700" />
                       )}
                       {editMode && (
-                        <div className="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-2 text-center transition hover:bg-slate-950/90">
+                        <div className="absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-2 text-center transition opacity-0 group-hover:opacity-100">
                           <label className="cursor-pointer flex flex-col items-center justify-center w-full h-full">
-                            <Upload className={`h-5 w-5 text-[#f59e0b] mb-1 ${logoUploading ? 'animate-bounce' : 'animate-pulse'}`} />
+                            <Upload className={`h-5 w-5 text-[#f59e0b] mb-1.5 ${logoUploading ? 'animate-bounce' : ''}`} />
                             <span className="text-[9px] font-bold text-white uppercase tracking-wider">
-                              {logoUploading ? 'Uploading...' : 'Upload Logo'}
+                              {logoUploading ? 'Uploading...' : 'Change Logo'}
                             </span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleLogoUpload}
-                              disabled={logoUploading}
-                              className="hidden"
-                            />
+                            <input type="file" accept="image/*" onChange={handleLogoUpload} disabled={logoUploading} className="hidden" />
                           </label>
                         </div>
                       )}
                     </div>
                     {editMode && logoUploadError && (
-                      <p className="text-[10px] font-semibold text-red-400 mt-1 max-w-[120px] text-center">
-                        {logoUploadError}
-                      </p>
+                      <p className="text-[10px] font-semibold text-red-400 mt-1 max-w-[120px] text-center">{logoUploadError}</p>
                     )}
 
-                    <div className="text-center sm:text-left flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 pb-1">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
-                          <h2 className="text-xl md:text-2xl font-black text-white tracking-wide truncate">
+                        <div className="min-w-0">
+                          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight truncate leading-tight drop-shadow-lg">
                             {formData.profileName || 'Store Name'}
                           </h2>
-                          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-1">
-                            <span className="bg-[#f59e0b]/10 text-[#f59e0b] text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border border-[#f59e0b]/20">
+                          <div className="flex flex-wrap items-center gap-2 mt-2">
+                            <span className="bg-[#f59e0b]/15 text-[#f59e0b] text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border border-[#f59e0b]/25">
                               {formData.category || 'Restaurant'}
                             </span>
-                            <span className="bg-[#1e293b] text-slate-300 text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full">
+                            <span className="bg-slate-800/80 text-slate-300 text-[10px] font-extrabold uppercase px-2.5 py-0.5 rounded-full border border-[#1e293b]">
                               {formData.currency || 'AUD'}
                             </span>
+                            {formData.city && (
+                              <span className="flex items-center gap-1 text-slate-400 text-[10px] font-bold">
+                                <MapPin className="h-3 w-3" />
+                                {formData.city}{formData.country ? `, ${formData.country}` : ''}
+                              </span>
+                            )}
                           </div>
                         </div>
                         
                         {!editMode ? (
                           <button
                             onClick={() => setEditMode(true)}
-                            className={`bg-slate-900 border border-[#1e293b] hover:text-white hover:bg-slate-800 font-bold px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-1.5 transition shrink-0`}
+                            className="flex items-center gap-1.5 bg-slate-900/80 backdrop-blur-sm border border-[#1e293b] hover:bg-slate-800 hover:border-[#f59e0b]/40 hover:text-[#f59e0b] text-slate-300 font-bold px-4 py-2.5 rounded-xl text-xs transition shrink-0 shadow-sm"
                           >
                             <Edit3 className="h-3.5 w-3.5" />
                             Edit Profile
@@ -665,14 +677,14 @@ export default function BusinessProfilePage() {
                             <button
                               onClick={handleSave}
                               disabled={saving}
-                              className="bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#d97706] hover:to-[#dd571c] text-white font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow-lg shadow-[#f59e0b]/10 disabled:opacity-50"
+                              className="bg-gradient-to-r from-[#f59e0b] to-[#ea580c] hover:from-[#d97706] hover:to-[#dd571c] text-white font-black px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow-lg shadow-[#f59e0b]/20 disabled:opacity-50"
                             >
                               <Save className="h-3.5 w-3.5" />
-                              {saving ? 'Saving...' : 'Save Profile'}
+                              {saving ? 'Saving...' : 'Save Changes'}
                             </button>
                             <button
                               onClick={handleCancel}
-                              className="bg-slate-900 border border-[#1e293b] text-slate-300 hover:text-white hover:bg-slate-800 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition"
+                              className="bg-slate-900/80 backdrop-blur-sm border border-[#1e293b] text-slate-300 hover:text-white hover:bg-slate-800 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition"
                             >
                               <X className="h-3.5 w-3.5" />
                               Cancel
@@ -1401,122 +1413,6 @@ export default function BusinessProfilePage() {
                     >
                       Configure Profile Fields
                     </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Additional Business Info Tab */}
-            {activeTab === 'info' && (
-              <div className="p-6 md:p-8 space-y-6">
-                <div>
-                  <h2 className="text-lg font-black tracking-wide text-white mb-2">ADDITIONAL BUSINESS CONFIGURATION</h2>
-                  <p className="text-xs text-slate-400">Configure business hours, default tax parameters, and dining parameters.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                  {/* Business Hours */}
-                  <div className="bg-[#080b11]/60 border border-[#1e293b] rounded-2xl p-5">
-                    <h3 className="text-xs font-black tracking-wider text-[#f59e0b] uppercase mb-4 flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      Standard Operating Hours
-                    </h3>
-                    <div className="space-y-2.5 text-xs text-slate-300">
-                      {store?.business_hours ? (
-                        Object.entries(store.business_hours).map(([day, hours]: [string, any]) => (
-                          <div key={day} className="flex justify-between border-b border-[#1e293b]/40 pb-1.5 capitalize">
-                            <span className="font-semibold text-slate-400">{day}</span>
-                            <span className="font-mono text-slate-200">
-                              {hours.open} AM - {hours.close} PM
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-slate-500 italic py-2">No operating hours configured.</div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Tax Rate Settings */}
-                  <div className="bg-[#080b11]/60 border border-[#1e293b] rounded-2xl p-5 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-xs font-black tracking-wider text-[#f59e0b] uppercase mb-4 flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Billing & Tax Configuration
-                      </h3>
-                      <div className="space-y-4">
-                        <div>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Standard Tax Rate</span>
-                          <span className="text-2xl font-black text-white">{store?.tax_rate || '5.00'} %</span>
-                          <p className="text-xs text-slate-500 mt-1">Applied to item sales in receipts.</p>
-                        </div>
-                        <div>
-                          <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Active Integration</span>
-                          <span className="text-xs bg-[#1e293b] text-slate-300 px-3 py-1 rounded-full font-bold">SQLite Internal DB</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-[#1e293b]/40 mt-4">
-                      <p className="text-[10px] text-slate-500 leading-normal">
-                        Note: Tax rates and billing values must be configured using backend migrations or super-admin database triggers.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Current Reservations Tab */}
-            {activeTab === 'reservations' && (
-              <div className="p-6 md:p-8">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="text-lg font-black tracking-wide text-white">RESTAURANT TABLE RESERVATIONS</h2>
-                    <p className="text-xs text-slate-400">Incoming online table reservation requests.</p>
-                  </div>
-                  <button className="bg-slate-900 border border-[#1e293b] hover:bg-slate-800 text-slate-300 text-xs px-3.5 py-2 rounded-xl font-bold transition flex items-center gap-1">
-                    <Plus className="h-3.5 w-3.5 text-[#f59e0b]" /> New Booking
-                  </button>
-                </div>
-
-                <div className="bg-[#080b11]/60 border border-[#1e293b] rounded-2xl overflow-hidden">
-                  <div className="p-5 border-b border-[#1e293b] bg-slate-950/20 text-xs font-bold text-slate-400 uppercase tracking-wider grid grid-cols-4 gap-4">
-                    <span>Customer Details</span>
-                    <span>Date & Time</span>
-                    <span>Guests</span>
-                    <span>Status</span>
-                  </div>
-
-                  {/* Empty state or list */}
-                  <div className="divide-y divide-[#1e293b]/60">
-                    <div className="p-5 grid grid-cols-4 gap-4 items-center text-xs">
-                      <div>
-                        <p className="font-bold text-white">Amelia Thorne</p>
-                        <p className="text-slate-500 font-medium">+61 491 570 156</p>
-                      </div>
-                      <span className="font-mono text-slate-300">2026-06-18 19:30</span>
-                      <span className="text-slate-300 font-bold">4 Guests</span>
-                      <div>
-                        <span className="bg-amber-500/10 text-amber-500 px-2.5 py-0.5 rounded-full border border-amber-500/20 text-[10px] font-extrabold uppercase">
-                          Pending
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="p-5 grid grid-cols-4 gap-4 items-center text-xs">
-                      <div>
-                        <p className="font-bold text-white">Marcus Finch</p>
-                        <p className="text-slate-500 font-medium">+61 491 570 188</p>
-                      </div>
-                      <span className="font-mono text-slate-300">2026-06-19 20:00</span>
-                      <span className="text-slate-300 font-bold">2 Guests</span>
-                      <div>
-                        <span className="bg-emerald-500/10 text-emerald-500 px-2.5 py-0.5 rounded-full border border-emerald-500/20 text-[10px] font-extrabold uppercase">
-                          Confirmed
-                        </span>
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>

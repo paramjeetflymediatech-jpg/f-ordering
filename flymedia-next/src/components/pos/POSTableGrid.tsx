@@ -4,7 +4,7 @@ interface POSTableGridProps {
   tables: any[];
   selectedTable: any;
   handleTableSelection: (table: any) => void;
-  getDummyTableBill: (table: any) => string | null;
+  getTableBill: (table: any) => string | null;
   setActiveModal: (modal: any) => void;
 }
 
@@ -12,7 +12,7 @@ export function POSTableGrid({
   tables,
   selectedTable,
   handleTableSelection,
-  getDummyTableBill,
+  getTableBill,
   setActiveModal,
 }: POSTableGridProps) {
   const [selectedZone, setSelectedZone] = React.useState<'all' | 'main' | 'vip' | 'bar'>('all');
@@ -113,8 +113,8 @@ export function POSTableGrid({
               </div>
 
               <span className="text-[10px] font-black tracking-tight">{table.table_number}</span>
-              {getDummyTableBill(table) ? (
-                <span className="text-[7.5px] font-extrabold mt-0.5 text-[#f59e0b]">${getDummyTableBill(table)}</span>
+              {getTableBill(table) ? (
+                <span className="text-[7.5px] font-extrabold mt-0.5 text-[#f59e0b]">${getTableBill(table)}</span>
               ) : (
                 <span className="text-[7px] uppercase font-bold mt-0.5 tracking-wider opacity-60">{table.status}</span>
               )}
