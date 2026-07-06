@@ -216,8 +216,8 @@ export function POSModals({
                     }}
                     className={`rounded-xl border p-3.5 text-xs font-bold capitalize transition duration-150 ${
                       selectedPayment === mode
-                        ? 'border-[#f59e0b] bg-[#f59e0b]/10 text-white shadow-md shadow-[#f59e0b]/5'
-                        : 'border-[#1e293b] bg-slate-950 text-slate-400 hover:bg-slate-900/50'
+                        ? 'border-[#f59e0b] shadow-md shadow-[#f59e0b]/5'
+                        : 'border-[#1e293b] '
                     }`}
                   >
                     {mode === 'card' && stripeEnabled ? '💳 Card (Stripe)' : `${mode} Payment`}
