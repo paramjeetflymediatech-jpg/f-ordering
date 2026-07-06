@@ -22,13 +22,13 @@ export function proxy(request: NextRequest) {
   // Helper to clean protocol and port/path from env variables if needed
   const getHostOnly = (urlStr: string | undefined) => {
     if (!urlStr) return '';
-    return urlStr.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
+    return urlStr.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0].toLowerCase();
   };
 
   // Identify root hosts that should not be parsed for subdomains
   const rootHosts = [
-    getHostOnly(process.env.NEXT_PUBLIC_APP_URL) || 'localhost:3000',
-    getHostOnly(process.env.NEXT_PUBLIC_APP_URL_WITH_WWW) || 'www.localhost:3000',
+    getHostOnly(process.env.NEXT_PUBLIC_APP_URL) || 'localhost',
+    getHostOnly(process.env.NEXT_PUBLIC_APP_URL_WITH_WWW) || 'www.localhost',
     'fly-pos.com',
     'www.fly-pos.com',
   ];

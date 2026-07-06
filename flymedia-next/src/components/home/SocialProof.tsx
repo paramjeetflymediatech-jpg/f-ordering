@@ -5,13 +5,21 @@ import { Star } from 'lucide-react';
 
 export default function SocialProof() {
   return (
-    <section className="py-24 border-b border-slate-800">
-      <div className="container mx-auto px-6 max-w-6xl">
+    <section className="py-28 border-b border-slate-900 bg-[#030712] relative overflow-hidden">
+      {/* Background decoration blur lights */}
+      <div className="absolute top-1/2 left-10 w-96 h-96 bg-orange-500/[0.03] rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/3 right-10 w-80 h-80 bg-blue-500/[0.02] rounded-full blur-[100px] pointer-events-none" />
+
+      <div className="container relative z-10 mx-auto px-6 max-w-6xl">
         {/* Section title */}
-        <div className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-xs font-bold text-orange-500 uppercase tracking-widest">Customer Reviews</span>
-          <h2 className="text-3xl font-extrabold text-white mt-2 sm:text-4xl">What Restaurant Owners Say</h2>
-          <p className="text-slate-400 text-sm mt-3 leading-relaxed">
+        <div className="text-center max-w-2xl mx-auto mb-20">
+          <span className="text-[10px] font-black text-orange-500 uppercase tracking-widest bg-orange-500/10 px-3 py-1 rounded-full border border-orange-500/20">
+            Customer Success
+          </span>
+          <h2 className="text-3xl font-extrabold text-white mt-4 sm:text-4xl tracking-tight leading-tight">
+            What Restaurant Owners Say
+          </h2>
+          <p className="text-slate-400 text-sm mt-4 leading-relaxed max-w-md mx-auto">
             Find out how partners use our POS software to speed up table turnaround times and drive direct online orders.
           </p>
         </div>
@@ -42,22 +50,22 @@ export default function SocialProof() {
           ].map((review) => (
             <div 
               key={review.name}
-              className="bg-slate-900/60 border border-slate-800/80 p-8 rounded-3xl flex flex-col justify-between hover:border-slate-700 hover:shadow-lg transition duration-200"
+              className="bg-gradient-to-b from-slate-900/40 to-slate-950/20 border border-slate-850/80 p-8 rounded-3xl flex flex-col justify-between hover:border-orange-500/20 hover:shadow-lg hover:shadow-orange-500/[0.01] transition-all duration-300 transform hover:-translate-y-1 group"
             >
               <div>
                 {/* Star Rating */}
-                <div className="flex gap-1 mb-4">
+                <div className="flex gap-1 mb-5">
                   {[...Array(review.rating)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    <Star key={i} className="h-4 w-4 fill-amber-450 text-amber-450" />
                   ))}
                 </div>
-                <p className="text-sm text-slate-300 italic leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-350 italic leading-relaxed group-hover:text-slate-200 transition duration-200">
                   "{review.text}"
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 mt-6 pt-5 border-t border-slate-800">
-                <div className="relative h-10 w-10 rounded-full overflow-hidden border border-orange-500/30">
+              <div className="flex items-center gap-3.5 mt-8 pt-6 border-t border-slate-900">
+                <div className="relative h-11 w-11 rounded-full overflow-hidden border-2 border-orange-500/20 shadow-inner">
                   <img 
                     src={review.image} 
                     alt={review.name}
@@ -65,8 +73,8 @@ export default function SocialProof() {
                   />
                 </div>
                 <div>
-                  <h4 className="text-xs font-bold text-white">{review.name}</h4>
-                  <p className="text-[10px] font-bold text-orange-500 uppercase mt-0.5">{review.outlet}</p>
+                  <h4 className="text-xs font-black text-white">{review.name}</h4>
+                  <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest mt-1">{review.outlet}</p>
                 </div>
               </div>
             </div>
@@ -74,19 +82,19 @@ export default function SocialProof() {
         </div>
 
         {/* Stats Showcase grid */}
-        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6">
           {[
             { label: 'Active Restaurants', val: '1,200+', color: 'text-orange-500' },
             { label: 'Orders Processed', val: '5M+', color: 'text-orange-500' },
             { label: 'Revenue Generated', val: '$45M+', color: 'text-orange-500' },
-            { label: 'Satisfaction Rate', val: '99.6%', color: 'text-emerald-400' }
+            { label: 'Satisfaction Rate', val: '99.6%', color: 'text-emerald-450' }
           ].map((stat) => (
             <div 
               key={stat.label}
-              className="bg-slate-900/40 border border-slate-850 p-6 rounded-2xl text-center"
+              className="bg-gradient-to-b from-slate-900/20 to-slate-950/40 border border-slate-850/60 p-6 rounded-2xl text-center shadow-inner hover:border-slate-800 transition duration-250"
             >
-              <p className={`text-3xl font-black ${stat.color}`}>{stat.val}</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-2">{stat.label}</p>
+              <p className={`text-3xl font-black tracking-tight ${stat.color}`}>{stat.val}</p>
+              <p className="text-[9px] text-slate-400 font-black uppercase tracking-wider mt-2.5">{stat.label}</p>
             </div>
           ))}
         </div>

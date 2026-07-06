@@ -86,7 +86,7 @@ const Header = () => {
                 key={link.name}
                 href={link.href}
                 className={`text-sm font-bold transition ${
-                  isActive ? 'text-orange-500' : 'text-slate-800 hover:text-orange-500'
+                  isActive ? 'text-orange-500' : 'text-slate-300 hover:text-orange-500'
                 }`}
               >
                 {link.name}
@@ -108,7 +108,7 @@ const Header = () => {
             <>
               <Link
                 href="/register"
-                className="border border-orange-500 text-orange-600 hover:bg-orange-500 hover:text-white transition px-4 py-2.5 rounded-full text-xs font-extrabold shrink-0"
+                className="border border-orange-500/80 text-orange-500 hover:bg-orange-500 hover:text-white transition px-4 py-2.5 rounded-full text-xs font-extrabold shrink-0"
               >
                 Become a Partner
               </Link>
@@ -125,7 +125,7 @@ const Header = () => {
         {/* Mobile Toggle Button */}
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="md:hidden p-2 text-slate-800 hover:text-orange-500 outline-none transition"
+          className="md:hidden p-2 text-slate-200 hover:text-orange-500 outline-none transition"
         >
           {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
@@ -133,8 +133,8 @@ const Header = () => {
 
       {/* Mobile Drawer Overlay */}
       {mobileOpen && (
-        <div className="fixed inset-0 top-[75px] z-50 md:hidden bg-slate-950/40 backdrop-blur-md flex flex-col justify-start">
-          <div className="bg-white border-t border-slate-100 p-6 flex flex-col gap-4 shadow-xl">
+        <div className="fixed inset-0 top-[75px] z-50 md:hidden bg-slate-950/60 backdrop-blur-md flex flex-col justify-start">
+          <div className="bg-slate-900 border-t border-slate-800 p-6 flex flex-col gap-4 shadow-xl">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
@@ -143,7 +143,7 @@ const Header = () => {
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
                   className={`text-base font-bold transition py-2 ${
-                    isActive ? 'text-orange-500' : 'text-slate-800 hover:text-orange-500'
+                    isActive ? 'text-orange-500' : 'text-slate-300 hover:text-orange-500'
                   }`}
                 >
                   {link.name}
@@ -163,11 +163,11 @@ const Header = () => {
               </button>
             )}
             {!isOrderOnline && (
-              <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-slate-100">
+              <div className="flex flex-col gap-3 mt-4 pt-4 border-t border-slate-850">
                 <Link
                   href="/register"
                   onClick={() => setMobileOpen(false)}
-                  className="w-full text-center border border-orange-500 text-orange-600 hover:bg-orange-500 hover:text-white transition py-3 rounded-xl text-sm font-bold"
+                  className="w-full text-center border border-orange-500/80 text-orange-500 hover:bg-orange-500 hover:text-white transition py-3 rounded-xl text-sm font-bold"
                 >
                   Become a Partner
                 </Link>

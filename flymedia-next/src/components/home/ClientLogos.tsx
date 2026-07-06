@@ -15,28 +15,34 @@ export default function ClientLogos() {
   ];
 
   return (
-    <section className="bg-slate-950 py-12 border-b border-slate-800 overflow-hidden relative">
+    <section className="bg-[#020617] py-16 border-b border-slate-900 overflow-hidden relative">
       <div className="container mx-auto px-6 max-w-5xl">
-        <p className="text-center text-xs font-extrabold uppercase tracking-widest text-slate-500 mb-6">
+        <p className="text-center text-[10px] font-black uppercase tracking-widest text-slate-500 mb-8">
           Trusted by 1,200+ Restaurants, Cafes & Cloud Kitchens Globally
         </p>
         
         {/* Logo Marquee Grid */}
-        <div className="flex gap-8 items-center overflow-x-hidden relative w-full select-none">
-          <div className="flex space-x-12 animate-scroll shrink-0 min-w-full justify-around">
+        <div className="flex gap-6 items-center overflow-x-hidden relative w-full select-none">
+          <div className="flex space-x-6 animate-scroll shrink-0 min-w-full justify-around">
             {clientLogos.map((logo) => (
-              <div key={logo.name} className="flex flex-col items-center">
-                <span className="text-sm font-black text-slate-300 tracking-wide">{logo.name}</span>
-                <span className="text-[10px] font-bold text-orange-500 uppercase mt-0.5">{logo.type}</span>
+              <div 
+                key={logo.name} 
+                className="flex flex-col items-center justify-center bg-slate-900/30 border border-slate-850 px-6 py-3.5 rounded-2xl shadow-sm hover:border-orange-500/30 hover:bg-slate-900/50 transition duration-200"
+              >
+                <span className="text-xs font-black text-slate-200 tracking-wide">{logo.name}</span>
+                <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest mt-1">{logo.type}</span>
               </div>
             ))}
           </div>
           {/* Duplicate for infinite loop */}
-          <div className="flex space-x-12 animate-scroll shrink-0 min-w-full justify-around" aria-hidden="true">
+          <div className="flex space-x-6 animate-scroll shrink-0 min-w-full justify-around" aria-hidden="true">
             {clientLogos.map((logo) => (
-              <div key={`${logo.name}-dup`} className="flex flex-col items-center">
-                <span className="text-sm font-black text-slate-300 tracking-wide">{logo.name}</span>
-                <span className="text-[10px] font-bold text-orange-500 uppercase mt-0.5">{logo.type}</span>
+              <div 
+                key={`${logo.name}-dup`} 
+                className="flex flex-col items-center justify-center bg-slate-900/30 border border-slate-850 px-6 py-3.5 rounded-2xl shadow-sm hover:border-orange-500/30 hover:bg-slate-900/50 transition duration-200"
+              >
+                <span className="text-xs font-black text-slate-200 tracking-wide">{logo.name}</span>
+                <span className="text-[9px] font-black text-orange-500 uppercase tracking-widest mt-1">{logo.type}</span>
               </div>
             ))}
           </div>

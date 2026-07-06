@@ -17,13 +17,13 @@ const Footer = () => {
         <div className={styles.col}>
           <Image 
             src="/logo.png" 
-            alt="Flymedia Tech" 
+            alt="F-Ordering POS Platform" 
             width={180} 
             height={60} 
             className={styles.footerLogo}
           />
           <p className={styles.desc}>
-            Flymedia Tech is a leading digital marketing agency providing SEO, Web Design, and PPC services to help businesses grow online.
+            F-Ordering is a premium cloud-based restaurant POS and online ordering SaaS platform. Empowering outlets, streamlining billing, and growing restaurant profits.
           </p>
         </div>
         
@@ -32,32 +32,32 @@ const Footer = () => {
           <ul>
             <li><Link href="/">Home</Link></li>
             <li><Link href="/about">About Us</Link></li>
-            <li><Link href="/portfolio">Portfolio</Link></li>
-            <li><Link href="/contact">Contact</Link></li>
+            <li><Link href="/portfolio">Our Portfolio</Link></li>
+            <li><Link href="/contact">Contact Support</Link></li>
           </ul>
         </div>
 
         <div className={styles.col}>
-          <h3>Services</h3>
+          <h3>POS Modules</h3>
           <ul>
-            <li><Link href="/services/seo">SEO Services</Link></li>
-            <li><Link href="/services/web-design">Web Design</Link></li>
-            <li><Link href="/services/ppc">PPC Marketing</Link></li>
-            <li><Link href="/services/social-media">Social Media</Link></li>
+            <li><Link href="/pos">POS Billing Terminal</Link></li>
+            <li><Link href="/kds">Kitchen Display (KDS)</Link></li>
+            <li><Link href="/register">QR Table Ordering</Link></li>
+            <li><Link href="/register">Waiter POS Terminal</Link></li>
           </ul>
         </div>
 
         <div className={styles.col}>
           <h3>Contact Us</h3>
-          <p>Email: info@flymediatech.com</p>
-          <p>Phone: +91 9876543210</p>
-          <p>Location: Ludhiana, Punjab, India</p>
+          <p>Email: support@fordering.com</p>
+          <p>Phone: +1-555-0199</p>
+          <p>Location: San Francisco, CA, USA</p>
         </div>
       </div>
       
       <div className={styles.bottomBar}>
         <div className="container">
-          <p>&copy; {new Date().getFullYear()} Flymedia Tech. All Rights Reserved.</p>
+          <p>&copy; {new Date().getFullYear()} F-Ordering. Powered by Flymedia Tech. All Rights Reserved.</p>
         </div>
       </div>
     </footer>
