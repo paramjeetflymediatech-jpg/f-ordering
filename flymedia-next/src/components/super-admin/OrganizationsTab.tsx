@@ -315,7 +315,7 @@ export default function OrganizationsTab() {
                       </td>
                       <td className="px-6 py-4 font-mono text-xs text-orange-400">
                         <a
-                          href={`${org.slug}.${process.env.NEXT_PUBLIC_APP}/order-online/menu`}
+                          href={`https://${org.slug}.${process.env.NEXT_PUBLIC_APP}/menu`}
                           target="_blank"
                           rel="noreferrer"
                           className="hover:underline flex items-center gap-1.5"
