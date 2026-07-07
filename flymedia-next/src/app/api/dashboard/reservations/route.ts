@@ -348,7 +348,7 @@ export async function DELETE(request: Request) {
       });
 
       const affectedTableIds = Array.from(
-        new Set(reservations.map(r => r.table_id).filter(Boolean))
+        new Set(reservations.map((r: any) => r.table_id).filter(Boolean))
       ) as string[];
 
       const deletedCount = await Reservation.destroy({
@@ -389,7 +389,7 @@ export async function DELETE(request: Request) {
       });
 
       const affectedTableIds = Array.from(
-        new Set(reservationsToDelete.map(r => r.table_id).filter(Boolean))
+        new Set(reservationsToDelete.map((r: any) => r.table_id).filter(Boolean))
       ) as string[];
 
       const deletedCount = await Reservation.destroy({

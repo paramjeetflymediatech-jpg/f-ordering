@@ -145,9 +145,9 @@ async function seedCentralDb() {
 
   // Create Roles & Permissions
   const [superAdminRole, ownerRole, cashierRole] = await Promise.all([
-    CentralRole.findOrCreate({ where: { name: 'Super Admin' }, defaults: { name: 'Super Admin', description: 'Global system administrator' } }).then(([r]) => r),
-    CentralRole.findOrCreate({ where: { name: 'Restaurant Owner' }, defaults: { name: 'Restaurant Owner', description: 'Owner of the organization' } }).then(([r]) => r),
-    CentralRole.findOrCreate({ where: { name: 'Cashier' }, defaults: { name: 'Cashier', description: 'Sales terminal operator' } }).then(([r]) => r),
+    CentralRole.findOrCreate({ where: { name: 'Super Admin' }, defaults: { name: 'Super Admin', description: 'Global system administrator' } }).then(([r]: any) => r),
+    CentralRole.findOrCreate({ where: { name: 'Restaurant Owner' }, defaults: { name: 'Restaurant Owner', description: 'Owner of the organization' } }).then(([r]: any) => r),
+    CentralRole.findOrCreate({ where: { name: 'Cashier' }, defaults: { name: 'Cashier', description: 'Sales terminal operator' } }).then(([r]: any) => r),
   ]);
 
   const hashedPwd = await bcrypt.hash('password123', 10);

@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { io } from 'socket.io-client';
 import { usePOSStore } from '../../../lib/store';
 import { POSSidebar } from '../../../components/pos/POSSidebar';
 import {
@@ -21,6 +22,7 @@ import {
   ShoppingBag,
   Truck,
   X,
+  Check,
 } from 'lucide-react';
 
 export default function POSDraftsPage() {
@@ -84,10 +86,11 @@ export default function POSDraftsPage() {
           total: parseFloat(order.total_amount),
           subtotal: parseFloat(order.subtotal),
           tax: parseFloat(order.tax_amount),
+          status: order.status,
+          payments: order.payments,
         }));
 
         setDrafts(formattedHeld);
-
         // Sync the Zustand store count as well
         usePOSStore.setState({ heldOrders: formattedHeld });
       }
@@ -111,6 +114,35 @@ export default function POSDraftsPage() {
         .catch((err) => console.error('Error fetching drafts profile logo:', err));
     }
   }, [status]);
+
+  const socketRef = useRef<any>(null);
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      const storeId = (session.user as any).store_id;
+      if (storeId) {
+        const socket = io({
+          transports: ['websocket', 'polling']
+        });
+        socketRef.current = socket;
+        socket.on('connect', () => {
+          socket.emit('join_store', storeId);
+        });
+
+        socket.on('order_status_changed', (data: any) => {
+          console.log('[Drafts Socket] Order status updated:', data);
+          fetchDrafts();
+        });
+
+        socket.on('kitchen_new_order', () => {
+          fetchDrafts();
+        });
+
+        return () => {
+          socket.disconnect();
+        };
+      }
+    }
+  }, [session, status]);
 
   if (status === 'loading') {
     return (
@@ -383,6 +415,7 @@ export default function POSDraftsPage() {
                 {filteredDrafts.map((d) => {
                   const isSelected = selectedDraft?.id === d.id;
                   const isChecked = checkedDraftIds.includes(d.id);
+                  const isPaid = d.payments && d.payments.some((p: any) => p.transaction_status === 'success');
                   
                   return (
                     <div
@@ -416,6 +449,70 @@ export default function POSDraftsPage() {
                             {getOrderTypeIcon(d.orderType)}
                             {d.orderType.replace('_', ' ')}
                           </span>
+                          
+                          {isPaid ? (
+                            <span className={`rounded-lg px-2 py-0.5 text-[9px] font-black uppercase tracking-wide flex items-center gap-1 border shadow-sm ${
+                              d.status === 'ready'
+                                ? 'bg-emerald-950 text-emerald-400 border-emerald-900/50 animate-pulse'
+                                : d.status === 'preparing'
+                                ? 'bg-purple-950 text-purple-400 border-purple-900/50'
+                                : d.status === 'pending'
+                                ? 'bg-blue-950 text-blue-400 border-blue-900/50'
+                                : 'bg-emerald-950/80 text-emerald-400 border-emerald-900/40'
+                            }`}>
+                              {d.status === 'ready' && d.orderType === 'delivery' && (
+                                <Truck className="h-3 w-3 shrink-0 animate-bounce" />
+                              )}
+                              {d.status === 'ready' && d.orderType === 'takeaway' && (
+                                <ShoppingBag className="h-3 w-3 shrink-0" />
+                              )}
+                              {d.status === 'ready' && d.orderType === 'dine_in' && (
+                                <Utensils className="h-3 w-3 shrink-0" />
+                              )}
+                              Paid / {
+                                d.status === 'ready'
+                                  ? d.orderType === 'delivery'
+                                    ? 'Ready to Ship'
+                                    : d.orderType === 'takeaway'
+                                    ? 'Ready to Pick'
+                                    : 'Ready to Serve'
+                                  : d.status === 'preparing'
+                                  ? 'Preparing'
+                                  : d.status === 'pending'
+                                  ? 'Kitchen Queue'
+                                  : 'Paid'
+                              }
+                            </span>
+                          ) : (
+                            d.status && d.status !== 'on_hold' && (
+                              <span className={`rounded-lg px-2 py-0.5 text-[9px] font-black uppercase tracking-wide flex items-center gap-1 ${
+                                d.status === 'ready'
+                                  ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-900/50 animate-pulse'
+                                  : d.status === 'preparing'
+                                  ? 'bg-purple-950/80 text-purple-400 border border-purple-900/50'
+                                  : d.status === 'pending'
+                                  ? 'bg-blue-950/80 text-blue-400 border border-blue-900/50'
+                                  : 'bg-slate-900 text-slate-400 border border-slate-800'
+                              }`}>
+                                {d.status === 'ready' && d.orderType === 'delivery' && (
+                                  <Truck className="h-3 w-3 shrink-0" />
+                                )}
+                                {d.status === 'ready' && d.orderType === 'takeaway' && (
+                                  <ShoppingBag className="h-3 w-3 shrink-0" />
+                                )}
+                                {d.status === 'ready' && d.orderType === 'dine_in' && (
+                                  <Utensils className="h-3 w-3 shrink-0" />
+                                )}
+                                {d.status === 'ready'
+                                  ? d.orderType === 'delivery'
+                                    ? 'Ready for Shipping'
+                                    : d.orderType === 'takeaway'
+                                    ? 'Ready for Pickup'
+                                    : 'Ready to Serve'
+                                  : d.status}
+                              </span>
+                            )
+                          )}
 
                           <span className="text-xs font-bold text-slate-500">
                             {d.selectedTable ? `Table ${d.selectedTable.table_number}` : 'Reference Draft'}
@@ -587,13 +684,48 @@ export default function POSDraftsPage() {
                     <Receipt className="h-4 w-4 text-[#f59e0b]" />
                     Print Docket
                   </button>
-                  <button
-                    onClick={() => handleResumeDraft(selectedDraft.id)}
-                    className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 py-3 text-sm font-black text-slate-950 transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/10"
-                  >
-                    <Play className="h-4 w-4 fill-current" />
-                    Resume Bill
-                  </button>
+                  {(() => {
+                    const isPaid = selectedDraft.payments && selectedDraft.payments.some((p: any) => p.transaction_status === 'success');
+                    if (isPaid) {
+                      return (
+                        <button
+                          onClick={async () => {
+                            if (confirm('Mark this pre-paid order as served and archive it?')) {
+                              try {
+                                const res = await fetch(`/api/orders/${selectedDraft.id}`, {
+                                  method: 'PATCH',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ status: 'completed' }),
+                                });
+                                const data = await res.json();
+                                if (data.success) {
+                                  fetchDrafts();
+                                  setSelectedDraft(null);
+                                } else {
+                                  alert(data.message || 'Failed to complete order.');
+                                }
+                              } catch (err) {
+                                console.error(err);
+                              }
+                            }
+                          }}
+                          className="rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 py-3 text-sm font-black text-white transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/10"
+                        >
+                          <Check className="h-4 w-4 animate-bounce" />
+                          Mark Served
+                        </button>
+                      );
+                    }
+                    return (
+                      <button
+                        onClick={() => handleResumeDraft(selectedDraft.id)}
+                        className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 py-3 text-sm font-black text-slate-950 transition flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-500/10"
+                      >
+                        <Play className="h-4 w-4 fill-current" />
+                        Resume Bill
+                      </button>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

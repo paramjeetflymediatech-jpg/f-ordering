@@ -23,6 +23,7 @@ export class Customer extends Model {
   declare shipping_state: string | null;
   declare shipping_country: string | null;
   declare shipping_zip_code: string | null;
+  declare stripe_customer_id: string | null;
 }
 
 Customer.init(
@@ -113,6 +114,10 @@ Customer.init(
       allowNull: true,
     },
     shipping_zip_code: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    stripe_customer_id: {
       type: DataTypes.STRING,
       allowNull: true,
     },

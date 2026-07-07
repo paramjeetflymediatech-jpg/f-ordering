@@ -36,6 +36,64 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: 'Store not found' }, { status: 404 });
     }
 
+    // Business hours validation
+    if (store.business_hours) {
+      const reqDate = new Date(reservationTime);
+      const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+      const dayKey = dayNames[reqDate.getDay()];
+      
+      const bizHours = store.business_hours;
+      let dayHours = bizHours[dayKey] || bizHours[dayKey.charAt(0).toUpperCase() + dayKey.slice(1)];
+      
+      // Fallback nested lookups
+      if (!dayHours && bizHours.dine_in) {
+        dayHours = bizHours.dine_in[dayKey] || bizHours.dine_in[dayKey.charAt(0).toUpperCase() + dayKey.slice(1)];
+      }
+      if (!dayHours && bizHours.reservation) {
+        dayHours = bizHours.reservation[dayKey] || bizHours.reservation[dayKey.charAt(0).toUpperCase() + dayKey.slice(1)];
+      }
+
+      if (dayHours) {
+        if (dayHours.closed || dayHours.isClosed) {
+          await transaction.rollback();
+          return NextResponse.json({
+            success: false,
+            error: `The restaurant is closed on ${dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}s.`,
+          }, { status: 400 });
+        }
+
+        const openTime = dayHours.open;
+        const closeTime = dayHours.close;
+
+        if (openTime && closeTime) {
+          const reqHours = reqDate.getHours();
+          const reqMinutes = reqDate.getMinutes();
+          const reqMinutesSinceMidnight = reqHours * 60 + reqMinutes;
+
+          const [openH, openM] = openTime.split(':').map(Number);
+          const [closeH, closeM] = closeTime.split(':').map(Number);
+          const openMinutesSinceMidnight = openH * 60 + openM;
+          const closeMinutesSinceMidnight = closeH * 60 + closeM;
+
+          if (reqMinutesSinceMidnight < openMinutesSinceMidnight || reqMinutesSinceMidnight > closeMinutesSinceMidnight) {
+            await transaction.rollback();
+            const formatTime12h = (h: number, m: number) => {
+              const ampm = h >= 12 ? 'PM' : 'AM';
+              const displayH = h % 12 === 0 ? 12 : h % 12;
+              const displayM = String(m).padStart(2, '0');
+              return `${displayH}:${displayM} ${ampm}`;
+            };
+            const openFormatted = formatTime12h(openH, openM);
+            const closeFormatted = formatTime12h(closeH, closeM);
+            return NextResponse.json({
+              success: false,
+              error: `Reservation time must be within our business hours for ${dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}: ${openFormatted} - ${closeFormatted}.`,
+            }, { status: 400 });
+          }
+        }
+      }
+    }
+
     // 2. Find or Create Customer Profile scoped by organization
     const [customer] = await Customer.findOrCreate({
       where: { 

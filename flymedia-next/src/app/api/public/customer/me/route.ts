@@ -69,7 +69,7 @@ export async function GET() {
         loyaltyPoints: customer.loyalty_points,
         addresses: addressesList,
       },
-      orders: orders.map(order => ({
+      orders: orders.map((order: any) => ({
         id: order.id,
         storeId: order.store_id,
         orderNumber: order.order_number,

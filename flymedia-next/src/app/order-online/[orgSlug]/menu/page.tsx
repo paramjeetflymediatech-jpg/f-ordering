@@ -90,6 +90,7 @@ function StripeCardCheckout({
   cardError,
   submitting,
   setSubmitting,
+  customer,
 }: {
   storeId: string;
   amount: number;
@@ -99,52 +100,182 @@ function StripeCardCheckout({
   cardError: string | null;
   submitting: boolean;
   setSubmitting: (v: boolean) => void;
+  customer: any;
 }) {
   const stripe = useStripe();
   const elements = useElements();
+  const [savedCards, setSavedCards] = useState<any[]>([]);
+  const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
+  const [useSaved, setUseSaved] = useState(false);
+  const [saveCard, setSaveCard] = useState(false);
+  const [loadingCards, setLoadingCards] = useState(false);
+
+  // Fetch saved cards on mount
+  useEffect(() => {
+    if (customer && storeId) {
+      setLoadingCards(true);
+      fetch(`/api/public/customer/saved-cards?storeId=${storeId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.cards && data.cards.length > 0) {
+            setSavedCards(data.cards);
+            setSelectedCardId(data.cards[0].id);
+            setUseSaved(true);
+          }
+        })
+        .catch((err) => console.error('Error fetching saved cards:', err))
+        .finally(() => setLoadingCards(false));
+    } else {
+      setSavedCards([]);
+      setUseSaved(false);
+    }
+  }, [customer, storeId]);
 
   const handleCardPay = async () => {
-    if (!stripe || !elements) return;
+    if (orderPayload.orderType === 'delivery') {
+      if (!orderPayload.deliveryAddress || !orderPayload.deliveryAddress.trim()) {
+        onError('Please enter a valid delivery address.');
+        return;
+      }
+      
+      try {
+        const geoRes = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(orderPayload.deliveryAddress)}&limit=1`,
+          { headers: { 'User-Agent': 'FlymediaNextApp/1.0' } }
+        );
+        const geoData = await geoRes.json();
+        let lat = undefined;
+        let lng = undefined;
+        let zipcode = undefined;
+        
+        if (geoData && geoData[0]) {
+          lat = parseFloat(geoData[0].lat);
+          lng = parseFloat(geoData[0].lon);
+          const zipMatch = geoData[0].display_name.match(/\b\d{4,5}\b/);
+          if (zipMatch) zipcode = zipMatch[0];
+        }
+
+        const valRes = await fetch('/api/public/store/validate-delivery-zone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            storeId: storeId,
+            address: orderPayload.deliveryAddress,
+            lat,
+            lng,
+            zipcode,
+          }),
+        });
+        const valData = await valRes.json();
+        if (!valData.success || !valData.allowed) {
+          onError(valData.message || 'Delivery is not available to this address.');
+          return;
+        }
+      } catch (err) {
+        onError('Failed to validate delivery address.');
+        return;
+      }
+    }
+    if (!stripe) return;
+    if (!useSaved && !elements) return;
+
     setSubmitting(true);
     onError('');
     try {
-      // 1. Create PaymentIntent on server using the store owner's key
-      const res = await fetch('/api/public/stripe/create-intent', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ storeId, amount, currency: 'aud' }),
-      });
-      const data = await res.json();
-      if (!data.clientSecret) {
-        onError(data.error || 'Could not initiate payment.');
-        setSubmitting(false);
-        return;
+      let clientSecret = '';
+      let paymentIntentStatus = '';
+      let stripePaymentIntentId = '';
+
+      if (useSaved && selectedCardId) {
+        // Direct charge using saved card
+        const res = await fetch('/api/public/stripe/create-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            storeId,
+            amount,
+            currency: 'aud',
+            customerId: customer?.id,
+            paymentMethodId: selectedCardId,
+          }),
+        });
+        const data = await res.json();
+        if (data.error) {
+          onError(data.error);
+          setSubmitting(false);
+          return;
+        }
+        clientSecret = data.clientSecret;
+        paymentIntentStatus = data.status;
+      } else {
+        // Normal card elements flow
+        const cardElement = elements!.getElement(CardElement);
+        if (!cardElement) { setSubmitting(false); return; }
+
+        const res = await fetch('/api/public/stripe/create-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            storeId,
+            amount,
+            currency: 'aud',
+            customerId: customer?.id,
+            saveCard: saveCard,
+          }),
+        });
+        const data = await res.json();
+        if (!data.clientSecret) {
+          onError(data.error || 'Could not initiate payment.');
+          setSubmitting(false);
+          return;
+        }
+
+        const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
+          data.clientSecret,
+          { payment_method: { card: cardElement } }
+        );
+
+        if (stripeError) {
+          onError(stripeError.message || 'Card payment failed.');
+          setSubmitting(false);
+          return;
+        }
+
+        if (paymentIntent) {
+          clientSecret = data.clientSecret;
+          paymentIntentStatus = paymentIntent.status;
+          stripePaymentIntentId = paymentIntent.id;
+        }
       }
 
-      // 2. Confirm card payment
-      const cardElement = elements.getElement(CardElement);
-      if (!cardElement) { setSubmitting(false); return; }
-
-      const { error: stripeError, paymentIntent } = await stripe.confirmCardPayment(
-        data.clientSecret,
-        { payment_method: { card: cardElement } }
-      );
-
-      if (stripeError) {
-        onError(stripeError.message || 'Card payment failed.');
-        setSubmitting(false);
-        return;
+      // Check if SCA action/redirection is required
+      if (paymentIntentStatus === 'requires_action' || paymentIntentStatus === 'requires_source_action') {
+        const { error: sError, paymentIntent: confirmedIntent } = await stripe.confirmCardPayment(clientSecret);
+        if (sError) {
+          onError(sError.message || 'Verification failed.');
+          setSubmitting(false);
+          return;
+        }
+        if (confirmedIntent) {
+          paymentIntentStatus = confirmedIntent.status;
+          stripePaymentIntentId = confirmedIntent.id;
+        }
       }
 
-      if (paymentIntent?.status === 'succeeded') {
-        // 3. Submit order with stripe reference
+      if (paymentIntentStatus === 'succeeded') {
+        // Resolve paymentIntent ID from clientSecret if not populated
+        if (!stripePaymentIntentId && clientSecret) {
+          stripePaymentIntentId = clientSecret.split('_secret_')[0];
+        }
+
+        // Submit order with stripe reference
         const orderRes = await fetch('/api/public/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             ...orderPayload,
             paymentMethod: 'card',
-            stripePaymentIntentId: paymentIntent.id,
+            stripePaymentIntentId: stripePaymentIntentId,
           }),
         });
         const orderData = await orderRes.json();
@@ -153,8 +284,11 @@ function StripeCardCheckout({
         } else {
           onError(orderData.error || 'Order could not be saved after payment.');
         }
+      } else {
+        onError(`Payment status: ${paymentIntentStatus}. Please try again.`);
       }
     } catch (err: any) {
+      console.error(err);
       onError('Network error. Please try again.');
     } finally {
       setSubmitting(false);
@@ -162,26 +296,107 @@ function StripeCardCheckout({
   };
 
   return (
-    <div className="space-y-3">
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-2">Card Details</p>
-        <CardElement
-          options={{
-            style: {
-              base: {
-                fontSize: '14px',
-                color: '#1e293b',
-                fontFamily: 'system-ui, sans-serif',
-                '::placeholder': { color: '#94a3b8' },
-              },
-              invalid: { color: '#ef4444' },
-            },
-          }}
-        />
-      </div>
+    <div className="space-y-4">
+      {savedCards.length > 0 && (
+        <div className="flex gap-2 p-1 bg-slate-100 rounded-xl">
+          <button
+            type="button"
+            onClick={() => setUseSaved(true)}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+              useSaved ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            Saved Card
+          </button>
+          <button
+            type="button"
+            onClick={() => setUseSaved(false)}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+              !useSaved ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+            }`}
+          >
+            New Card
+          </button>
+        </div>
+      )}
+
+      {useSaved && savedCards.length > 0 ? (
+        <div className="space-y-2">
+          <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider">Select Saved Card</p>
+          <div className="space-y-2">
+            {savedCards.map((card) => (
+              <label
+                key={card.id}
+                onClick={() => setSelectedCardId(card.id)}
+                className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${
+                  selectedCardId === card.id
+                    ? 'border-[#635BFF] bg-[#635bff0a] shadow-sm'
+                    : 'border-slate-200 bg-white hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="radio"
+                    name="saved_card"
+                    checked={selectedCardId === card.id}
+                    onChange={() => setSelectedCardId(card.id)}
+                    className="accent-[#635BFF] h-4 w-4"
+                  />
+                  <div className="text-slate-800">
+                    <p className="text-xs font-bold capitalize flex items-center gap-1.5">
+                      💳 {card.brand} ending in {card.last4}
+                    </p>
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      Expires {card.expMonth}/{card.expYear}
+                    </p>
+                  </div>
+                </div>
+                {selectedCardId === card.id && (
+                  <span className="text-[10px] bg-[#635BFF] text-white px-2 py-0.5 rounded-full font-bold">
+                    Active
+                  </span>
+                )}
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+            <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-2">Card Details</p>
+            <CardElement
+              options={{
+                style: {
+                  base: {
+                    fontSize: '14px',
+                    color: '#1e293b',
+                    fontFamily: 'system-ui, sans-serif',
+                    '::placeholder': { color: '#94a3b8' },
+                  },
+                  invalid: { color: '#ef4444' },
+                },
+              }}
+            />
+          </div>
+          
+          {customer && (
+            <label className="flex items-center gap-2 cursor-pointer py-1 select-none">
+              <input
+                type="checkbox"
+                checked={saveCard}
+                onChange={(e) => setSaveCard(e.target.checked)}
+                className="rounded border-slate-300 text-[#635BFF] focus:ring-[#635BFF] h-4 w-4 accent-[#635BFF]"
+              />
+              <span className="text-xs font-semibold text-slate-600">Save card for future payments</span>
+            </label>
+          )}
+        </div>
+      )}
+
       {cardError && (
         <p className="text-xs text-red-500 font-medium flex items-center gap-1">⚠️ {cardError}</p>
       )}
+
       <button
         type="button"
         onClick={handleCardPay}
@@ -229,6 +444,66 @@ export default function PublicOrderPage() {
   const [newAccount, setNewAccount] = useState<{ phone: string; tempPassword: string } | null>(null);
 
   const [geocodingCheckout, setGeocodingCheckout] = useState(false);
+  const [deliveryValidating, setDeliveryValidating] = useState(false);
+  const [deliveryError, setDeliveryError] = useState<string | null>(null);
+  const [deliverySuccessMsg, setDeliverySuccessMsg] = useState<string | null>(null);
+
+  const validateAddress = async (addr: string) => {
+    if (!addr || !addr.trim()) {
+      setDeliveryError('Delivery address is required.');
+      setDeliverySuccessMsg(null);
+      return;
+    }
+    setDeliveryValidating(true);
+    setDeliveryError(null);
+    setDeliverySuccessMsg(null);
+    try {
+      const geoRes = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&limit=1`,
+        { headers: { 'User-Agent': 'FlymediaNextApp/1.0' } }
+      );
+      const geoData = await geoRes.json();
+      let lat = undefined;
+      let lng = undefined;
+      let zipcode = undefined;
+      
+      if (geoData && geoData[0]) {
+        lat = parseFloat(geoData[0].lat);
+        lng = parseFloat(geoData[0].lon);
+        const zipMatch = geoData[0].display_name.match(/\b\d{4,5}\b/);
+        if (zipMatch) zipcode = zipMatch[0];
+      }
+
+      const valRes = await fetch('/api/public/store/validate-delivery-zone', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storeId: store?.id,
+          address: addr,
+          lat,
+          lng,
+          zipcode,
+        }),
+      });
+      const valData = await valRes.json();
+      if (valData.success) {
+        if (valData.allowed) {
+          setDeliverySuccessMsg(valData.message || 'Delivery is available for this address.');
+          setDeliveryError(null);
+        } else {
+          setDeliveryError(valData.message || 'Delivery is not available to this address.');
+          setDeliverySuccessMsg(null);
+        }
+      } else {
+        setDeliveryError(valData.error || 'Failed to validate delivery address.');
+      }
+    } catch (err) {
+      console.error(err);
+      setDeliveryError('Failed to validate address. Please verify your connection.');
+    } finally {
+      setDeliveryValidating(false);
+    }
+  };
 
   const fetchCurrentLocationCheckout = () => {
     if (!navigator.geolocation) {
@@ -246,6 +521,7 @@ export default function PublicOrderPage() {
           const data = await response.json();
           if (data && data.display_name) {
             setDeliveryAddress(data.display_name);
+            validateAddress(data.display_name);
           } else {
             alert(`Location found (${latitude.toFixed(4)}, ${longitude.toFixed(4)}) but reverse geocoding failed.`);
           }
@@ -713,6 +989,63 @@ export default function PublicOrderPage() {
     if (cart.length === 0 || submitting) return;
     setSubmitting(true);
     setCardError(null);
+
+    if (orderType === 'delivery') {
+      if (!deliveryAddress || !deliveryAddress.trim()) {
+        showToast('Please enter a valid delivery address.', 'error');
+        setSubmitting(false);
+        return;
+      }
+      
+      if (deliveryError) {
+        showToast(deliveryError, 'error');
+        setSubmitting(false);
+        return;
+      }
+      
+      if (!deliverySuccessMsg) {
+        try {
+          const geoRes = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(deliveryAddress)}&limit=1`,
+            { headers: { 'User-Agent': 'FlymediaNextApp/1.0' } }
+          );
+          const geoData = await geoRes.json();
+          let lat = undefined;
+          let lng = undefined;
+          let zipcode = undefined;
+          
+          if (geoData && geoData[0]) {
+            lat = parseFloat(geoData[0].lat);
+            lng = parseFloat(geoData[0].lon);
+            const zipMatch = geoData[0].display_name.match(/\b\d{4,5}\b/);
+            if (zipMatch) zipcode = zipMatch[0];
+          }
+
+          const valRes = await fetch('/api/public/store/validate-delivery-zone', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              storeId: store?.id,
+              address: deliveryAddress,
+              lat,
+              lng,
+              zipcode,
+            }),
+          });
+          const valData = await valRes.json();
+          if (!valData.success || !valData.allowed) {
+            showToast(valData.message || 'Delivery is not available to this address.', 'error');
+            setDeliveryError(valData.message || 'Delivery is not available to this address.');
+            setSubmitting(false);
+            return;
+          }
+        } catch (err) {
+          showToast('Failed to validate delivery address.', 'error');
+          setSubmitting(false);
+          return;
+        }
+      }
+    }
 
     try {
       const payload = {
@@ -1832,7 +2165,10 @@ export default function PublicOrderPage() {
                     <div className="mt-1">
                       <select
                         onChange={(e) => {
-                          if (e.target.value) setDeliveryAddress(e.target.value);
+                          if (e.target.value) {
+                            setDeliveryAddress(e.target.value);
+                            validateAddress(e.target.value);
+                          }
                         }}
                         value={customer.addresses.includes(deliveryAddress) ? deliveryAddress : ""}
                         className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition"
@@ -1849,9 +2185,23 @@ export default function PublicOrderPage() {
                     required 
                     placeholder="Enter complete delivery address..."
                     value={deliveryAddress} 
-                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    onChange={(e) => {
+                      setDeliveryAddress(e.target.value);
+                      setDeliveryError(null);
+                      setDeliverySuccessMsg(null);
+                    }}
+                    onBlur={() => validateAddress(deliveryAddress)}
                     className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 h-14 outline-none resize-none focus:border-slate-400 focus:bg-white transition"
                   />
+                  {deliveryValidating && (
+                    <p className="text-[10px] text-amber-500 mt-1 font-bold animate-pulse">Validating delivery availability...</p>
+                  )}
+                  {deliveryError && (
+                    <p className="text-[10px] text-rose-500 mt-1 font-bold">{deliveryError}</p>
+                  )}
+                  {deliverySuccessMsg && (
+                    <p className="text-[10px] text-emerald-600 mt-1 font-bold">{deliverySuccessMsg}</p>
+                  )}
                 </div>
               )}
 
@@ -1892,6 +2242,7 @@ export default function PublicOrderPage() {
                   <StripeCardCheckout
                     storeId={stripeStoreId!}
                     amount={totals.total}
+                    customer={customer}
                     orderPayload={{
                       storeId: store.id,
                       customerName,

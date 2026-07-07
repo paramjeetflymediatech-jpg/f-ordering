@@ -18,7 +18,7 @@ export async function GET() {
     });
 
     // Filter out Super Admin — it should never be assignable from this panel
-    const assignable = roles.filter((r) => r.name !== 'Super Admin');
+    const assignable = roles.filter((r: any) => r.name !== 'Super Admin');
 
     return NextResponse.json({ success: true, roles: assignable });
   } catch (error: any) {

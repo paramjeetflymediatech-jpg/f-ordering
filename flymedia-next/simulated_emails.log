@@ -15,3 +15,304 @@ Please log in using your phone number or email and this temporary password.
 ========================================================================
 
 
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/7/2026, 3:46:52 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00004
+Order Type: TAKEAWAY
+Timestamp: 7/7/2026, 3:46:52 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: jot@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Triple Patty] @ $20.99 each = $20.99
+
+Subtotal: $20.99
+Tax: $1.73
+Total Amount: $22.72
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $22.72
+Transaction Reference: ONL-TX-1783419412891
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: jot@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+[STATUS UPDATE] ORD-ONL-00004: pending -> preparing at 7/7/2026, 3:47:38 PM
+  Customer: Paramjit Singh (jot@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00001: pending -> preparing at 7/7/2026, 3:47:39 PM
+  Customer: Imran (imran.flymediatech@gmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00001: preparing -> ready at 7/7/2026, 3:47:43 PM
+  Customer: Imran (imran.flymediatech@gmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00001: ready -> completed at 7/7/2026, 3:50:39 PM
+  Customer: Imran (imran.flymediatech@gmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00004: preparing -> ready at 7/7/2026, 3:58:35 PM
+  Customer: Paramjit Singh (jot@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/7/2026, 4:00:16 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00005
+Order Type: TAKEAWAY
+Timestamp: 7/7/2026, 4:00:16 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: jot@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Triple Patty] @ $20.99 each = $20.99
+
+Subtotal: $20.99
+Tax: $1.73
+Total Amount: $22.72
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CARD
+Amount Paid: $22.72
+Transaction Reference: pi_3TqWGY2NxSGni9xK1cVJ2wCF
+Payment Status: SUCCESS
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: jot@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+[STATUS UPDATE] ORD-ONL-00005: pending -> preparing at 7/7/2026, 4:00:52 PM
+  Customer: Paramjit Singh (jot@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00005: preparing -> ready at 7/7/2026, 4:00:54 PM
+  Customer: Paramjit Singh (jot@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00005: ready -> completed at 7/7/2026, 4:01:21 PM
+  Customer: Paramjit Singh (jot@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/7/2026, 4:04:10 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00006
+Order Type: TAKEAWAY
+Timestamp: 7/7/2026, 4:04:10 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: jot@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Triple Patty] @ $20.99 each = $20.99
+
+Subtotal: $20.99
+Tax: $1.73
+Total Amount: $22.72
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CARD
+Amount Paid: $22.72
+Transaction Reference: pi_3TqWKK2NxSGni9xK185nztC2
+Payment Status: SUCCESS
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: jot@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+[STATUS UPDATE] ORD-ONL-00006: pending -> preparing at 7/7/2026, 4:04:40 PM
+  Customer: Paramjit Singh (jot@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00006: preparing -> ready at 7/7/2026, 4:04:42 PM
+  Customer: Paramjit Singh (jot@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/7/2026, 4:05:43 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00007
+Order Type: TAKEAWAY
+Timestamp: 7/7/2026, 4:05:43 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: jot@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Triple Patty] @ $20.99 each = $20.99
+
+Subtotal: $20.99
+Tax: $1.73
+Total Amount: $22.72
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CARD
+Amount Paid: $22.72
+Transaction Reference: pi_3TqWLq2NxSGni9xK1KMZriHl
+Payment Status: SUCCESS
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: jot@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+[STATUS UPDATE] ORD-ONL-00007: pending -> preparing at 7/7/2026, 4:06:04 PM
+  Customer: Paramjit Singh (jot@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00006: ready -> completed at 7/7/2026, 4:06:15 PM
+  Customer: Paramjit Singh (jot@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00007: preparing -> ready at 7/7/2026, 4:06:20 PM
+  Customer: Paramjit Singh (jot@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00007: ready -> completed at 7/7/2026, 4:06:37 PM
+  Customer: Paramjit Singh (jot@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/7/2026, 4:08:19 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00008
+Order Type: TAKEAWAY
+Timestamp: 7/7/2026, 4:08:19 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: jot@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Woodfired Margherita Pizza [Variant: Medium 12"] @ $17.99 each = $17.99
+
+Subtotal: $17.99
+Tax: $1.48
+Total Amount: $19.47
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $19.47
+Transaction Reference: ONL-TX-1783420699407
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: jot@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/7/2026, 4:09:58 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00009
+Order Type: DELIVERY
+Timestamp: 7/7/2026, 4:09:58 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: jot@yopmail.com
+Delivery Address: 36 Esplanade Headland
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Fresh Mint Lime Soda [Variant: Large] @ $6.00 each = $6.00
+
+Subtotal: $6.00
+Tax: $0.49
+Total Amount: $6.50
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $6.50
+Transaction Reference: ONL-TX-1783420798849
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: jot@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+

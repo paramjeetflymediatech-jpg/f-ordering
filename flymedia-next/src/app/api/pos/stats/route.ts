@@ -46,7 +46,7 @@ export async function GET() {
         }
       }
     });
-    const todaySalesVal = todayOrders.reduce((sum, o) => sum + parseFloat(o.total_amount as any), 0);
+    const todaySalesVal = todayOrders.reduce((sum: number, o: any) => sum + parseFloat(o.total_amount as any), 0);
 
     // 5. Daily Sales Trend for the last 7 days (including today)
     const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -72,7 +72,7 @@ export async function GET() {
         }
       });
 
-      const daySalesSum = dayOrders.reduce((sum, o) => sum + parseFloat(o.total_amount as any), 0);
+      const daySalesSum = dayOrders.reduce((sum: number, o: any) => sum + parseFloat(o.total_amount as any), 0);
 
       if (i < 7) {
         salesTrend.push({
@@ -83,11 +83,11 @@ export async function GET() {
 
       sparklineSales.push(daySalesSum);
       sparklineOrders.push(dayOrders.length);
-      sparklinePending.push(dayOrders.filter(o => o.status === 'on_hold').length);
+      sparklinePending.push(dayOrders.filter((o: any) => o.status === 'on_hold').length);
     }
 
-    const hasRealSalesData = salesTrend.some(s => s.sales > 0);
-    const displaySalesTrend = hasRealSalesData ? salesTrend : salesTrend.map(s => ({ ...s, sales: 0 }));
+    const hasRealSalesData = salesTrend.some((s: any) => s.sales > 0);
+    const displaySalesTrend = hasRealSalesData ? salesTrend : salesTrend.map((s: any) => ({ ...s, sales: 0 }));
 
     const displaySparklineSales = hasRealSalesData ? sparklineSales : [0, 0, 0, 0, 0, 0, 0, 0];
     const displaySparklineOrders = totalOrdersCount > 0 ? sparklineOrders : [0, 0, 0, 0, 0, 0, 0, 0];

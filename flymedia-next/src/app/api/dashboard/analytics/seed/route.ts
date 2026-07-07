@@ -34,7 +34,7 @@ export async function POST() {
     }
 
     // 2. Clear old demo data for clean seeding
-    const orderIds = (await Order.findAll({ where: { store_id }, attributes: ['id'], transaction })).map((o) => o.id);
+    const orderIds = (await Order.findAll({ where: { store_id }, attributes: ['id'], transaction })).map((o: any) => o.id);
     if (orderIds.length > 0) {
       await Payment.destroy({ where: { order_id: orderIds }, transaction });
       await Order.destroy({ where: { store_id }, transaction });

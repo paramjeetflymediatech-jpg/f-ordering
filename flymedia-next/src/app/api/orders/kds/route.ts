@@ -1,7 +1,8 @@
+// Force cache-busting compile comment
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { Order, OrderItem, MenuItem, MenuVariant, RestaurantTable, Customer } from '../../../../models';
+import { Order, OrderItem, MenuItem, MenuVariant, RestaurantTable, Customer, Payment } from '../../../../models';
 import { Op } from 'sequelize';
 
 export async function GET(request: Request) {
@@ -56,6 +57,11 @@ export async function GET(request: Request) {
           model: Customer,
           as: 'customer',
           attributes: ['name', 'phone'],
+        },
+        {
+          model: Payment,
+          as: 'payments',
+          attributes: ['id', 'transaction_status'],
         },
       ],
       order: [['createdAt', 'ASC']], // FIFO

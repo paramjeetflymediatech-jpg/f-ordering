@@ -52,7 +52,7 @@ export async function GET() {
     });
 
     // Merge counts into table data
-    const tablesWithCounts = tables.map((t) => {
+    const tablesWithCounts = tables.map((t: any) => {
       const tableJson = t.toJSON();
       return {
         ...tableJson,

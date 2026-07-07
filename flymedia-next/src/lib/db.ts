@@ -24,29 +24,45 @@ export async function ensureDatabaseExists() {
   }
 }
 
-export const sequelize = new Sequelize(database, username, password, {
-  host,
-  port,
-  dialect: 'mysql',
-  logging: false,
-  pool: {
-    max: 10,
-    min: 0,
-    acquire: 30000,
-    idle: 10000,
-  },
-  define: {
-    timestamps: true,
-    underscored: true,
-  },
-});
-if (process.env.NODE_ENV === 'development') {
-  (async () => {
-    try {
-      await sequelize.sync();
-      console.log('✅ DB sync (dev) complete');
-    } catch (err) {
-      console.error('⚠️ DB sync error', err);
-    }
-  })();
+let sequelizeInstance: Sequelize;
+
+if (process.env.NODE_ENV === 'production') {
+  sequelizeInstance = new Sequelize(database, username, password, {
+    host,
+    port,
+    dialect: 'mysql',
+    logging: false,
+    pool: {
+      max: 10,
+      min: 0,
+      acquire: 30000,
+      idle: 10000,
+    },
+    define: {
+      timestamps: true,
+      underscored: true,
+    },
+  });
+} else {
+  if (!(global as any).globalSequelize) {
+    (global as any).globalSequelize = new Sequelize(database, username, password, {
+      host,
+      port,
+      dialect: 'mysql',
+      logging: false,
+      pool: {
+        max: 10,
+        min: 0,
+        acquire: 30000,
+        idle: 10000,
+      },
+      define: {
+        timestamps: true,
+        underscored: true,
+      },
+    });
+  }
+  sequelizeInstance = (global as any).globalSequelize;
 }
+
+export const sequelize = sequelizeInstance;

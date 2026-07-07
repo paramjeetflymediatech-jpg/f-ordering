@@ -100,6 +100,15 @@ export default function POSPage() {
           fetchTables();
         });
 
+        // Real-time kitchen state sync: Listen for order status updates
+        socket.on('order_status_changed', (data: any) => {
+          console.log('[POS Socket] Order status changed:', data);
+          fetchHeldOrders();
+          if (data.status === 'ready') {
+            playNotificationSound();
+          }
+        });
+
         return () => {
           socket.disconnect();
         };
@@ -656,7 +665,7 @@ export default function POSPage() {
           discountRate,
           discountAmount,
           taxRate,
-          status: 'on_hold',
+          status: isWaiter ? 'pending' : 'on_hold',
           notes: notes || orderNotes || undefined,
           customerName,
           customerPhone,
@@ -669,6 +678,13 @@ export default function POSPage() {
 
       const data = await res.json();
       if (data.success) {
+        // Emit Socket event to notify KDS instantly
+        if (socketRef.current && isWaiter && data.order) {
+          socketRef.current.emit('new_order', {
+            storeId: (session?.user as any)?.store_id,
+            order: data.order
+          });
+        }
         handleClearCart();
         fetchTables();
         fetchStats();

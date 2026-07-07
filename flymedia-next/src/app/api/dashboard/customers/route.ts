@@ -190,7 +190,7 @@ export async function DELETE(request: Request) {
     });
 
     const affectedTableIds = Array.from(
-      new Set(reservations.map(r => r.table_id).filter(Boolean))
+      new Set(reservations.map((r: any) => r.table_id).filter(Boolean))
     ) as string[];
 
     await Reservation.destroy({

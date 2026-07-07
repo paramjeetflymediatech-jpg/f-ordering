@@ -1,3 +1,4 @@
+// Force recompilation comment
 import { NextResponse } from 'next/server';
 import { ensureDatabaseExists, sequelize } from '../../../../lib/db';
 import bcrypt from 'bcryptjs';
@@ -21,13 +22,22 @@ import {
   Payment,
 } from '../../../../models';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const force = searchParams.get('force') === 'true';
+
     // 1. Ensure Database Exists
     await ensureDatabaseExists();
 
     // 2. Synchronize Schema
-    await sequelize.sync({ force: false, alter: true });
+    if (force) {
+      await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+    }
+    await sequelize.sync({ force, alter: !force });
+    if (force) {
+      await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+    }
 
     // 3. Seed Roles & Permissions if they don't exist yet
     const existingRolesCount = await Role.count();
@@ -394,7 +404,7 @@ export async function POST() {
           name: 'terry mulcahy',
           first_name: 'terry mulcahy',
           last_name: '-',
-          email: '-',
+          email: null,
           phone: '0499634548',
           loyalty_points: 450,
           company_name: '-',
@@ -641,118 +651,6 @@ export async function POST() {
       }
     }
 
-    // Ensure Mitran Da Dhaba organization exists
-    const mitranExists = await Organization.findOne({ where: { slug: 'mitran-da-dhaba' } });
-    if (!mitranExists) {
-      console.log('Seeding Mitran Da Dhaba organization...');
-      const mitranOrg = await Organization.create({
-        name: 'Mitran Da Dhaba',
-        slug: 'mitran-da-dhaba',
-        logo: '', // no logo, showing elegant text instead
-        status: 'active',
-        subscription_plan: 'enterprise',
-      });
-
-      const mitranStore = await Store.create({
-        organization_id: mitranOrg.id,
-        name: 'Mitran Da Dhaba',
-        category: 'Indian Restaurant',
-        address: '123 Curry Road, Warners Bay',
-        zip_code: '2282',
-        state: 'NSW',
-        city: 'Sydney',
-        country: 'Australia',
-        phone: '+61 299999999',
-        email: 'info@mitrandadhaba.com.au',
-        currency: 'AUD',
-        website: 'https://mitrandadhaba.info/',
-        description: 'Authentic Punjabi Dhaba experience serving delicious traditional food.',
-        tax_rate: 10.00,
-        business_hours: {
-          monday: { open: '12:00', close: '22:00' },
-          tuesday: { open: '12:00', close: '22:00' },
-          wednesday: { open: '12:00', close: '22:00' },
-          thursday: { open: '12:00', close: '22:00' },
-          friday: { open: '12:00', close: '23:00' },
-          saturday: { open: '12:00', close: '23:00' },
-          sunday: { open: '12:00', close: '22:00' },
-        },
-      });
-
-      // Seed tables
-      await Promise.all([
-        RestaurantTable.create({ organization_id: mitranOrg.id, store_id: mitranStore.id, table_number: 'Table 1', seating_capacity: 4, status: 'available' }),
-        RestaurantTable.create({ organization_id: mitranOrg.id, store_id: mitranStore.id, table_number: 'Table 2', seating_capacity: 4, status: 'available' }),
-      ]);
-
-      // Seed menu categories
-      const entree = await MenuCategory.create({
-        organization_id: mitranOrg.id,
-        store_id: mitranStore.id,
-        name: 'Entree',
-        sort_order: 1,
-        is_active: true,
-      });
-      const mains = await MenuCategory.create({
-        organization_id: mitranOrg.id,
-        store_id: mitranStore.id,
-        name: 'Mains',
-        sort_order: 2,
-        is_active: true,
-      });
-
-      // Seed menu items
-      await MenuItem.create({
-        organization_id: mitranOrg.id,
-        store_id: mitranStore.id,
-        category_id: entree.id,
-        name: 'Paneer Tikka',
-        description: 'Cottage cheese cubes marinated in spices and cooked in tandoor.',
-        price: 15.90,
-        is_available: true,
-      });
-      await MenuItem.create({
-        organization_id: mitranOrg.id,
-        store_id: mitranStore.id,
-        category_id: mains.id,
-        name: 'Butter Chicken',
-        description: 'Tender tandoori chicken cooked in a rich, creamy tomato gravy.',
-        price: 21.90,
-        is_available: true,
-      });
-      await MenuItem.create({
-        organization_id: mitranOrg.id,
-        store_id: mitranStore.id,
-        category_id: mains.id,
-        name: 'Dal Makhani',
-        description: 'Slow cooked black lentils with cream and spices.',
-        price: 18.90,
-        is_available: true,
-      });
-
-      // Seed a default customer and order for testing history
-      const hashedDefaultPassword = await bcrypt.hash('password123', 10);
-      const ownerRoleModel = await Role.findOne({ where: { name: 'Restaurant Owner' } });
-      
-      const mitranOwner = await User.create({
-        organization_id: mitranOrg.id,
-        store_id: mitranStore.id,
-        name: 'Mitran Owner',
-        email: 'owner@mitrandadhaba.com.au',
-        password: hashedDefaultPassword,
-        phone: '+61 299999998',
-        status: 'active',
-      });
-      await (mitranOwner as any).addRole(ownerRoleModel);
-
-      console.log('Seeded Mitran Da Dhaba organization successfully!');
-    } else {
-      const mitranStore = await Store.findOne({ where: { organization_id: mitranExists.id } });
-      if (mitranStore) {
-        mitranStore.website = 'https://mitrandadhaba.info/';
-        await mitranStore.save();
-      }
-    }
 
     return NextResponse.json({
       success: true,

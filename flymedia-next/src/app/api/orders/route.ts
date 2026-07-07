@@ -17,7 +17,7 @@ export async function GET() {
       where: {
         store_id,
         status: {
-          [Op.in]: ['on_hold', 'pending'],
+          [Op.in]: ['on_hold', 'pending', 'preparing', 'ready'],
         },
       },
       include: [
@@ -38,6 +38,11 @@ export async function GET() {
         {
           model: Customer,
           as: 'customer',
+        },
+        {
+          model: Payment,
+          as: 'payments',
+          attributes: ['id', 'transaction_status'],
         }
       ],
       order: [['createdAt', 'DESC']],
@@ -340,7 +345,7 @@ export async function DELETE(request: Request) {
     });
 
     const affectedTableIds = Array.from(
-      new Set(orders.map(o => o.table_id).filter(Boolean))
+      new Set(orders.map((o: any) => o.table_id).filter(Boolean))
     ) as string[];
 
     await Payment.destroy({

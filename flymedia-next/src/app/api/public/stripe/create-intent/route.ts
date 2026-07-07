@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { Store, StorePaymentConfig } from '../../../../../models';
+import { Store, StorePaymentConfig, Customer } from '../../../../../models';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { storeId, amount, currency, orderId } = body;
+    const { storeId, amount, currency, orderId, customerId, saveCard, paymentMethodId } = body;
 
     if (!storeId || !amount) {
       return NextResponse.json({ error: 'storeId and amount are required' }, { status: 400 });
@@ -34,7 +34,36 @@ export async function POST(request: Request) {
       apiVersion: '2026-06-24.dahlia',
     });
 
-    const paymentIntent = await stripe.paymentIntents.create({
+    let stripeCustomerId: string | undefined = undefined;
+
+    // Check if customerId is passed
+    if (customerId) {
+      const customer = await Customer.findByPk(customerId);
+      if (customer) {
+        if (customer.stripe_customer_id) {
+          stripeCustomerId = customer.stripe_customer_id;
+        } else {
+          // Create Stripe Customer
+          try {
+            const stripeCustomer = await stripe.customers.create({
+              email: customer.email,
+              name: customer.name,
+              metadata: {
+                customerId: String(customer.id),
+              },
+            });
+            customer.stripe_customer_id = stripeCustomer.id;
+            await customer.save();
+            stripeCustomerId = stripeCustomer.id;
+          } catch (custErr) {
+            console.error('Failed to create Stripe customer:', custErr);
+          }
+        }
+      }
+    }
+
+    // Build intent options
+    const intentOptions: Stripe.PaymentIntentCreateParams = {
       amount: Math.round(amount * 100), // Stripe expects cents
       currency: (currency || 'aud').toLowerCase(),
       metadata: {
@@ -42,13 +71,41 @@ export async function POST(request: Request) {
         organization_id: store.organization_id,
         order_id: orderId || '',
       },
-      automatic_payment_methods: { enabled: true },
-    });
+    };
+
+    if (stripeCustomerId) {
+      intentOptions.customer = stripeCustomerId;
+    }
+
+    if (paymentMethodId) {
+      // Direct charge on a saved card
+      intentOptions.payment_method = paymentMethodId;
+      intentOptions.confirm = true;
+      // We must provide return_url when confirming payment intent on backend
+      const origin = request.headers.get('origin') || '';
+      intentOptions.return_url = `${origin}/order-online/payment-confirm`;
+      // When confirming on server, we also need to allow redirects
+      intentOptions.automatic_payment_methods = {
+        enabled: true,
+        allow_redirects: 'always',
+      };
+    } else {
+      // Normal flow - card elements
+      intentOptions.automatic_payment_methods = { enabled: true };
+      
+      // Save card checkbox logic
+      if (saveCard && stripeCustomerId) {
+        intentOptions.setup_future_usage = 'off_session';
+      }
+    }
+
+    const paymentIntent = await stripe.paymentIntents.create(intentOptions);
 
     return NextResponse.json({
       success: true,
       clientSecret: paymentIntent.client_secret,
       publishableKey: paymentConfig.stripe_publishable_key,
+      status: paymentIntent.status,
     });
   } catch (error: any) {
     console.error('Stripe Create Intent Error:', error);

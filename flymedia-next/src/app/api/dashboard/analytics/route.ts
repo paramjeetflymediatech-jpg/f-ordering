@@ -44,7 +44,7 @@ export async function GET() {
       ],
     });
 
-    const paymentsList = orders.flatMap((order) => {
+    const paymentsList = orders.flatMap((order: any) => {
       const payments = (order as any).payments || [];
       return payments.map((payment: any) => ({
         amount: Number(payment.amount),
@@ -63,7 +63,7 @@ export async function GET() {
       dailyData[dateStr] = { date: dateStr, cash: 0, online: 0, total: 0, count: 0 };
     }
 
-    paymentsList.forEach((payment) => {
+    paymentsList.forEach((payment: any) => {
       const dateStr = payment.createdAt.toISOString().split('T')[0];
       if (dailyData[dateStr]) {
         const isCash = payment.payment_method === 'cash';
@@ -98,7 +98,7 @@ export async function GET() {
       weeklyData[key] = { week: weekStr, cash: 0, online: 0, total: 0, count: 0 };
     }
 
-    paymentsList.forEach((payment) => {
+    paymentsList.forEach((payment: any) => {
       const mon = getMonday(payment.createdAt);
       const key = mon.toISOString().split('T')[0];
       if (weeklyData[key]) {
@@ -126,7 +126,7 @@ export async function GET() {
       monthlyData[monthKey] = { month: label, cash: 0, online: 0, total: 0, count: 0 };
     }
 
-    paymentsList.forEach((payment) => {
+    paymentsList.forEach((payment: any) => {
       const d = payment.createdAt;
       const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       if (monthlyData[monthKey]) {
@@ -152,7 +152,7 @@ export async function GET() {
       yearlyData[String(y)] = { year: String(y), cash: 0, online: 0, total: 0, count: 0 };
     }
 
-    paymentsList.forEach((payment) => {
+    paymentsList.forEach((payment: any) => {
       const y = payment.createdAt.getFullYear();
       const key = String(y);
       if (yearlyData[key]) {
@@ -279,7 +279,7 @@ export async function GET() {
     });
 
     const modifierSalesMap: Record<string, { name: string; menuItemName: string; qty: number; amount: number }> = {};
-    completedOrderItems.forEach((item) => {
+    completedOrderItems.forEach((item: any) => {
       let addonsList = [];
       try {
         addonsList = typeof item.addons === 'string' ? JSON.parse(item.addons) : (item.addons || []);
@@ -322,7 +322,7 @@ export async function GET() {
     });
 
     const employeePerformance = await Promise.all(
-      employees.map(async (emp) => {
+      employees.map(async (emp: any) => {
         const checkoutsCount = await Order.count({
           where: { store_id, cashier_id: emp.id, status: 'completed' },
         });
@@ -349,7 +349,7 @@ export async function GET() {
     });
 
     const urlData = await Promise.all(
-      tablesList.map(async (table) => {
+      tablesList.map(async (table: any) => {
         const tableOrdersCount = await Order.count({
           where: { store_id, table_id: table.id, status: 'completed' },
         });
@@ -369,7 +369,7 @@ export async function GET() {
     // Calculate actual unpaid/outstanding orders
     let unpaidTotal = 0;
     let unpaidCount = 0;
-    orders.forEach((order) => {
+    orders.forEach((order: any) => {
       const payments = (order as any).payments || [];
       if (payments.length === 0 && order.status !== 'completed' && order.status !== 'cancelled') {
         unpaidTotal += Number(order.total_amount) || 0;

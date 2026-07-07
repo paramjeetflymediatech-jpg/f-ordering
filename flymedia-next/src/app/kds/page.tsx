@@ -513,7 +513,7 @@ export default function KDSPage() {
                 e.stopPropagation();
                 setSelectedDetailOrder(order);
               }}
-              className="p-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-850 dark:text-slate-400 dark:hover:text-white transition ml-1"
+              className="p-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition ml-1"
               title="View Order Details"
             >
               <Eye className="h-3 w-3" />
@@ -530,7 +530,7 @@ export default function KDSPage() {
             )}
 
             {/* Billing Amount */}
-            <span className="text-[9.5px] font-extrabold bg-amber-500/10 text-amber-650 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded">
+            <span className="text-[9.5px] font-extrabold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded">
               ${parseFloat(order.total_amount as string || '0').toFixed(2)}
             </span>
           </div>
@@ -591,7 +591,7 @@ export default function KDSPage() {
                     }`}>
                       {item.MenuItem?.name || item.name || item.menuItem?.name || 'Dish Item'}
                       {item.variant?.name && (
-                        <span className="text-[10px] font-medium text-slate-650 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800/60 ml-1.5">
+                        <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-200 dark:border-slate-800/60 ml-1.5">
                           {item.variant.name}
                         </span>
                       )}
@@ -600,7 +600,7 @@ export default function KDSPage() {
                     {/* MenuItem description */}
                     {(item.MenuItem?.description || item.description || item.menuItem?.description) && (
                       <p className={`text-[11.5px] mt-0.5 leading-normal transition ${
-                        isChecked ? 'line-through text-slate-400/80 dark:text-slate-600' : 'text-slate-550 dark:text-slate-400'
+                        isChecked ? 'line-through text-slate-400/80 dark:text-slate-600' : 'text-slate-500 dark:text-slate-400'
                       }`}>
                         {item.MenuItem?.description || item.description || item.menuItem?.description}
                       </p>
@@ -609,7 +609,7 @@ export default function KDSPage() {
                     {/* Render Addons */}
                     {item.addons && item.addons.length > 0 && (
                       <div className={`text-[10px] flex flex-wrap gap-1 mt-1.5 transition ${
-                        isChecked ? 'line-through text-slate-400 dark:text-slate-650' : 'text-slate-600 dark:text-slate-400'
+                        isChecked ? 'line-through text-slate-400 dark:text-slate-600' : 'text-slate-600 dark:text-slate-400'
                       }`}>
                         {item.addons.map((addon, aIdx) => (
                           <span key={aIdx} className="bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800/40">
@@ -661,15 +661,24 @@ export default function KDSPage() {
             </button>
           )}
 
-          {order.status === 'ready' && (
-            <button
-              onClick={() => handleUpdateStatus(order.id, 'ready', 'completed')}
-              className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-extrabold text-white py-2.5 transition shadow-md shadow-emerald-600/10"
-            >
-              <span>Complete & Serve</span>
-              <Check className="h-3.5 w-3.5 stroke-[3]" />
-            </button>
-          )}
+          {order.status === 'ready' && (() => {
+            const isPaid = (order as any).payments && (order as any).payments.some((p: any) => p.transaction_status === 'success');
+            return (
+              <button
+                disabled={!isPaid}
+                onClick={() => handleUpdateStatus(order.id, 'ready', 'completed')}
+                className={`w-full inline-flex items-center justify-center gap-1.5 rounded-xl py-2.5 transition text-xs font-extrabold ${
+                  isPaid
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/10'
+                    : 'bg-slate-800/80 text-slate-500 border border-slate-700/60 cursor-not-allowed shadow-none'
+                }`}
+                title={!isPaid ? "Waiting for checkout payment at POS terminal" : "Mark order as completed and served"}
+              >
+                <span>{isPaid ? 'Complete & Serve' : 'Awaiting POS Payment'}</span>
+                <Check className="h-3.5 w-3.5 stroke-[3]" />
+              </button>
+            );
+          })()}
         </div>
 
       </div>
@@ -747,7 +756,7 @@ export default function KDSPage() {
               <h1 className="text-lg font-black tracking-wide text-slate-800 dark:text-white">{storeName}</h1>
               <span className="text-[10px] text-slate-500 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">KDS V2</span>
             </div>
-            <p className="text-[11px] text-slate-550 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
               <span className={`h-2 w-2 rounded-full ${socketConnected ? 'bg-emerald-500' : 'bg-rose-500 animate-ping'}`}></span>
               {socketConnected ? 'Live Connection Established' : 'Sync Offline (Polling Fallback)'}
             </p>
@@ -1171,7 +1180,7 @@ export default function KDSPage() {
                 <h4 className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
                   <Utensils className="h-3.5 w-3.5" /> Items Checklist
                 </h4>
-                <div className="border border-slate-250/60 dark:border-slate-900 rounded-xl overflow-hidden divide-y divide-slate-200 dark:divide-slate-900">
+                <div className="border border-slate-200/60 dark:border-slate-900 rounded-xl overflow-hidden divide-y divide-slate-200 dark:divide-slate-900">
                   {selectedDetailOrder.items.map((item) => {
                     const isChecked = !!checkedItems[item.id];
                     const itemDescription = item.MenuItem?.description || item.description || item.menuItem?.description;
@@ -1198,7 +1207,7 @@ export default function KDSPage() {
                             }`}>
                               {item.MenuItem?.name || item.name || item.menuItem?.name || 'Dish Item'}
                               {item.variant?.name && (
-                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-250 dark:border-slate-800 ml-2">
+                                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-800 ml-2">
                                   {item.variant.name}
                                 </span>
                               )}
@@ -1206,7 +1215,7 @@ export default function KDSPage() {
 
                             {itemDescription && (
                               <p className={`text-xs mt-1 leading-relaxed ${
-                                isChecked ? 'line-through text-slate-400/80 dark:text-slate-600' : 'text-slate-550 dark:text-slate-400'
+                                isChecked ? 'line-through text-slate-400/80 dark:text-slate-600' : 'text-slate-500 dark:text-slate-400'
                               }`}>
                                 {itemDescription}
                               </p>
@@ -1216,7 +1225,7 @@ export default function KDSPage() {
                             {item.addons && item.addons.length > 0 && (
                               <div className="text-[10px] flex flex-wrap gap-1 mt-2">
                                 {item.addons.map((addon, aIdx) => (
-                                  <span key={aIdx} className="bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded text-slate-650 dark:text-slate-400 border border-slate-250 dark:border-slate-850">
+                                  <span key={aIdx} className="bg-slate-100 dark:bg-slate-900/60 px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-800">
                                     + {addon.name}
                                   </span>
                                 ))}
@@ -1225,7 +1234,7 @@ export default function KDSPage() {
 
                             {/* Item notes */}
                             {item.notes && (
-                              <span className="text-xs text-amber-650 dark:text-amber-500/80 italic mt-2 flex items-start gap-1 font-medium">
+                              <span className="text-xs text-amber-600 dark:text-amber-500/80 italic mt-2 flex items-start gap-1 font-medium">
                                 <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
                                 <span>Note: {item.notes}</span>
                               </span>
@@ -1236,7 +1245,7 @@ export default function KDSPage() {
                         {/* Quantity & Unit Price */}
                         <div className="text-right shrink-0 font-medium">
                           <span className={`font-mono text-sm font-black block ${
-                            isChecked ? 'text-slate-400 dark:text-slate-500' : 'text-slate-850 dark:text-white'
+                            isChecked ? 'text-slate-400 dark:text-slate-500' : 'text-slate-800 dark:text-white'
                           }`}>
                             x{item.quantity}
                           </span>
@@ -1251,7 +1260,7 @@ export default function KDSPage() {
               </div>
 
               {/* Billing Summary */}
-              <div className="bg-slate-50 dark:bg-slate-950/20 border border-slate-205 dark:border-slate-900 rounded-xl p-4.5 space-y-2.5 text-xs text-slate-550 dark:text-slate-400">
+              <div className="bg-slate-50 dark:bg-slate-950/20 border border-slate-200 dark:border-slate-900 rounded-xl p-4.5 space-y-2.5 text-xs text-slate-500 dark:text-slate-400">
                 <div className="flex justify-between">
                   <span>Subtotal:</span>
                   <span className="font-mono text-slate-800 dark:text-slate-200">${parseFloat(selectedDetailOrder.subtotal as any || '0').toFixed(2)}</span>
@@ -1266,7 +1275,7 @@ export default function KDSPage() {
                   <span>Tax:</span>
                   <span className="font-mono text-slate-800 dark:text-slate-200">${parseFloat(selectedDetailOrder.tax_amount as any || '0').toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between pt-2.5 border-t border-slate-200 dark:border-slate-900 text-sm font-extrabold text-slate-850 dark:text-white">
+                <div className="flex justify-between pt-2.5 border-t border-slate-200 dark:border-slate-900 text-sm font-extrabold text-slate-800 dark:text-white">
                   <span>Total Bill Amount:</span>
                   <span className="font-mono text-amber-500">${parseFloat(selectedDetailOrder.total_amount as any || '0').toFixed(2)}</span>
                 </div>
@@ -1278,7 +1287,7 @@ export default function KDSPage() {
             <div className="p-4 border-t border-slate-200 dark:border-slate-900 bg-slate-50 dark:bg-slate-950/40 flex justify-between gap-3">
               <button
                 onClick={() => setSelectedDetailOrder(null)}
-                className="w-1/3 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-900 dark:hover:bg-slate-800 py-3 text-xs font-extrabold text-slate-650 dark:text-slate-350 transition"
+                className="w-1/3 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-900 dark:hover:bg-slate-800 py-3 text-xs font-extrabold text-slate-600 dark:text-slate-350 transition"
               >
                 Close Details
               </button>
@@ -1309,18 +1318,27 @@ export default function KDSPage() {
                 </button>
               )}
 
-              {selectedDetailOrder.status === 'ready' && (
-                <button
-                  onClick={() => {
-                    handleUpdateStatus(selectedDetailOrder.id, 'ready', 'completed');
-                    setSelectedDetailOrder(null);
-                  }}
-                  className="w-2/3 inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-extrabold text-white py-3 transition shadow-md shadow-emerald-600/10"
-                >
-                  <span>Complete & Serve</span>
-                  <Check className="h-3.5 w-3.5 stroke-[3]" />
-                </button>
-              )}
+              {selectedDetailOrder.status === 'ready' && (() => {
+                const isPaid = (selectedDetailOrder as any).payments && (selectedDetailOrder as any).payments.some((p: any) => p.transaction_status === 'success');
+                return (
+                  <button
+                    disabled={!isPaid}
+                    onClick={() => {
+                      handleUpdateStatus(selectedDetailOrder.id, 'ready', 'completed');
+                      setSelectedDetailOrder(null);
+                    }}
+                    className={`w-2/3 inline-flex items-center justify-center gap-1.5 rounded-xl py-3 transition text-xs font-extrabold ${
+                      isPaid
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md shadow-emerald-600/10'
+                        : 'bg-slate-800/80 text-slate-500 border border-slate-700/60 cursor-not-allowed shadow-none'
+                    }`}
+                    title={!isPaid ? "Waiting for checkout payment at POS terminal" : "Mark order as completed and served"}
+                  >
+                    <span>{isPaid ? 'Complete & Serve' : 'Awaiting POS Payment'}</span>
+                    <Check className="h-3.5 w-3.5 stroke-[3]" />
+                  </button>
+                );
+              })()}
             </div>
 
           </div>
