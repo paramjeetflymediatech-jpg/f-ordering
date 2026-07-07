@@ -212,6 +212,41 @@ export default function POSPage() {
     }
   }, [session, status]);
 
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      const registerDevice = async () => {
+        try {
+          const isCapacitor = (window as any).Capacitor !== undefined;
+          const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+          const deviceType = isCapacitor ? 'android' : isMobileUA ? 'mobile_web' : 'desktop_web';
+          
+          let fcmToken = null;
+          if (isCapacitor) {
+            try {
+              fcmToken = localStorage.getItem('push_token_fcm') || null;
+            } catch (e) {
+              console.warn('FCM token retrieval failed:', e);
+            }
+          }
+
+          await fetch('/api/user/device', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fcmToken,
+              deviceType,
+              lastLoginDevice: navigator.userAgent.substring(0, 250)
+            })
+          });
+        } catch (err) {
+          console.error('Failed to register device context:', err);
+        }
+      };
+
+      registerDevice();
+    }
+  }, [session, status]);
+
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);

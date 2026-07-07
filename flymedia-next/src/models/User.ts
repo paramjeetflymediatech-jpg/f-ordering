@@ -10,6 +10,9 @@ export class User extends Model {
   declare password: string;
   declare phone: string | null;
   declare status: 'active' | 'inactive';
+  declare fcmToken: string | null;
+  declare deviceType: string | null;
+  declare lastLoginDevice: string | null;
 }
 
 User.init(
@@ -51,6 +54,18 @@ User.init(
       type: DataTypes.ENUM('active', 'inactive'),
       defaultValue: 'active',
       allowNull: false,
+    },
+    fcmToken: {
+      type: DataTypes.STRING(512),
+      allowNull: true,
+    },
+    deviceType: {
+      type: DataTypes.STRING(50),
+      allowNull: true,
+    },
+    lastLoginDevice: {
+      type: DataTypes.STRING(255),
+      allowNull: true,
     },
   },
   {

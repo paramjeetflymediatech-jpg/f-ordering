@@ -400,6 +400,15 @@ export function POSModals({
                 ))
               )}
             </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setActiveModal(null)}
+                className="rounded-xl bg-slate-900 border border-slate-800 px-5 py-2.5 text-xs font-bold text-slate-400 hover:text-white transition"
+              >
+                Closess
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -310,34 +310,28 @@ export default function POSDraftsPage() {
         {/* LEFT COLUMN: Drafts List */}
         <div className="flex-1 flex flex-col min-w-0 border-r border-slate-800 bg-transparent">
           {/* Header */}
-          <div className="p-6 border-b border-[#1e293b]/60 bg-[#0f1524]/20 flex justify-between items-center">
-            <div>
-              <h1 className="text-xl font-black text-white tracking-wide flex items-center gap-2">
-                <FolderOpen className="h-6 w-6 text-[#f59e0b]" /> Active Drafts & Held Bills
+          <div className="p-4 sm:p-6 border-b border-[#1e293b]/60 bg-[#0f1524]/20 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl font-black text-white tracking-wide flex items-center gap-2">
+                <FolderOpen className="h-5 w-5 sm:h-6 sm:w-6 text-[#f59e0b] shrink-0" /> Active Drafts & Held Bills
               </h1>
-              <p className="text-sm text-slate-400 mt-1.5">
+              <p className="text-xs sm:text-sm text-slate-400 mt-1">
                 Manage, edit, or merge restaurant tab drafts prior to final checkouts.
               </p>
             </div>
             
-            <div className="flex items-center gap-2.5 shrink-0">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
               {checkedDraftIds.length >= 2 && (
                 <button
                   onClick={handleMergeDrafts}
-                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-4 py-2.5 text-sm font-black text-slate-950 transition shadow-lg shadow-cyan-500/10 animate-fade-in"
+                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-3.5 py-2.5 text-xs sm:text-sm font-black text-slate-950 transition shadow-lg shadow-cyan-500/10 animate-fade-in"
                 >
                   <GitMerge className="h-4 w-4" />
-                  Merge Selected ({checkedDraftIds.length})
+                  Merge ({checkedDraftIds.length})
                 </button>
               )}
               
-              <button
-                onClick={() => router.push('/pos')}
-                className="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-300 hover:text-white transition shadow-sm"
-              >
-                <X className="h-4 w-4" />
-                Close
-              </button>
+             
             </div>
           </div>
 
@@ -460,6 +454,13 @@ export default function POSDraftsPage() {
 
         {/* RIGHT COLUMN: Detail Drawer / Action Panel */}
         <div className="w-96 shrink-0 bg-[#0c101b]/40 backdrop-blur-md border-l border-slate-800 flex flex-col justify-between overflow-hidden shadow-2xl">
+          <button
+                onClick={() => router.push('/pos')}
+                className="flex max-w-fit items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-300 hover:text-white transition shadow-sm"
+              >
+                <X className="h-4 w-4" />
+                Close
+              </button>
           {selectedDraft ? (
             <div className="flex-1 flex flex-col justify-between overflow-hidden">
               {/* Detail Header */}
@@ -603,6 +604,7 @@ export default function POSDraftsPage() {
               <p className="text-xs mt-1 opacity-70">Click any draft card to inspect items list, billing details, and resume/merge tickets.</p>
             </div>
           )}
+         
         </div>
 
       </div>

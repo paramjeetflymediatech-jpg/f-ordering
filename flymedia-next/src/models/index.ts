@@ -21,6 +21,7 @@ import { Package } from './Package';
 import { DeliveryZone } from './DeliveryZone';
 import { DeliveryRule } from './DeliveryRule';
 import { StorePaymentConfig } from './StorePaymentConfig';
+import { UserDevice } from './UserDevice';
 
 // Define Associations
 
@@ -39,6 +40,10 @@ User.belongsTo(Store, { foreignKey: 'store_id', constraints: false });
 // Users, Roles & Permissions (RBAC)
 User.belongsToMany(Role, { through: 'user_roles', foreignKey: 'user_id', otherKey: 'role_id', onDelete: 'CASCADE' });
 Role.belongsToMany(User, { through: 'user_roles', foreignKey: 'role_id', otherKey: 'user_id', onDelete: 'CASCADE' });
+
+// Users & UserDevices (One-to-Many device tokens)
+User.hasMany(UserDevice, { foreignKey: 'user_id', as: 'devices', onDelete: 'CASCADE' });
+UserDevice.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
 Role.belongsToMany(Permission, { through: 'role_permissions', foreignKey: 'role_id', otherKey: 'permission_id', onDelete: 'CASCADE' });
 Permission.belongsToMany(Role, { through: 'role_permissions', foreignKey: 'permission_id', otherKey: 'role_id', onDelete: 'CASCADE' });
@@ -152,4 +157,5 @@ export {
   DeliveryZone,
   DeliveryRule,
   StorePaymentConfig,
+  UserDevice,
 };
