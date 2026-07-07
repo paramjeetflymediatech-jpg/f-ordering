@@ -6,7 +6,16 @@ async function handler(request: NextRequest, context: any) {
   const host = request.headers.get('host') || 'fly-pos.com';
   const originalProto = request.headers.get('x-forwarded-proto') || 'not-set';
   let proto = 'https';
-  if (host.includes('localhost') || host.includes('127.0.0.1')) {
+  
+  const hostNameOnly = host.split(':')[0];
+  const isIPAddress = /^[0-9.]+$/.test(hostNameOnly);
+  
+  if (
+    host.includes('localhost') || 
+    host.includes('127.0.0.1') || 
+    isIPAddress || 
+    host.includes(':30') // local dev ports
+  ) {
     proto = 'http';
   }
   

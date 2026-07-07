@@ -20,6 +20,7 @@ import {
   Utensils,
   ShoppingBag,
   Truck,
+  X,
 } from 'lucide-react';
 
 export default function POSDraftsPage() {
@@ -319,15 +320,25 @@ export default function POSDraftsPage() {
               </p>
             </div>
             
-            {checkedDraftIds.length >= 2 && (
+            <div className="flex items-center gap-2.5 shrink-0">
+              {checkedDraftIds.length >= 2 && (
+                <button
+                  onClick={handleMergeDrafts}
+                  className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-4 py-2.5 text-sm font-black text-slate-950 transition shadow-lg shadow-cyan-500/10 animate-fade-in"
+                >
+                  <GitMerge className="h-4 w-4" />
+                  Merge Selected ({checkedDraftIds.length})
+                </button>
+              )}
+              
               <button
-                onClick={handleMergeDrafts}
-                className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 px-4 py-2.5 text-sm font-black text-slate-950 transition shadow-lg shadow-cyan-500/10"
+                onClick={() => router.push('/pos')}
+                className="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800 px-4 py-2.5 text-xs font-bold text-slate-300 hover:text-white transition shadow-sm"
               >
-                <GitMerge className="h-4 w-4" />
-                Merge Selected ({checkedDraftIds.length})
+                <X className="h-4 w-4" />
+                Close
               </button>
-            )}
+            </div>
           </div>
 
           {/* Filters & Search */}

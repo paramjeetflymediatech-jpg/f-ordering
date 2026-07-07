@@ -289,7 +289,7 @@ export async function provisionTenantDatabase(slug: string): Promise<void> {
       models.Permission.create({ name: 'reports:read',   description: 'View sales and analytics reports' }),
     ]);
 
-    const [ownerRole, managerRole, cashierRole] = await Promise.all([
+    const [ownerRole, managerRole, cashierRole, kitchenRole, waiterRole] = await Promise.all([
       models.Role.create({ name: 'Restaurant Owner', description: 'Owner of the organization and all stores' }),
       models.Role.create({ name: 'Manager',          description: 'Store manager with elevated permissions' }),
       models.Role.create({ name: 'Cashier',          description: 'Sales terminal operator' }),
@@ -302,6 +302,12 @@ export async function provisionTenantDatabase(slug: string): Promise<void> {
       perms.filter((p: any) => ['pos:access', 'pos:checkout', 'menu:read', 'settings:write'].includes(p.name))
     );
     await cashierRole.setPermissions(
+      perms.filter((p: any) => ['pos:access', 'pos:checkout', 'menu:read'].includes(p.name))
+    );
+    await kitchenRole.setPermissions(
+      perms.filter((p: any) => ['pos:access', 'menu:read'].includes(p.name))
+    );
+    await waiterRole.setPermissions(
       perms.filter((p: any) => ['pos:access', 'pos:checkout', 'menu:read'].includes(p.name))
     );
 

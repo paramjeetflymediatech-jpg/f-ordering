@@ -76,6 +76,19 @@ export async function POST() {
         perms.find(p => p.name === 'pos:checkout')!,
         perms.find(p => p.name === 'menu:read')!,
       ]);
+
+      // Kitchen Staff gets pos:access, menu:read
+      await (kitchenRole as any).setPermissions([
+        perms.find(p => p.name === 'pos:access')!,
+        perms.find(p => p.name === 'menu:read')!,
+      ]);
+
+      // Waiter gets pos:access, pos:checkout, menu:read
+      await (waiterRole as any).setPermissions([
+        perms.find(p => p.name === 'pos:access')!,
+        perms.find(p => p.name === 'pos:checkout')!,
+        perms.find(p => p.name === 'menu:read')!,
+      ]);
     }
 
     // 4. Seed Default Tenant (Organization & Store) if empty

@@ -5,6 +5,13 @@ export function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
   const hostname = request.headers.get('host') || '';
 
+  // Bypass proxy rewrites for raw IP addresses (e.g. 10.0.2.2 or local LAN IPs during testing)
+  const hostNameOnly = hostname.split(':')[0];
+  const isIPAddress = /^[0-9.]+$/.test(hostNameOnly);
+  if (isIPAddress) {
+    return NextResponse.next();
+  }
+
   // Exclude static assets and API routes
   const excludePaths = [
     '/api',

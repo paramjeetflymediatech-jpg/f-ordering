@@ -62,6 +62,9 @@ export default function POSPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  const roles = (session?.user as any)?.roles || [];
+  const isWaiter = roles.includes('Waiter');
+
   // Redirect if not logged in
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -199,6 +202,15 @@ export default function POSPage() {
       setTheme(savedTheme);
     }
   }, []);
+
+  useEffect(() => {
+    if (status === 'authenticated' && session?.user) {
+      const roles = (session.user as any).roles || [];
+      if (roles.includes('Waiter')) {
+        setPosTab('tables');
+      }
+    }
+  }, [session, status]);
 
   const toggleTheme = () => {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
@@ -783,18 +795,20 @@ export default function POSPage() {
             {/* STYLISH TAB HEADER BAR */}
             <div className="flex border-b border-slate-800 bg-[#070b13]/40 backdrop-blur-md px-4 sm:px-6 py-1 sticky top-0 z-10 select-none items-center justify-between shrink-0 shadow-sm overflow-x-auto scrollbar-none">
               <div className="flex gap-1.5 shrink-0 overflow-x-auto scrollbar-none whitespace-nowrap">
-                <button
-                  type="button"
-                  onClick={() => setPosTab('analytics')}
-                  className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider transition border-b-2 -mb-[6px] shrink-0 ${
-                    posTab === 'analytics'
-                      ? 'border-[#f59e0b] text-[#f59e0b]'
-                      : 'border-transparent text-slate-500 hover:text-slate-350'
-                  }`}
-                >
-                  <LineChart className="h-4 w-4" />
-                  Sales Analytics
-                </button>
+                {!isWaiter && (
+                  <button
+                    type="button"
+                    onClick={() => setPosTab('analytics')}
+                    className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider transition border-b-2 -mb-[6px] shrink-0 ${
+                      posTab === 'analytics'
+                        ? 'border-[#f59e0b] text-[#f59e0b]'
+                        : 'border-transparent text-slate-500 hover:text-slate-350'
+                    }`}
+                  >
+                    <LineChart className="h-4 w-4" />
+                    Sales Analytics
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setPosTab('tables')}
@@ -854,6 +868,7 @@ export default function POSPage() {
                   addToCart={addToCart}
                   updateQuantity={updateQuantity}
                   cart={cart}
+                  theme={theme}
                 />
               </div>
             )}
@@ -1123,14 +1138,16 @@ export default function POSPage() {
           <span className="text-[9px] font-bold mt-1">Drafts</span>
         </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveModal('settings')}
-          className="flex flex-col items-center justify-center py-1 text-slate-400"
-        >
-          <Settings className="h-5 w-5" />
-          <span className="text-[9px] font-bold mt-1">Settings</span>
-        </button>
+        {!isWaiter && (
+          <button
+            type="button"
+            onClick={() => setActiveModal('settings')}
+            className="flex flex-col items-center justify-center py-1 text-slate-400"
+          >
+            <Settings className="h-5 w-5" />
+            <span className="text-[9px] font-bold mt-1">Settings</span>
+          </button>
+        )}
       </div>
 
     </div>

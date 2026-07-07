@@ -164,6 +164,14 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
               </Link>
             </div>
           )}
+
+          <Link
+            href="/login"
+            className="text-white/60 hover:text-white text-xs font-semibold border-l border-white/20 pl-4 py-1 transition flex items-center gap-1 shrink-0"
+            title="Staff Login Portal"
+          >
+            Staff Portal
+          </Link>
         </div>
 
         {/* Mobile Hamburger Button */}
@@ -269,6 +277,14 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
                   </Link>
                 </div>
               )}
+              
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full mt-3 text-center rounded-xl bg-slate-900 border border-slate-800 text-white hover:bg-slate-850 py-2.5 text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-slate-950/20"
+              >
+                Staff Portal
+              </Link>
             </div>
           </div>
         </div>

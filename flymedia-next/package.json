@@ -6,9 +6,13 @@
     "dev": "tsx src/server.ts",
     "build": "next build",
     "start": "tsx src/server.ts",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate-app": "tsx scripts/generate-app.ts"
   },
   "dependencies": {
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capacitor/ios": "^8.4.1",
     "@stripe/react-stripe-js": "^6.6.0",
     "@stripe/stripe-js": "^9.8.0",
     "@tanstack/react-query": "^5.101.0",
@@ -37,6 +41,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/express": "^5.0.6",
     "@types/ioredis": "^4.28.10",

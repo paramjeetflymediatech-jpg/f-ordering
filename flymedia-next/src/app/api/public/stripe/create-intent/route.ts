@@ -5,7 +5,7 @@ import { Store, StorePaymentConfig } from '../../../../../models';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { storeId, amount, currency } = body;
+    const { storeId, amount, currency, orderId } = body;
 
     if (!storeId || !amount) {
       return NextResponse.json({ error: 'storeId and amount are required' }, { status: 400 });
@@ -40,6 +40,7 @@ export async function POST(request: Request) {
       metadata: {
         store_id: storeId,
         organization_id: store.organization_id,
+        order_id: orderId || '',
       },
       automatic_payment_methods: { enabled: true },
     });

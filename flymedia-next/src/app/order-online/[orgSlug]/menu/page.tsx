@@ -228,6 +228,43 @@ export default function PublicOrderPage() {
   const [recentOrder, setRecentOrder] = useState<any>(null);
   const [newAccount, setNewAccount] = useState<{ phone: string; tempPassword: string } | null>(null);
 
+  const [geocodingCheckout, setGeocodingCheckout] = useState(false);
+
+  const fetchCurrentLocationCheckout = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser.");
+      return;
+    }
+    setGeocodingCheckout(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+          );
+          const data = await response.json();
+          if (data && data.display_name) {
+            setDeliveryAddress(data.display_name);
+          } else {
+            alert(`Location found (${latitude.toFixed(4)}, ${longitude.toFixed(4)}) but reverse geocoding failed.`);
+          }
+        } catch (err) {
+          console.error(err);
+          setDeliveryAddress(`${latitude.toFixed(6)}, ${longitude.toFixed(6)}`);
+        } finally {
+          setGeocodingCheckout(false);
+        }
+      },
+      (error) => {
+        console.error(error);
+        alert("Failed to retrieve location: " + error.message);
+        setGeocodingCheckout(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' | 'info' }>>([]);
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
@@ -717,7 +754,8 @@ export default function PublicOrderPage() {
 
   const primaryColor = store?.theme_primary_color || '#2A0E07';
   const accentColor = store?.theme_accent_color || '#C39A3C';
-  const bgColor = store?.theme_bg_color || '#F9F6F0';
+  const bgColor = store?.bg_color_menu || store?.theme_bg_color || '#F9F6F0';
+  const bgImage = store?.bg_menu || null;
   const fontStyle = store?.theme_font || 'serif';
   const layoutStyle = store?.theme_layout || 'classic';
 
@@ -764,6 +802,10 @@ export default function PublicOrderPage() {
         }`}
       style={{
         backgroundColor: bgColor,
+        backgroundImage: bgImage ? `url(${bgImage})` : undefined,
+        backgroundSize: bgImage ? 'cover' : undefined,
+        backgroundPosition: bgImage ? 'center' : undefined,
+        backgroundAttachment: bgImage ? 'fixed' : undefined,
         fontFamily: getFontFamily(fontStyle),
       }}
     >
@@ -895,8 +937,8 @@ export default function PublicOrderPage() {
                 <Link
                   href={`/order-online/${orgSlug}/menu`}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="hover:opacity-80 py-1 transition"
-                  style={{ color: accentColor }}
+                  className="hover:text-white py-1 transition"
+                  style={{ color: primaryColor }}
                 >
                   Menu
                 </Link>
@@ -927,6 +969,17 @@ export default function PublicOrderPage() {
                       )}
                     </div>
                   </div>
+                  <Link
+                    href={`/order-online/${orgSlug}/customer/profile`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`w-full text-center block rounded-xl border py-2.5 text-xs font-bold transition ${
+                      layoutStyle === 'modern_dark'
+                        ? 'border-slate-800 text-slate-200 hover:bg-slate-900'
+                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    My Account
+                  </Link>
                   <button
                     onClick={() => {
                       setMobileMenuOpen(false);
@@ -943,15 +996,15 @@ export default function PublicOrderPage() {
                   <Link
                     href={`/order-online/${orgSlug}/customer/login`}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center rounded-xl border border-slate-200 py-2.5 text-xs font-bold"
-                  >
+                    className={`w-full text-center rounded-xl border border-slate-200 py-2.5 text-xs font-bold `}
+                    style={{ backgroundColor: primaryColor,color:accentColor }}>
                     Login
                   </Link>
                   <Link
                     href={`/order-online/${orgSlug}/customer/register`}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center text-white py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider"
-                    style={{ backgroundColor: accentColor }}
+                    className="w-full text-center  py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider"
+                    style={{ backgroundColor: primaryColor,color:accentColor }}
                   >
                     Sign Up
                   </Link>
@@ -1760,12 +1813,44 @@ export default function PublicOrderPage() {
 
               {/* Delivery address */}
               {orderType === 'delivery' && (
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Delivery Address *</label>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Delivery Address *</label>
+                    <button
+                      type="button"
+                      disabled={geocodingCheckout}
+                      onClick={fetchCurrentLocationCheckout}
+                      className="text-[10px] font-bold transition flex items-center gap-1 hover:opacity-85"
+                      style={{ color: accentColor }}
+                    >
+                      <MapPin className="h-3 w-3" />
+                      {geocodingCheckout ? "Locating..." : "Use Current Location"}
+                    </button>
+                  </div>
+
+                  {customer?.addresses && customer.addresses.length > 0 && (
+                    <div className="mt-1">
+                      <select
+                        onChange={(e) => {
+                          if (e.target.value) setDeliveryAddress(e.target.value);
+                        }}
+                        value={customer.addresses.includes(deliveryAddress) ? deliveryAddress : ""}
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition"
+                      >
+                        <option value="">-- Choose saved address --</option>
+                        {customer.addresses.map((addr: string, idx: number) => (
+                          <option key={idx} value={addr}>{addr}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   <textarea
-                    required placeholder="Enter complete delivery address..."
-                    value={deliveryAddress} onChange={(e) => setDeliveryAddress(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 h-14 outline-none resize-none focus:border-slate-400 focus:bg-white transition"
+                    required 
+                    placeholder="Enter complete delivery address..."
+                    value={deliveryAddress} 
+                    onChange={(e) => setDeliveryAddress(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 h-14 outline-none resize-none focus:border-slate-400 focus:bg-white transition"
                   />
                 </div>
               )}

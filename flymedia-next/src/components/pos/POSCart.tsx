@@ -54,6 +54,9 @@ export function POSCart({
   cartRef,
   onClose,
 }: POSCartProps) {
+  const roles = session?.user?.roles || [];
+  const isWaiter = roles.includes('Waiter');
+
   return (
     <aside className="w-full lg:w-96 h-full shrink-0 border-l border-slate-800/80 bg-slate-950/80 backdrop-blur-md flex flex-col justify-between overflow-hidden shadow-2xl">
       {/* Header receipt metadata */}
@@ -64,9 +67,10 @@ export function POSCart({
               <button
                 type="button"
                 onClick={onClose}
-                className="lg:hidden p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition mr-0.5"
+                className="lg:hidden p-2 rounded-xl text-slate-300 bg-slate-900 border border-slate-800 hover:text-white transition mr-1 flex items-center justify-center"
+                title="Close Drawer"
               >
-                <X className="h-4 w-4" />
+                <X className="h-5 w-5" />
               </button>
             )}
             <h3 className="text-xs font-bold uppercase text-slate-400 tracking-wider flex items-center gap-2">
@@ -236,45 +240,71 @@ export function POSCart({
           <span className="bg-gradient-to-r from-orange-400 to-amber-300 bg-clip-text text-transparent font-extrabold">${total.toFixed(2)}</span>
         </div>
 
-        {/* Quick billing utility modifiers */}
-        <div className="grid grid-cols-3 gap-2 mt-3.5">
-          <button
-            onClick={() => setActiveModal('hold')}
-            disabled={cart.length === 0}
-            className="rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white transition disabled:opacity-50"
-          >
-            Hold Bill
-          </button>
-          <button
-            onClick={() => setActiveModal('split')}
-            disabled={cart.length === 0}
-            className="rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white transition disabled:opacity-50"
-          >
-            Split ({splitCount})
-          </button>
-          <button
-            onClick={() => {
-              if (recentOrder) {
-                setActiveModal('receipt');
-              } else {
-                alert('No orders placed in this session yet.');
-              }
-            }}
-            className="rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white transition"
-          >
-            Print Ticket
-          </button>
-        </div>
+        {isWaiter ? (
+          <div className="grid grid-cols-2 gap-2 mt-3.5">
+            <button
+              onClick={() => setActiveModal('hold')}
+              disabled={cart.length === 0}
+              className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-450 hover:to-orange-550 py-3 text-xs font-extrabold text-white transition disabled:opacity-50 flex justify-center items-center gap-1"
+            >
+              Send to Kitchen
+            </button>
+            <button
+              onClick={() => {
+                if (recentOrder) {
+                  setActiveModal('receipt');
+                } else {
+                  alert('No orders placed in this session yet.');
+                }
+              }}
+              className="rounded-xl border border-slate-850 bg-slate-900 hover:bg-slate-850 py-3 text-xs font-bold text-slate-300 hover:text-white transition"
+            >
+              Print Ticket
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Quick billing utility modifiers */}
+            <div className="grid grid-cols-3 gap-2 mt-3.5">
+              <button
+                onClick={() => setActiveModal('hold')}
+                disabled={cart.length === 0}
+                className="rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white transition disabled:opacity-50"
+              >
+                Hold Bill
+              </button>
+              <button
+                onClick={() => setActiveModal('split')}
+                disabled={cart.length === 0}
+                className="rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white transition disabled:opacity-50"
+              >
+                Split ({splitCount})
+              </button>
+              <button
+                onClick={() => {
+                  if (recentOrder) {
+                    setActiveModal('receipt');
+                  } else {
+                    alert('No orders placed in this session yet.');
+                  }
+                }}
+                className="rounded-xl border border-slate-800 bg-slate-950/50 hover:bg-slate-900 py-2.5 text-[11px] font-bold text-slate-300 hover:text-white transition"
+              >
+                Print Ticket
+              </button>
+            </div>
 
-        {/* Proceed Payment Main Button */}
-        <button
-          onClick={() => setActiveModal('checkout')}
-          disabled={cart.length === 0}
-          className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-650 hover:from-emerald-450 hover:to-teal-600 py-3.5 text-xs font-black text-slate-950 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all mt-2 flex justify-center items-center gap-1.5"
-        >
-          <DollarSign className="h-4 w-4 animate-pulse" />
-          Proceed to Payment
-        </button>
+            {/* Proceed Payment Main Button */}
+            <button
+              onClick={() => setActiveModal('checkout')}
+              disabled={cart.length === 0}
+              className="w-full rounded-xl bg-gradient-to-r from-emerald-500 to-teal-650 hover:from-emerald-450 hover:to-teal-600 py-3.5 text-xs font-black text-slate-950 shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all mt-2 flex justify-center items-center gap-1.5"
+            >
+              <DollarSign className="h-4 w-4 animate-pulse" />
+              Proceed to Payment
+            </button>
+          </>
+        )}
       </div>
     </aside>
   );

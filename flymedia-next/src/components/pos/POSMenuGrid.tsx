@@ -12,6 +12,7 @@ interface POSMenuGridProps {
   addToCart: (item: any) => void;
   updateQuantity: (id: string, quantity: number) => void;
   cart: any[];
+  theme?: 'dark' | 'light';
 }
 
 export function POSMenuGrid({
@@ -25,7 +26,10 @@ export function POSMenuGrid({
   addToCart,
   updateQuantity,
   cart,
+  theme = 'dark',
 }: POSMenuGridProps) {
+  const stickyBg = theme === 'light' ? 'bg-[#f8fafc]/95 border-slate-250' : 'bg-[#070b13]/95 border-slate-800/80';
+
   // Custom states for customization modal
   const [customizingItem, setCustomizingItem] = React.useState<any | null>(null);
   const [selectedVariant, setSelectedVariant] = React.useState<any | null>(null);
@@ -162,8 +166,8 @@ export function POSMenuGrid({
   return (
     <>
       <div className="w-full rounded-2xl border border-slate-800/80 bg-slate-900/20 backdrop-blur-md p-6 flex flex-col min-h-[calc(100vh-180px)] justify-between shadow-xl animate-fade-in">
-        {/* Category tabs & Search bar row */}
-        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6">
+        {/* Category tabs & Search bar row - Sticky on mobile devices */}
+        <div className={`sticky top-[66px] z-20 -mx-6 px-6 py-4 ${stickyBg} border-b md:relative md:top-auto md:z-auto md:bg-transparent md:mx-0 md:px-0 md:py-0 md:border-none flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between mb-6`}>
           <div className="flex overflow-x-auto scrollbar-none whitespace-nowrap gap-2 max-w-full pb-1.5">
             <button
               onClick={() => setSelectedCategoryId('all')}

@@ -81,6 +81,13 @@ export default function KDSPage() {
   const { data: session, status: sessionStatus } = useSession();
   const router = useRouter();
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const isCapacitor = (window as any).Capacitor !== undefined;
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(isCapacitor || isMobileUA);
+  }, []);
+
   // Audio system state for notification chime
   const [audioBlocked, setAudioBlocked] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -805,13 +812,15 @@ export default function KDSPage() {
             )}
           </button>
 
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="p-2.5 rounded-xl border border-rose-200 dark:border-rose-950/40 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition"
-            title="Logout"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+          {!isMobile && (
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="p-2.5 rounded-xl border border-rose-200 dark:border-rose-950/40 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-450 hover:bg-rose-100 dark:hover:bg-rose-900/30 transition"
+              title="Logout"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          )}
 
           <button
             onClick={() => setShowHistory(!showHistory)}

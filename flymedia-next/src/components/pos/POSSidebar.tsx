@@ -23,6 +23,16 @@ interface POSSidebarProps {
 export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab = 'pos', logoUrl }: POSSidebarProps) {
   const router = useRouter();
 
+  const roles = session?.user?.roles || [];
+  const isWaiter = roles.includes('Waiter');
+
+  const [isMobile, setIsMobile] = React.useState(false);
+  React.useEffect(() => {
+    const isCapacitor = (window as any).Capacitor !== undefined;
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(isCapacitor || isMobileUA);
+  }, []);
+
   const handleModalClick = (modalName: string) => {
     if (activeTab === 'drafts') {
       router.push('/pos');
@@ -99,54 +109,60 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab
           <span className="text-[9.5px] font-extrabold mt-1.5 uppercase tracking-wider scale-90">Tables</span>
         </button>
 
-        <a
-          href="/dashboard/menu"
-          target="_blank"
-          className="group flex w-full flex-col items-center justify-center rounded-xl py-3.5 text-slate-455 hover:bg-slate-900/40 hover:text-white border border-transparent hover:border-slate-800/30 transition-all duration-300"
-          title="Menu Management"
-        >
-          <ShoppingBag className="h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-105" />
-          <span className="text-[9.5px] font-extrabold mt-1.5 uppercase tracking-wider scale-90">Menu</span>
-        </a>
+        {!isWaiter && (
+          <>
+            <a
+              href="/dashboard/menu"
+              target="_blank"
+              className="group flex w-full flex-col items-center justify-center rounded-xl py-3.5 text-slate-455 hover:bg-slate-900/40 hover:text-white border border-transparent hover:border-slate-800/30 transition-all duration-300"
+              title="Menu Management"
+            >
+              <ShoppingBag className="h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-105" />
+              <span className="text-[9.5px] font-extrabold mt-1.5 uppercase tracking-wider scale-90">Menu</span>
+            </a>
 
-        <a
-          href="/dashboard"
-          target="_blank"
-          className="group flex w-full flex-col items-center justify-center rounded-xl py-3.5 text-slate-455 hover:bg-slate-900/40 hover:text-white border border-transparent hover:border-slate-800/30 transition-all duration-300"
-          title="Reports & Trends"
-        >
-          <TrendingUp className="h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-105" />
-          <span className="text-[9.5px] font-extrabold mt-1.5 uppercase tracking-wider scale-90">Reports</span>
-        </a>
+            <a
+              href="/dashboard"
+              target="_blank"
+              className="group flex w-full flex-col items-center justify-center rounded-xl py-3.5 text-slate-455 hover:bg-slate-900/40 hover:text-white border border-transparent hover:border-slate-800/30 transition-all duration-300"
+              title="Reports & Trends"
+            >
+              <TrendingUp className="h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-105" />
+              <span className="text-[9.5px] font-extrabold mt-1.5 uppercase tracking-wider scale-90">Reports</span>
+            </a>
 
-        <button
-          onClick={() => handleModalClick('inventory')}
-          className="group flex w-full flex-col items-center justify-center rounded-xl py-3.5 text-slate-450 hover:bg-slate-900/40 hover:text-white border border-transparent hover:border-slate-800/30 transition-all duration-300"
-          title="Ingredient Inventory"
-        >
-          <Package className="h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-105" />
-          <span className="text-[9.5px] font-extrabold mt-1.5 uppercase tracking-wider scale-90">Stock</span>
-        </button>
+            <button
+              onClick={() => handleModalClick('inventory')}
+              className="group flex w-full flex-col items-center justify-center rounded-xl py-3.5 text-slate-450 hover:bg-slate-900/40 hover:text-white border border-transparent hover:border-slate-800/30 transition-all duration-300"
+              title="Ingredient Inventory"
+            >
+              <Package className="h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-105" />
+              <span className="text-[9.5px] font-extrabold mt-1.5 uppercase tracking-wider scale-90">Stock</span>
+            </button>
 
-        <button
-          onClick={() => handleModalClick('settings')}
-          className="group flex w-full flex-col items-center justify-center rounded-xl py-3.5 text-slate-450 hover:bg-slate-900/40 hover:text-white border border-transparent hover:border-slate-800/30 transition-all duration-300"
-          title="System Settings"
-        >
-          <Settings className="h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-105" />
-          <span className="text-[9.5px] font-extrabold mt-1.5 uppercase tracking-wider scale-90">Settings</span>
-        </button>
+            <button
+              onClick={() => handleModalClick('settings')}
+              className="group flex w-full flex-col items-center justify-center rounded-xl py-3.5 text-slate-450 hover:bg-slate-900/40 hover:text-white border border-transparent hover:border-slate-800/30 transition-all duration-300"
+              title="System Settings"
+            >
+              <Settings className="h-5.5 w-5.5 transition-transform duration-300 group-hover:scale-105" />
+              <span className="text-[9.5px] font-extrabold mt-1.5 uppercase tracking-wider scale-90">Settings</span>
+            </button>
+          </>
+        )}
       </nav>
 
       {/* Footer Logout & User Profile */}
       <div className="flex flex-col items-center gap-4 w-full">
-        <button
-          onClick={() => signOut({ callbackUrl: '/login' })}
-          className="rounded-xl p-2.5 text-red-400/80 hover:bg-red-950/20 hover:text-red-400 border border-transparent hover:border-red-900/20 transition-all duration-300"
-          title="Sign Out"
-        >
-          <LogOut className="h-5 w-5" />
-        </button>
+        {!isMobile && (
+          <button
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="rounded-xl p-2.5 text-red-400/80 hover:bg-red-950/20 hover:text-red-400 border border-transparent hover:border-red-900/20 transition-all duration-300"
+            title="Sign Out"
+          >
+            <LogOut className="h-5 w-5" />
+          </button>
+        )}
 
         {/* Profile Avatar Card */}
         <div className="h-11 w-11 p-0.5 overflow-hidden rounded-full border border-slate-850 bg-slate-950 cursor-pointer hover:border-orange-500 transition-all duration-300 hover:scale-105">

@@ -360,6 +360,13 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
 
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const isCapacitor = (window as any).Capacitor !== undefined;
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(isCapacitor || isMobileUA);
+  }, []);
+
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState<string | null>(null);
@@ -376,6 +383,8 @@ export default function DashboardPage() {
       const roles = (session?.user as any)?.roles || [];
       if (roles.includes('Super Admin')) {
         router.push('/dashboard/super-admin');
+      } else if (roles.includes('Waiter') || roles.includes('Cashier')) {
+        router.push('/pos');
       }
     }
   }, [status, session, router]);
@@ -478,12 +487,14 @@ export default function DashboardPage() {
               {(session?.user as any)?.roles?.[0] || 'Administrator'}
             </p>
           </div>
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="rounded-lg bg-slate-900 border border-[#1e293b] p-2 text-slate-400 hover:text-white hover:bg-slate-800 transition duration-150"
-          >
-            <LogOut className="h-4.5 w-4.5" />
-          </button>
+          {!isMobile && (
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="rounded-lg bg-slate-900 border border-[#1e293b] p-2 text-slate-400 hover:text-white hover:bg-slate-800 transition duration-150"
+            >
+              <LogOut className="h-4.5 w-4.5" />
+            </button>
+          )}
         </div>
       </nav>
 
@@ -733,7 +744,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/pos"
-              target="_blank"
+              target={typeof window !== 'undefined' && (window.innerWidth < 768 || (window as any).Capacitor) ? undefined : "_blank"}
               className="mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#f59e0b] py-3 text-xs font-extrabold text-slate-950 hover:bg-[#f59e0b]/80 transition shadow-md shadow-[#f59e0b]/10"
             >
               Launch Cashier Screen
@@ -753,7 +764,7 @@ export default function DashboardPage() {
             </div>
             <Link
               href="/kds"
-              target="_blank"
+              target={typeof window !== 'undefined' && (window.innerWidth < 768 || (window as any).Capacitor) ? undefined : "_blank"}
               className="mt-6 inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 py-3 text-xs font-extrabold text-white transition shadow-md shadow-purple-600/10"
             >
               Launch Kitchen Console

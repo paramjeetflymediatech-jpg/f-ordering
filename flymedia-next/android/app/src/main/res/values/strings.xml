@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Harry Bistro</string>
+    <string name="title_activity_main">Harry Bistro</string>
+    <string name="package_name">com.harrybistro</string>
+    <string name="custom_url_scheme">com.harrybistro</string>
+</resources>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSession, signOut } from 'next-auth/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -199,7 +199,7 @@ function NavigationItems({
       {!isSuperAdmin && (
         <Link
           href="/pos"
-          target="_blank"
+          target={typeof window !== 'undefined' && (window.innerWidth < 768 || (window as any).Capacitor) ? undefined : "_blank"}
           className="flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold text-slate-400 hover:bg-slate-900/50 hover:text-white transition duration-150"
         >
           <MonitorPlay className="h-4.5 w-4.5 text-emerald-400" />
@@ -215,6 +215,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const isCapacitor = (window as any).Capacitor !== undefined;
+    const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(isCapacitor || isMobileUA);
+  }, []);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState<string | null>(null);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -254,12 +260,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
   }, [status]);
 
-  // Redirect if not authenticated
+  // Redirect if not authenticated or if staff who belong in POS
   React.useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/login');
+    } else if (status === 'authenticated') {
+      const roles = (session?.user as any)?.roles || [];
+      if (roles.includes('Waiter') || roles.includes('Cashier')) {
+        router.push('/pos');
+      }
     }
-  }, [status, router]);
+  }, [status, session, router]);
 
   if (status === 'loading') {
     return (
@@ -350,13 +361,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </>
             )}
           </button>
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400 hover:bg-red-950/45 transition duration-150"
-          >
-            <LogOut className="h-4 w-4" />
-            Log Out
-          </button>
+          {!isMobile && (
+            <button
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400 hover:bg-red-950/45 transition duration-150"
+            >
+              <LogOut className="h-4 w-4" />
+              Log Out
+            </button>
+          )}
         </div>
       </aside>
 
@@ -449,13 +462,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </>
                 )}
               </button>
-              <button
-                onClick={() => signOut({ callbackUrl: '/login' })}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400"
-              >
-                <LogOut className="h-4 w-4" />
-                Log Out
-              </button>
+              {!isMobile && (
+                <button
+                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-950/20 border border-red-900/15 py-2.5 text-xs font-bold text-red-400"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log Out
+                </button>
+              )}
             </div>
           </div>
           <div className="flex-1" onClick={() => setMobileOpen(false)}></div>
