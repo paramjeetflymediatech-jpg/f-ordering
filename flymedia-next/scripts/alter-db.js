@@ -50,6 +50,26 @@ async function run() {
         console.log(`Column '${col}' already exists on 'stores' table.`);
       }
     }
+
+    // 4. Create user_devices table if not exists to support push notification device registrations
+    console.log("Checking if 'user_devices' table exists...");
+    await sequelize.query(`
+      CREATE TABLE IF NOT EXISTS \`user_devices\` (
+        \`id\` CHAR(36) BINARY NOT NULL,
+        \`user_id\` CHAR(36) BINARY NOT NULL,
+        \`fcmToken\` VARCHAR(512) NULL,
+        \`deviceType\` VARCHAR(50) NULL,
+        \`lastLoginDevice\` VARCHAR(255) NULL,
+        \`lastActive\` DATETIME NOT NULL,
+        \`createdAt\` DATETIME NOT NULL,
+        \`updatedAt\` DATETIME NOT NULL,
+        PRIMARY KEY (\`id\`),
+        INDEX \`user_id_idx\` (\`user_id\`),
+        CONSTRAINT \`fk_user_devices_user_id\` FOREIGN KEY (\`user_id\`) REFERENCES \`users\` (\`id\`) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+    console.log("'user_devices' table verification complete.");
+
     console.log("Table alterations complete.");
   } catch (err) {
     console.error("Migration error:", err);
