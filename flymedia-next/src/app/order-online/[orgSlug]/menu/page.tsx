@@ -1755,7 +1755,7 @@ export default function PublicOrderPage() {
                             }`}
                             style={
                               selectedCategoryId === sub.id
-                                ? { color: accentColor }
+                                ? {  backgroundColor:primaryColor}
                                 : undefined
                             }
                           >
