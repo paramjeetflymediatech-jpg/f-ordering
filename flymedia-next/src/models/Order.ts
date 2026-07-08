@@ -16,6 +16,8 @@ export class Order extends Model {
   declare discount_amount: number;
   declare total_amount: number;
   declare coupon_code: string | null;
+  declare rating: number | null;
+  declare rating_comment: string | null;
 }
 
 Order.init(
@@ -81,6 +83,14 @@ Order.init(
     },
     coupon_code: {
       type: DataTypes.STRING,
+      allowNull: true,
+    },
+    rating: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+    },
+    rating_comment: {
+      type: DataTypes.TEXT,
       allowNull: true,
     },
   },

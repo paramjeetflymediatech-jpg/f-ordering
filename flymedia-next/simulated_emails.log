@@ -352,3 +352,136 @@ SIMULATED DISPATCH DETAIL:
 ========================================================================
 
 
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/8/2026, 12:09:14 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00072
+Order Type: QR_ORDER
+Timestamp: 7/8/2026, 12:09:14 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Classic Smash Burger [Variant: Triple Patty] @ $22.49 each = $22.49
+    + Add-ons: Extra Cheddar Cheese (+$1.50)
+
+Subtotal: $22.49
+Tax: $1.86
+Total Amount: $24.35
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $24.35
+Transaction Reference: ONL-TX-1783492754813
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/8/2026, 12:17:06 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00073
+Order Type: QR_ORDER
+Timestamp: 7/8/2026, 12:17:06 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 3x Classic Smash Burger [Variant: Triple Patty] @ $20.99 each = $62.97
+
+Subtotal: $62.97
+Tax: $5.20
+Total Amount: $68.17
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $68.17
+Transaction Reference: ONL-TX-1783493226319
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+[STATUS UPDATE] ORD-TM-020: pending -> preparing at 7/8/2026, 12:18:37 PM
+  Customer: terry mulcahy (no email)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-NK-001: pending -> preparing at 7/8/2026, 12:18:38 PM
+  Customer: Nick (nickridley_@outlook.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00071: pending -> preparing at 7/8/2026, 12:18:39 PM
+  Customer: Paramjit Singh (paramjeet.flymediatech@gmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00072: pending -> preparing at 7/8/2026, 12:18:41 PM
+  Customer: Paramjit Singh (paramjeet.flymediatech@gmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00073: pending -> preparing at 7/8/2026, 12:18:44 PM
+  Customer: Paramjit Singh (paramjeet.flymediatech@gmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00073: preparing -> ready at 7/8/2026, 12:18:48 PM
+  Customer: Paramjit Singh (paramjeet.flymediatech@gmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-TM-020: preparing -> ready at 7/8/2026, 12:18:53 PM
+  Customer: terry mulcahy (no email)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-NK-001: preparing -> ready at 7/8/2026, 12:18:53 PM
+  Customer: Nick (nickridley_@outlook.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00071: preparing -> ready at 7/8/2026, 12:18:54 PM
+  Customer: Paramjit Singh (paramjeet.flymediatech@gmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00072: preparing -> ready at 7/8/2026, 12:18:55 PM
+  Customer: Paramjit Singh (paramjeet.flymediatech@gmail.com)
+  Admin notified: owner@fordering.com
+  
+

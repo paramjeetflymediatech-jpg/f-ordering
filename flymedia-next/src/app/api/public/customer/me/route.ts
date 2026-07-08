@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { Customer, Order, OrderItem, Payment } from '../../../../../models';
+import { Customer, Order, OrderItem, Payment, MenuItem, MenuVariant } from '../../../../../models';
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'supersecretposplatformkeychangeinprod';
 
@@ -37,6 +37,17 @@ export async function GET() {
         {
           model: OrderItem,
           as: 'items',
+          include: [
+            {
+              model: MenuItem,
+              attributes: ['name', 'price', 'image_url'],
+            },
+            {
+              model: MenuVariant,
+              as: 'variant',
+              attributes: ['name', 'additional_price'],
+            }
+          ]
         },
         {
           model: Payment,
@@ -79,8 +90,25 @@ export async function GET() {
         taxAmount: parseFloat(order.tax_amount as any),
         discountAmount: parseFloat(order.discount_amount as any),
         totalAmount: parseFloat(order.total_amount as any),
+        rating: order.rating || null,
+        ratingComment: order.rating_comment || null,
         createdAt: (order as any).createdAt,
-        items: (order as any).items || [],
+        items: ((order as any).items || []).map((item: any) => ({
+          id: item.id,
+          menuItemId: item.menu_item_id,
+          name: item.MenuItem?.name || 'Menu Item',
+          price: parseFloat(item.unit_price as any),
+          quantity: item.quantity,
+          notes: item.notes || '',
+          imageUrl: item.MenuItem?.image_url || null,
+          variant: item.variant ? {
+            id: item.variant_id,
+            name: item.variant.name,
+            additionalPrice: parseFloat(item.variant.additional_price as any),
+          } : null,
+          addons: typeof item.addons === 'string' ? JSON.parse(item.addons) : (item.addons || []),
+          bases: typeof item.bases === 'string' ? JSON.parse(item.bases) : (item.bases || []),
+        })),
         payments: (order as any).payments || [],
       })),
     });

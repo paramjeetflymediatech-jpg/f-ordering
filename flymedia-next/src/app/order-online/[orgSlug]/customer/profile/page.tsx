@@ -27,7 +27,11 @@ import {
   Compass,
   Menu,
   Home,
-  Lock
+  Lock,
+  Eye,
+  Star,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -165,6 +169,25 @@ function OnlinePaymentForm({
   );
 }
 
+const getDeliveryAddressFromOrder = (order: any) => {
+  const itemWithAddress = order.items?.find((item: any) => item.notes?.startsWith('Delivery Address:'));
+  if (itemWithAddress) {
+    const match = itemWithAddress.notes.match(/^Delivery Address:\s*([^|]+)/);
+    return match ? match[1].trim() : '';
+  }
+  return '';
+};
+
+const getCustomerNotesFromOrder = (order: any) => {
+  const itemWithAddress = order.items?.find((item: any) => item.notes?.startsWith('Delivery Address:'));
+  if (itemWithAddress) {
+    const match = itemWithAddress.notes.match(/\|\s*Notes:\s*(.+)$/);
+    return match ? match[1].trim() : '';
+  }
+  const regularItemWithNotes = order.items?.find((item: any) => item.notes && !item.notes.startsWith('Delivery Address:'));
+  return regularItemWithNotes ? regularItemWithNotes.notes : '';
+};
+
 // --- MAIN PROFILE COMPONENT ---
 export default function CustomerProfilePage() {
   const params = useParams();
@@ -207,6 +230,18 @@ export default function CustomerProfilePage() {
   // Online Payment States
   const [selectedOrderForPay, setSelectedOrderForPay] = useState<any>(null);
   const [stripePromise, setStripePromise] = useState<any>(null);
+
+  // Order Details Modal State
+  const [selectedOrderForDetails, setSelectedOrderForDetails] = useState<any>(null);
+
+  // Order Rating States
+  const [selectedOrderForRating, setSelectedOrderForRating] = useState<any>(null);
+  const [ratingValue, setRatingValue] = useState<number>(5);
+  const [ratingComment, setRatingComment] = useState<string>('');
+  const [submittingRating, setSubmittingRating] = useState<boolean>(false);
+
+  // Mobile Dropdown State
+  const [activeDropdownOrderId, setActiveDropdownOrderId] = useState<string | null>(null);
   const [stripeConfig, setStripeConfig] = useState<any>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentIntentSecret, setPaymentIntentSecret] = useState<string | null>(null);
@@ -253,6 +288,17 @@ export default function CustomerProfilePage() {
         .catch(() => {});
     }
   }, [orgSlug, router]);
+
+  // Click outside to close dropdowns
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      setActiveDropdownOrderId(null);
+    };
+    window.addEventListener('click', handleGlobalClick);
+    return () => {
+      window.removeEventListener('click', handleGlobalClick);
+    };
+  }, []);
 
   // Load Leaflet dynamically on opening Addresses tab
   useEffect(() => {
@@ -402,6 +448,58 @@ export default function CustomerProfilePage() {
       }
     } catch (err) {
       console.error('Logout error:', err);
+    }
+  };
+
+  const handleDeleteOrderAction = async (orderId: string) => {
+    if (!window.confirm('Are you sure you want to permanently delete this order from your logs? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/public/customer/orders/${orderId}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert('Order deleted successfully.');
+        fetchProfile();
+      } else {
+        alert(data.error || 'Failed to delete order.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error deleting order.');
+    }
+  };
+
+  const handleSubmitRating = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedOrderForRating || submittingRating) return;
+
+    setSubmittingRating(true);
+    try {
+      const res = await fetch(`/api/public/customer/orders/${selectedOrderForRating.id}/rate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rating: ratingValue,
+          comment: ratingComment,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert('Thank you for your rating!');
+        setSelectedOrderForRating(null);
+        fetchProfile();
+      } else {
+        alert(data.error || 'Failed to submit rating.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error submitting rating.');
+    } finally {
+      setSubmittingRating(false);
     }
   };
 
@@ -1121,9 +1219,80 @@ export default function CustomerProfilePage() {
                   return (
                     <div
                       key={order.id}
-                      className="border rounded-3xl p-6 shadow-sm space-y-5 backdrop-blur-sm"
+                      className="border rounded-3xl p-6 shadow-sm space-y-5 backdrop-blur-sm relative"
                       style={{ backgroundColor: `${primaryColor}e8`, borderColor: `${accentColor}30` }}
                     >
+                      {/* Mobile Three-Dots Actions Menu */}
+                      <div className="absolute top-5 right-5 sm:hidden z-20" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveDropdownOrderId(activeDropdownOrderId === order.id ? null : order.id);
+                          }}
+                          className="p-2.5 rounded-xl border border-slate-800 hover:bg-slate-800/40 text-slate-400 hover:text-white transition shadow-md bg-slate-950/40"
+                          title="Order Actions"
+                        >
+                          <MoreVertical className="h-4.5 w-4.5" />
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {activeDropdownOrderId === order.id && (
+                          <div className="absolute right-0 mt-2 w-48 rounded-2xl bg-slate-900 border border-slate-800 shadow-2xl py-2 animate-in fade-in slide-in-from-top-2 duration-150 z-30">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedOrderForDetails(order);
+                                setActiveDropdownOrderId(null);
+                              }}
+                              className="w-full text-left px-4 py-2.5 hover:bg-slate-800/50 text-xs font-semibold text-slate-200 transition flex items-center gap-2"
+                            >
+                              <Eye className="h-4 w-4" style={{ color: accentColor }} /> View Details
+                            </button>
+
+                            {order.status === 'completed' && !order.rating && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedOrderForRating(order);
+                                  setRatingValue(5);
+                                  setRatingComment('');
+                                  setActiveDropdownOrderId(null);
+                                }}
+                                className="w-full text-left px-4 py-2.5 hover:bg-slate-800/50 text-xs font-semibold text-slate-200 transition flex items-center gap-2"
+                              >
+                                <Star className="h-4 w-4 text-amber-400" /> Rate Order
+                              </button>
+                            )}
+
+                            {canPayOnline && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  initPayment(order);
+                                  setActiveDropdownOrderId(null);
+                                }}
+                                className="w-full text-left px-4 py-2.5 hover:bg-slate-800/50 text-xs font-semibold text-slate-200 transition flex items-center gap-2"
+                              >
+                                <CardIcon className="h-4 w-4" style={{ color: accentColor }} /> Pay Online
+                              </button>
+                            )}
+
+                            <div className="h-px bg-slate-800/60 my-1" />
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleDeleteOrderAction(order.id);
+                                setActiveDropdownOrderId(null);
+                              }}
+                              className="w-full text-left px-4 py-2.5 hover:bg-red-950/20 text-xs font-semibold text-red-400 transition flex items-center gap-2"
+                            >
+                              <Trash2 className="h-4 w-4" /> Delete Order
+                            </button>
+                          </div>
+                        )}
+                      </div>
                       {/* Order info header */}
                       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-slate-800/60 pb-4">
                         <div>
@@ -1168,17 +1337,37 @@ export default function CustomerProfilePage() {
                               key={item.id}
                               className="bg-slate-950/60 border border-slate-800 p-3.5 rounded-2xl flex justify-between items-center text-xs"
                             >
-                              <div>
-                                <p className="font-extrabold text-white">
-                                  {item.notes ? `${item.notes}` : 'Menu Item'}
-                                </p>
-                                {item.addons && item.addons.length > 0 && (
-                                  <p className="text-[10px] text-slate-400 mt-0.5">
-                                    Addons: {item.addons.map((a: any) => a.name).join(', ')}
-                                  </p>
+                              <div className="flex items-center gap-3 min-w-0">
+                                {/* Thumbnail */}
+                                {item.imageUrl ? (
+                                  <img
+                                    src={item.imageUrl}
+                                    alt={item.name}
+                                    className="h-10 w-10 rounded-xl object-cover shrink-0"
+                                  />
+                                ) : (
+                                  <div className="h-10 w-10 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 font-extrabold flex items-center justify-center shrink-0">
+                                    {item.name?.charAt(0).toUpperCase()}
+                                  </div>
                                 )}
+
+                                <div className="min-w-0">
+                                  <p className="font-extrabold text-white truncate">
+                                    {item.name}
+                                  </p>
+                                  {item.addons && item.addons.length > 0 && (
+                                    <p className="text-[10px] text-slate-450 mt-0.5 truncate">
+                                      Addons: {item.addons.map((a: any) => a.name).join(', ')}
+                                    </p>
+                                  )}
+                                  {item.notes && !item.notes.startsWith('Delivery Address:') && (
+                                    <p className="text-[10px] text-amber-400/90 mt-0.5 italic truncate font-medium">
+                                      Note: "{item.notes}"
+                                    </p>
+                                  )}
+                                </div>
                               </div>
-                              <span className="font-black text-slate-350 text-right">
+                              <span className="font-black text-slate-350 text-right shrink-0 ml-3">
                                 {item.quantity}x @ ${parseFloat(item.unit_price).toFixed(2)}
                               </span>
                             </div>
@@ -1202,6 +1391,50 @@ export default function CustomerProfilePage() {
                           </button>
                         </div>
                       )}
+
+                      {/* Action Bar (Desktop only) */}
+                      <div className="pt-4 border-t border-slate-800/40 sm:flex hidden flex-wrap items-center justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedOrderForDetails(order)}
+                            className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition bg-slate-950/60 border border-slate-800 hover:border-slate-700 hover:bg-slate-950/80 shadow-md"
+                          >
+                            <Eye className="h-4 w-4" style={{ color: accentColor }} /> View Details
+                          </button>
+
+                          {/* Rating display or trigger */}
+                          {order.rating ? (
+                            <div className="flex items-center gap-1 px-3 py-2 bg-slate-950/30 border border-slate-850 rounded-xl text-xs text-slate-400 font-bold">
+                              <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400 shrink-0" />
+                              <span>{order.rating}/5 Rated</span>
+                            </div>
+                          ) : (
+                            order.status === 'completed' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedOrderForRating(order);
+                                  setRatingValue(5);
+                                  setRatingComment('');
+                                }}
+                                className="flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white transition bg-slate-950/60 border border-slate-800 hover:border-slate-700 hover:bg-slate-950/80 shadow-md animate-pulse"
+                              >
+                                <Star className="h-4 w-4 text-amber-450" /> Rate Order
+                              </button>
+                            )
+                          )}
+                        </div>
+
+                        {/* Delete Order option */}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteOrderAction(order.id)}
+                          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold text-red-400 hover:text-red-350 transition bg-red-950/10 border border-red-900/20 hover:border-red-900/40 hover:bg-red-950/20 shadow-md ml-auto"
+                        >
+                          <Trash2 className="h-4 w-4" /> Delete Order
+                        </button>
+                      </div>
                     </div>
                   );
                 })
@@ -1412,6 +1645,276 @@ export default function CustomerProfilePage() {
           </div>
         </div>
       )}
+
+      {/* --- ORDER DETAILS MODAL (POPUP) --- */}
+      {selectedOrderForDetails && (() => {
+        const order = selectedOrderForDetails;
+        const isPaid = order.payments?.some((p: any) => p.transaction_status === 'success');
+        const paymentMethodName = order.payments?.[0]?.payment_method || 'Cash';
+        const deliveryAddress = getDeliveryAddressFromOrder(order);
+        const customerNotes = getCustomerNotesFromOrder(order);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-2xl w-full max-h-[85vh] overflow-y-auto relative shadow-2xl animate-in zoom-in-95 duration-250 text-xs">
+              
+              <button
+                onClick={() => setSelectedOrderForDetails(null)}
+                className="absolute right-4 top-4 p-1 rounded-xl text-slate-500 hover:text-white hover:bg-slate-855 transition animate-in fade-in duration-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+
+              <div className="pb-4 border-b border-slate-800/60">
+                <div className="flex flex-wrap items-center gap-3">
+                  <h3 className="text-base font-black text-white">Order Details</h3>
+                  <span className="text-slate-400 font-mono">#{order.orderNumber}</span>
+                  {getOrderStatusPill(order.status)}
+                </div>
+                <p className="text-[10px] text-slate-400 mt-1 font-semibold flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5 text-slate-500" />
+                  Plated on {new Date(order.createdAt).toLocaleDateString()} at {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              </div>
+
+              {/* 2x2 Grid for Order Details */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 py-5 border-b border-slate-800/40">
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1.5">Customer & Account</p>
+                  <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-3 space-y-1.5">
+                    <p className="font-bold text-slate-200">{customer.name}</p>
+                    <p className="text-slate-400 flex items-center gap-1.5"><Phone className="h-3.5 w-3.5 shrink-0" /> {customer.phone}</p>
+                    {customer.email && <p className="text-slate-400 flex items-center gap-1.5"><Mail className="h-3.5 w-3.5 shrink-0" /> {customer.email}</p>}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1.5">Fulfillment & Payment</p>
+                  <div className="bg-slate-950/40 border border-slate-850 rounded-2xl p-3 space-y-1.5">
+                    <p className="font-semibold text-slate-300">
+                      Mode: <span className="uppercase text-[10px] font-extrabold tracking-wider px-1.5 py-0.5 rounded bg-slate-900 border border-white/5" style={{ color: accentColor }}>{order.orderType.replace('_', ' ')}</span>
+                    </p>
+                    <p className="font-semibold text-slate-300">
+                      Status: <span className={`text-[10px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded ${isPaid ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}`}>{isPaid ? 'Paid' : 'Unpaid'}</span>
+                    </p>
+                    <p className="text-slate-400">Method: <span className="uppercase text-[10px] font-black">{paymentMethodName}</span></p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Address & Notes */}
+              {(deliveryAddress || customerNotes) && (
+                <div className="py-5 border-b border-slate-800/40 space-y-3">
+                  {deliveryAddress && (
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Delivery Address</p>
+                      <p className="text-slate-300 bg-slate-950/20 border border-slate-850 p-3 rounded-xl">{deliveryAddress}</p>
+                    </div>
+                  )}
+                  {customerNotes && (
+                    <div>
+                      <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-1">Diner Notes</p>
+                      <p className="text-slate-300 bg-slate-950/20 border border-slate-850 p-3 rounded-xl italic">"{customerNotes}"</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Items List */}
+              <div className="py-5">
+                <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider mb-2">Itemized Receipt</p>
+                <div className="border border-slate-800 rounded-2xl overflow-hidden bg-slate-950/20">
+                  <div className="divide-y divide-slate-850">
+                    {order.items?.map((item: any) => {
+                      const itemTotal = item.price * item.quantity;
+                      return (
+                        <div key={item.id} className="p-4 flex flex-col sm:flex-row justify-between sm:items-center gap-3 hover:bg-slate-850/10 transition">
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Thumbnail */}
+                            {item.imageUrl ? (
+                              <img
+                                src={item.imageUrl}
+                                alt={item.name}
+                                className="h-12 w-12 rounded-xl object-cover shrink-0"
+                              />
+                            ) : (
+                              <div className="h-12 w-12 rounded-xl bg-slate-950 border border-slate-850 text-slate-400 font-extrabold flex items-center justify-center shrink-0">
+                                {item.name?.charAt(0).toUpperCase()}
+                              </div>
+                            )}
+
+                            <div className="min-w-0">
+                              <p className="font-extrabold text-slate-200">{item.name}</p>
+                              
+                              {/* Variant details */}
+                              {item.variant && (
+                                <p className="text-[10px] text-slate-400 mt-0.5">
+                                  Variant: {item.variant.name} (+${item.variant.additionalPrice.toFixed(2)})
+                                </p>
+                              )}
+
+                              {/* Addons details */}
+                              {item.addons && item.addons.length > 0 && (
+                                <p className="text-[10px] text-slate-450 mt-0.5">
+                                  Addons: {item.addons.map((a: any) => `${a.name} (+$${parseFloat(a.price || 0).toFixed(2)})`).join(', ')}
+                                </p>
+                              )}
+
+                              {/* Bases details */}
+                              {item.bases && item.bases.length > 0 && (
+                                <p className="text-[10px] text-slate-450 mt-0.5">
+                                  Option: {item.bases.map((b: any) => `${b.name} (+$${parseFloat(b.price || 0).toFixed(2)})`).join(', ')}
+                                </p>
+                              )}
+
+                              {/* Item-specific notes (filtered of delivery address) */}
+                              {item.notes && !item.notes.startsWith('Delivery Address:') && (
+                                <p className="text-[10px] text-amber-400/90 mt-1 italic">
+                                  Note: "{item.notes}"
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-1.5">
+                            <span className="text-slate-400 font-medium">{item.quantity} x ${item.price.toFixed(2)}</span>
+                            <span className="font-black text-white">${itemTotal.toFixed(2)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Summary Breakdown */}
+                  <div className="bg-slate-950/60 p-4 border-t border-slate-800 space-y-2 text-right">
+                    <div className="flex justify-between items-center text-slate-400">
+                      <span>Subtotal</span>
+                      <span className="font-semibold text-slate-300">${order.subtotal.toFixed(2)}</span>
+                    </div>
+                    {order.taxAmount > 0 && (
+                      <div className="flex justify-between items-center text-slate-400">
+                        <span>Tax</span>
+                        <span className="font-semibold text-slate-300">${order.taxAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    {order.discountAmount > 0 && (
+                      <div className="flex justify-between items-center text-red-400">
+                        <span>Discount</span>
+                        <span className="font-semibold">${order.discountAmount.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center text-sm font-black text-white pt-1 border-t border-slate-800">
+                      <span>Total Amount</span>
+                      <span className="text-base" style={{ color: accentColor }}>${order.totalAmount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Close button */}
+              <div className="flex justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedOrderForDetails(null)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-black text-white transition hover:opacity-90 shadow-md"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  Close Receipt
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* --- RATING MODAL (POPUP) --- */}
+      {selectedOrderForRating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <form onSubmit={handleSubmitRating} className="bg-slate-900 border border-slate-800 rounded-3xl p-6 max-w-md w-full relative shadow-2xl animate-in zoom-in-95 duration-250 text-xs">
+            
+            <button
+              type="button"
+              onClick={() => setSelectedOrderForRating(null)}
+              className="absolute right-4 top-4 p-1 rounded-xl text-slate-500 hover:text-white hover:bg-slate-850 transition"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h3 className="text-lg font-black text-white flex items-center gap-2">
+              <Star className="h-5 w-5 text-amber-400" /> Rate Your Meal
+            </h3>
+            <p className="text-slate-400 text-xs mt-1.5 mb-6">
+              Let us know how your food was for order **{selectedOrderForRating.orderNumber}**! Your feedback helps us improve.
+            </p>
+
+            {/* Stars selection */}
+            <div className="space-y-2 mb-5">
+              <label className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Rating</label>
+              <div className="flex items-center gap-2">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    onClick={() => setRatingValue(star)}
+                    className="p-1 hover:scale-110 transition shrink-0"
+                  >
+                    <Star
+                      className={`h-8 w-8 ${
+                        star <= ratingValue ? 'fill-amber-400 text-amber-400' : 'text-slate-650'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Comment block */}
+            <div className="space-y-2 mb-6">
+              <label className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">Comment (Optional)</label>
+              <textarea
+                value={ratingComment}
+                onChange={(e) => setRatingComment(e.target.value)}
+                placeholder="Share details of your experience..."
+                rows={3}
+                disabled={submittingRating}
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-slate-200 placeholder-slate-650 focus:outline-none focus:border-slate-700 disabled:opacity-50 transition resize-none font-medium"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedOrderForRating(null)}
+                disabled={submittingRating}
+                className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={submittingRating}
+                className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-xs font-extrabold text-white shadow-lg transition disabled:opacity-60"
+                style={{ backgroundColor: accentColor }}
+              >
+                {submittingRating ? (
+                  <>
+                    <div className="h-3 w-3 animate-spin rounded-full border-2 border-t-transparent border-white"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    Submit Feedback
+                  </>
+                )}
+              </button>
+            </div>
+
+          </form>
+        </div>
+      )}
+
       {/* --- MOBILE SIDEBAR DRAWER OVERLAY --- */}
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden bg-slate-950/80 backdrop-blur-sm flex justify-start animate-in fade-in duration-200">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { loadStripe } from '@stripe/stripe-js';
@@ -599,6 +599,17 @@ export default function PublicOrderPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Keep latest refs of submitting and activeModal states to avoid socket event handler stale closures
+  const submittingRef = useRef(submitting);
+  useEffect(() => {
+    submittingRef.current = submitting;
+  }, [submitting]);
+
+  const activeModalRef = useRef(activeModal);
+  useEffect(() => {
+    activeModalRef.current = activeModal;
+  }, [activeModal]);
+
   // Payment
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
@@ -721,6 +732,10 @@ export default function PublicOrderPage() {
             if (!currentId) return currentId;
             const chosen = updatedTables.find((t: any) => String(t.id) === String(currentId));
             if (chosen && chosen.status !== 'available') {
+              // Ignore if we are currently submitting an order or if order is already successful
+              if (submittingRef.current || activeModalRef.current === 'success') {
+                return currentId;
+              }
               showToast(`Table ${chosen.table_number} is no longer available. Please select another table.`, 'error');
               return '';
             }
@@ -992,6 +1007,7 @@ export default function PublicOrderPage() {
       setNewAccount(data.newAccount || null);
       setCart([]);
       setDeliveryAddress('');
+      setSelectedTableId('');
       setActiveModal('success');
       showToast('Order placed successfully!', 'success');
     } else {
@@ -2150,8 +2166,8 @@ export default function PublicOrderPage() {
                   >
                     <option value="">-- Choose Table --</option>
                     {tables.map((t) => (
-                      <option key={t.id} value={t.id} disabled={t.status === 'occupied'}>
-                        {t.table_number} ({t.seating_capacity} seats){t.status === 'occupied' ? ' • Occupied' : ''}
+                      <option key={t.id} value={t.id} disabled={t.status !== 'available'}>
+                        {t.table_number} ({t.seating_capacity} seats){t.status !== 'available' ? ` • ${t.status.charAt(0).toUpperCase() + t.status.slice(1)}` : ''}
                       </option>
                     ))}
                   </select>
@@ -2275,6 +2291,7 @@ export default function PublicOrderPage() {
                       setNewAccount(accountInfo || null);
                       setCart([]);
                       setDeliveryAddress('');
+                      setSelectedTableId('');
                       setActiveModal('success');
                     }}
                     onError={(msg: string) => setCardError(msg)}
