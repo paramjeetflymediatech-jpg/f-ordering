@@ -14,8 +14,7 @@ function generateTempPassword(): string {
 }
 
 export async function POST(request: Request) {
-  const transaction = await sequelize.transaction();
-
+  let transaction: any = null;
   try {
     const body = await request.json();
     const {
@@ -34,15 +33,41 @@ export async function POST(request: Request) {
       transactionReference,
     } = body;
 
+    // Prevent duplicate orders for Stripe Checkout redirects
+    if (stripePaymentIntentId || transactionReference) {
+      const refToCheck = stripePaymentIntentId || transactionReference;
+      const existingPayment = await Payment.findOne({
+        where: { transaction_reference: refToCheck },
+      });
+      if (existingPayment) {
+        const existingOrder = await Order.findByPk(existingPayment.order_id);
+        if (existingOrder) {
+          console.log(`[Order API] Duplicate checkout redirect intercepted. Recovering order ${existingOrder.order_number}`);
+          return NextResponse.json({
+            success: true,
+            message: 'Online order placed successfully!',
+            order: {
+              id: existingOrder.id,
+              orderNumber: existingOrder.order_number,
+              total: existingOrder.total_amount,
+              status: existingOrder.status,
+            },
+            newAccount: null,
+          });
+        }
+      }
+    }
+
     // 1. Validations
     if (!storeId) {
-      await transaction.rollback();
       return NextResponse.json({ error: 'Store ID is required' }, { status: 400 });
     }
     if (!customerName || !customerPhone) {
-      await transaction.rollback();
       return NextResponse.json({ error: 'Customer name and phone number are required' }, { status: 400 });
     }
+
+    transaction = await sequelize.transaction();
+
     if (!items || items.length === 0) {
       await transaction.rollback();
       return NextResponse.json({ error: 'Shopping cart is empty' }, { status: 400 });
@@ -349,7 +374,9 @@ export async function POST(request: Request) {
         : null,
     });
   } catch (error: any) {
-    await transaction.rollback();
+    if (transaction) {
+      await transaction.rollback();
+    }
     console.error('Online Checkout Error:', error);
     return NextResponse.json(
       { success: false, message: 'Failed to process online order checkout.', error: error.message },
