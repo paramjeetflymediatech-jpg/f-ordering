@@ -2168,7 +2168,7 @@ export default function PublicOrderPage() {
                       disabled={geocodingCheckout}
                       onClick={fetchCurrentLocationCheckout}
                       className="text-[10px] font-bold transition flex items-center gap-1 hover:opacity-85"
-                      style={{ color: accentColor }}
+                      style={{ color: primaryColor }}
                     >
                       <MapPin className="h-3 w-3" />
                       {geocodingCheckout ? "Locating..." : "Use Current Location"}
