@@ -31,6 +31,7 @@ export async function POST(request: Request) {
       notes,
       stripePaymentIntentId,
       couponCode,
+      transactionReference,
     } = body;
 
     // 1. Validations
@@ -243,10 +244,10 @@ export async function POST(request: Request) {
         amount: total,
         transaction_status: stripePaymentIntentId
           ? 'success'
-          : paymentMethod === 'cash'
+          : (paymentMethod === 'cash' || paymentMethod === 'upi')
           ? 'pending'
           : 'success',
-        transaction_reference: stripePaymentIntentId || `ONL-TX-${Date.now()}`,
+        transaction_reference: stripePaymentIntentId || transactionReference || `ONL-TX-${Date.now()}`,
       },
       { transaction }
     );

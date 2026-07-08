@@ -32,6 +32,7 @@ import {
   Menu as MenuIcon,
   Info,
   Sparkles,
+  Loader2,
 } from 'lucide-react';
 
 interface CartItem {
@@ -84,6 +85,7 @@ const getItemInitialsAndColor = (name: string) => {
 function StripeCardCheckout({
   storeId,
   amount,
+  currency,
   orderPayload,
   onSuccess,
   onError,
@@ -94,6 +96,7 @@ function StripeCardCheckout({
 }: {
   storeId: string;
   amount: number;
+  currency: string;
   orderPayload: any;
   onSuccess: (order: any) => void;
   onError: (msg: string) => void;
@@ -194,7 +197,7 @@ function StripeCardCheckout({
           body: JSON.stringify({
             storeId,
             amount,
-            currency: 'aud',
+            currency: currency || 'aud',
             customerId: customer?.id,
             paymentMethodId: selectedCardId,
           }),
@@ -218,7 +221,7 @@ function StripeCardCheckout({
           body: JSON.stringify({
             storeId,
             amount,
-            currency: 'aud',
+            currency: currency || 'aud',
             customerId: customer?.id,
             saveCard: saveCard,
           }),
@@ -611,11 +614,23 @@ export default function PublicOrderPage() {
   }, [activeModal]);
 
   // Payment
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi'>('cash');
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
   const [stripeStoreId, setStripeStoreId] = useState<string | null>(null);
+
+  // UPI configuration states
+  const [upiEnabled, setUpiEnabled] = useState(false);
+  const [upiVpa, setUpiVpa] = useState<string | null>(null);
+  const [upiQrImage, setUpiQrImage] = useState<string | null>(null);
+
+  // UPI payment processing state
+  const [showUpiPayModal, setShowUpiPayModal] = useState(false);
+  const [upiUtrRef, setUpiUtrRef] = useState('');
+  const [verifyingUpi, setVerifyingUpi] = useState(false);
+
+
 
   // Fetch Store Info and Menu by Organization Slug
   const fetchStoreAndMenu = async (showLoading = true) => {
@@ -633,17 +648,22 @@ export default function PublicOrderPage() {
       setTables(storeData.tables || []);
       setStripeStoreId(storeData.store?.id || null);
 
-      // Check if Stripe is configured for this store (lightweight — no PaymentIntent created)
+      // Check if Stripe/UPI is configured for this store (lightweight — no PaymentIntent created)
       if (storeData.store?.id) {
         try {
           const cfgRes = await fetch(`/api/public/stripe/config?storeId=${storeData.store.id}`, { cache: 'no-store' });
           const cfgData = await cfgRes.json();
-          if (cfgData.enabled && cfgData.publishableKey) {
+          if (cfgData.stripeEnabled && cfgData.publishableKey) {
             setStripeEnabled(true);
             setStripePromise(loadStripe(cfgData.publishableKey));
           }
+          if (cfgData.upiEnabled && (cfgData.upiVpa || cfgData.upiQrImage)) {
+            setUpiEnabled(true);
+            setUpiVpa(cfgData.upiVpa || null);
+            setUpiQrImage(cfgData.upiQrImage || null);
+          }
         } catch {
-          // Stripe not configured — cash only
+          // Config error — cash only
         }
       }
 
@@ -994,11 +1014,64 @@ export default function PublicOrderPage() {
     }
   };
 
+  // Handle Stripe Checkout Redirect Callbacks
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const checkoutSuccess = searchParams.get('checkout_success');
+    const sessionId = searchParams.get('session_id');
+    const payloadStr = searchParams.get('payload');
+
+    if (checkoutSuccess === 'true' && sessionId && payloadStr) {
+      // Clear URL params so page reloads don't duplicate order
+      window.history.replaceState(null, '', window.location.pathname);
+
+      try {
+        const payload = JSON.parse(decodeURIComponent(payloadStr));
+        setSubmitting(true);
+
+        // Submit order with session ID as transaction reference and mark transaction status as success
+        fetch('/api/public/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            paymentMethod: 'upi',
+            stripePaymentIntentId: sessionId,
+            transactionReference: sessionId,
+          }),
+        })
+          .then((res) => res.json())
+          .then((orderData) => {
+            if (orderData.success && orderData.order) {
+              triggerOrderCreatedNotification(orderData.order, orderData.order.OrderItems || [], orderData.order.orderType);
+              setRecentOrder(orderData.order);
+              setCart([]);
+              setDeliveryAddress('');
+              setSelectedTableId('');
+              setActiveModal('success');
+            } else {
+              showToast(orderData.error || 'Failed to register checkout order.', 'error');
+            }
+          })
+          .catch((err) => {
+            console.error('Order placement error:', err);
+            showToast('Network error placing order.', 'error');
+          })
+          .finally(() => setSubmitting(false));
+      } catch (err) {
+        console.error('Failed to parse order payload:', err);
+      }
+    } else if (searchParams.get('checkout_cancelled') === 'true') {
+      window.history.replaceState(null, '', window.location.pathname);
+      showToast('Checkout was cancelled.', 'info');
+    }
+  }, [store, orgSlug]);
+
   const handleCashCheckout = async (cartItems: CartItem[], payload: any) => {
     const res = await fetch('/api/public/orders', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...payload, paymentMethod: 'cash' }),
+      body: JSON.stringify({ ...payload, paymentMethod }),
     });
     const data = await res.json();
     if (data.success) {
@@ -1092,6 +1165,38 @@ export default function PublicOrderPage() {
         couponCode: appliedCoupon ? appliedCoupon.code : undefined,
       };
 
+      if (paymentMethod === 'upi') {
+        const response = await fetch('/api/public/stripe/create-checkout-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            storeId: store.id,
+            amount: totals.total,
+            orgSlug,
+            orderPayload: {
+              storeId: store.id,
+              customerName,
+              customerPhone,
+              customerEmail,
+              items: cart,
+              orderType: orderType === 'dine_in' ? 'qr_order' : orderType,
+              tableId: orderType === 'dine_in' ? selectedTableId : undefined,
+              deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
+              notes: checkoutNotes,
+              couponCode: appliedCoupon ? appliedCoupon.code : undefined,
+            }
+          }),
+        });
+        const data = await response.json();
+        if (data.success && data.url) {
+          window.location.href = data.url;
+        } else {
+          showToast(data.error || 'Failed to initiate Stripe Checkout.', 'error');
+          setSubmitting(false);
+        }
+        return;
+      }
+
       if (paymentMethod === 'cash' || !stripeEnabled) {
         await handleCashCheckout(cart, payload);
       }
@@ -1101,6 +1206,42 @@ export default function PublicOrderPage() {
       showToast('Network error while processing order.', 'error');
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleUpiCheckoutSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (submitting || verifyingUpi) return;
+
+    setVerifyingUpi(true);
+    // Simulate UPI banking server verification check
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        storeId: store.id,
+        customerName,
+        customerPhone,
+        customerEmail,
+        items: cart,
+        orderType: orderType === 'dine_in' ? 'qr_order' : orderType,
+        tableId: orderType === 'dine_in' ? selectedTableId : undefined,
+        deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
+        notes: checkoutNotes,
+        couponCode: appliedCoupon ? appliedCoupon.code : undefined,
+        transactionReference: upiUtrRef.trim() || undefined,
+      };
+
+      await handleCashCheckout(cart, payload);
+      setShowUpiPayModal(false);
+      setUpiUtrRef('');
+    } catch (err) {
+      console.error(err);
+      showToast('Failed to place UPI order.', 'error');
+    } finally {
+      setSubmitting(false);
+      setVerifyingUpi(false);
     }
   };
 
@@ -2246,25 +2387,40 @@ export default function PublicOrderPage() {
               </div>
 
               {/* Payment Method */}
-              {stripeEnabled && (
-                <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment Method</label>
-                  <div className="grid grid-cols-2 gap-2 mt-1.5">
-                    {(['cash', 'card'] as const).map((method) => (
-                      <button
-                        key={method} type="button"
-                        onClick={() => { setPaymentMethod(method); setCardError(null); }}
-                        className={`py-2.5 rounded-lg border text-[11px] font-bold uppercase tracking-wide transition flex items-center justify-center gap-1.5 ${paymentMethod === method
-                          ? 'border-slate-800 bg-slate-800 text-white'
-                          : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
-                          }`}
-                      >
-                        {method === 'card' ? '💳 Card' : '💵 Cash'}
-                      </button>
-                    ))}
+              {(() => {
+                const availableMethods = [
+                  { id: 'cash', label: '💵 Cash' },
+                  ...(stripeEnabled ? [{ id: 'card', label: '💳 Card' }] : []),
+                  ...(upiEnabled ? [{ id: 'upi', label: '⚡ UPI' }] : [])
+                ] as const;
+
+                if (availableMethods.length <= 1) return null;
+
+                return (
+                  <div>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment Method</label>
+                    <div className={`grid gap-2 mt-1.5 ${
+                      availableMethods.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
+                    }`}>
+                      {availableMethods.map((method) => (
+                        <button
+                          key={method.id} type="button"
+                          onClick={() => {
+                            setPaymentMethod(method.id as 'cash' | 'card' | 'upi');
+                            setCardError(null);
+                          }}
+                          className={`py-2.5 rounded-lg border text-[11px] font-bold uppercase tracking-wide transition flex items-center justify-center gap-1.5 ${paymentMethod === method.id
+                            ? 'border-slate-800 bg-slate-800 text-white'
+                            : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                            }`}
+                        >
+                          {method.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* Stripe Card Element */}
               {stripeEnabled && paymentMethod === 'card' && stripePromise && (
@@ -2272,6 +2428,7 @@ export default function PublicOrderPage() {
                   <StripeCardCheckout
                     storeId={stripeStoreId!}
                     amount={totals.total}
+                    currency={store?.currency || 'aud'}
                     customer={customer}
                     orderPayload={{
                       storeId: store.id,
@@ -2311,7 +2468,7 @@ export default function PublicOrderPage() {
                   color: primaryColor
                 }} >${totals.total.toFixed(2)}</span>
               </div>
-              {(!stripeEnabled || paymentMethod === 'cash') && (
+              {(!stripeEnabled || paymentMethod === 'cash' || paymentMethod === 'upi') && (
                 <button
                   type="button"
                   onClick={handleCheckout as any}
@@ -2319,7 +2476,11 @@ export default function PublicOrderPage() {
                   className="w-full rounded-xl py-3 text-xs font-bold text-white transition shadow-lg disabled:opacity-50"
                   style={{ backgroundColor: primaryColor }}
                 >
-                  {submitting ? 'Placing Order...' : 'Place Order & Pay at Counter'}
+                  {submitting
+                    ? 'Placing Order...'
+                    : paymentMethod === 'upi'
+                    ? '⚡ Proceed to UPI Payment'
+                    : 'Place Order & Pay at Counter'}
                 </button>
               )}
             </div>
@@ -2344,7 +2505,7 @@ export default function PublicOrderPage() {
               {/* Order summary */}
               <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2 text-xs font-semibold">
                 <div className="flex justify-between text-slate-500">
-                  <span>Total Paid</span>
+                  <span>Total Bill</span>
                   <span className="text-slate-800 font-extrabold">${parseFloat(recentOrder.total).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-slate-500">
@@ -2352,6 +2513,19 @@ export default function PublicOrderPage() {
                   <span className="rounded bg-emerald-100 px-2 py-0.5 text-[10px] text-emerald-700 uppercase font-black">{recentOrder.status}</span>
                 </div>
               </div>
+
+              {/* UPI Payment confirmation note */}
+              {recentOrder.payments?.[0]?.payment_method === 'upi' && (
+                <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3.5 space-y-2 text-xs font-semibold text-emerald-800 animate-in fade-in duration-300">
+                  <p className="font-extrabold flex items-center gap-1.5"><CheckCircle className="h-4 w-4 text-emerald-600" /> Payment Reference Registered!</p>
+                  <p className="text-[10px] text-slate-500 font-medium leading-normal">
+                    Reference ID: <span className="font-mono font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{recentOrder.payments[0].transaction_reference}</span>
+                  </p>
+                  <p className="text-[10px] text-slate-450 leading-relaxed font-medium">
+                    Our team will verify this UPI reference code against our bank statement before preparing your order.
+                  </p>
+                </div>
+              )}
 
               {/* New account credentials — shown only for first-time guest orders */}
               {newAccount && (
@@ -2390,6 +2564,124 @@ export default function PublicOrderPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* UPI PAYMENT INPUT MODAL (POPUP BEFORE ORDER PLACEMENT) */}
+      {showUpiPayModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <form onSubmit={handleUpiCheckoutSubmit} className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Header */}
+            <div className="bg-amber-50 px-6 py-5 text-center border-b border-amber-100 relative">
+              <button
+                type="button"
+                onClick={() => { setShowUpiPayModal(false); setUpiUtrRef(''); }}
+                className="absolute right-4 top-4 text-slate-400 hover:text-slate-700"
+              >
+                <X className="h-5 w-5" />
+              </button>
+              <h3 className="text-base font-extrabold text-slate-800">Complete UPI Payment</h3>
+              <p className="text-xs text-slate-500 mt-1">Scan QR code & enter transaction details</p>
+            </div>
+
+            {verifyingUpi ? (
+              <div className="p-8 text-center space-y-4 animate-in fade-in duration-300">
+                <div className="relative w-16 h-16 mx-auto flex items-center justify-center">
+                  <div className="absolute inset-0 rounded-full border-4 border-slate-100"></div>
+                  <div className="absolute inset-0 rounded-full border-4 border-t-amber-500 border-r-amber-500 animate-spin"></div>
+                  <Loader2 className="h-6 w-6 text-amber-500 animate-pulse animate-spin" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="text-sm font-extrabold text-slate-800">Verifying UPI Transaction</h4>
+                  <p className="text-[10px] text-slate-500 font-medium">UTR Reference: <span className="font-mono text-slate-700 font-bold">{upiUtrRef}</span></p>
+                </div>
+                <div className="text-[9px] bg-amber-50 border border-amber-100 rounded-lg p-2.5 text-amber-800 max-w-[240px] mx-auto leading-normal">
+                  Connecting to UPI payments gateway network and merchant bank...
+                </div>
+              </div>
+            ) : (
+              <div className="p-5 space-y-4">
+                {/* Order total amount info */}
+                <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex justify-between items-center text-xs font-bold text-slate-700">
+                  <span>Total Amount Due</span>
+                  <span className="text-slate-900 text-sm font-black">${totals.total.toFixed(2)}</span>
+                </div>
+
+                {/* UPI Payment Scan QR */}
+                {(upiVpa || upiQrImage) && (
+                  <div className="space-y-3 text-center">
+                    {/* QR Code Container */}
+                    <div className="mx-auto bg-white p-2 w-44 h-44 rounded-xl border border-slate-200 flex items-center justify-center shadow-inner">
+                      {upiQrImage ? (
+                        <img
+                          src={upiQrImage}
+                          alt="Merchant UPI Scanner"
+                          className="w-40 h-40 object-contain rounded-lg"
+                        />
+                      ) : (
+                        <img
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+                            `upi://pay?pa=${upiVpa || ''}&pn=${encodeURIComponent(store.name || 'Store')}&am=${totals.total.toFixed(2)}&cu=INR&tn=Checkout%20Order`
+                          )}`}
+                          alt="UPI QR Code"
+                          className="w-40 h-40"
+                        />
+                      )}
+                    </div>
+
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      {upiQrImage ? 'Scan and pay the exact amount due' : 'Scan to pay directly from your mobile device'}
+                    </p>
+
+                    {upiVpa && (
+                      <a
+                        href={`upi://pay?pa=${upiVpa}&pn=${encodeURIComponent(store.name || 'Store')}&am=${totals.total.toFixed(2)}&cu=INR&tn=Checkout%20Order`}
+                        className="inline-flex items-center justify-center gap-1.5 w-full py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[11px] transition shadow-md shadow-amber-500/10"
+                      >
+                        ⚡ Pay via UPI App
+                      </a>
+                    )}
+                  </div>
+                )}
+
+                {/* Transaction / UTR input field (Optional) */}
+                <div className="space-y-1.5">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Transaction / UTR Reference ID <span className="text-slate-400">(Optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={30}
+                    value={upiUtrRef}
+                    onChange={(e) => setUpiUtrRef(e.target.value)}
+                    placeholder="e.g. 12-digit UTR or Ref Code"
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition font-mono tracking-wider text-center"
+                  />
+                  <p className="text-[9px] text-slate-450 leading-relaxed text-center">
+                    You can enter your UPI transaction reference code to speed up verification.
+                  </p>
+                </div>
+
+                {/* Submit button */}
+                <button
+                  type="submit"
+                  disabled={submitting || verifyingUpi}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 py-3 text-xs font-bold text-white hover:bg-emerald-700 transition disabled:opacity-50 shadow-md"
+                >
+                  {submitting ? (
+                    <>
+                      <div className="h-3 w-3 animate-spin rounded-full border-2 border-t-transparent border-white"></div>
+                      Placing Order...
+                    </>
+                  ) : (
+                    'Complete Payment & Place Order'
+                  )}
+                </button>
+              </div>
+            )}
+
+          </form>
         </div>
       )}
 

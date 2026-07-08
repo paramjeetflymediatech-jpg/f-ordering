@@ -31,7 +31,11 @@ import {
   Eye,
   Star,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight
 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -242,6 +246,19 @@ export default function CustomerProfilePage() {
 
   // Mobile Dropdown State
   const [activeDropdownOrderId, setActiveDropdownOrderId] = useState<string | null>(null);
+
+  // Payment History Pagination States
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+
+  // Order History Pagination States
+  const [currentOrderPage, setCurrentOrderPage] = useState(1);
+  const [ordersPerPage, setOrdersPerPage] = useState(5);
+
+  useEffect(() => {
+    setCurrentPage(1);
+    setCurrentOrderPage(1);
+  }, [activeTab]);
   const [stripeConfig, setStripeConfig] = useState<any>(null);
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [paymentIntentSecret, setPaymentIntentSecret] = useState<string | null>(null);
@@ -741,7 +758,7 @@ export default function CustomerProfilePage() {
         body: JSON.stringify({
           storeId: order.storeId,
           amount: order.totalAmount,
-          currency: 'aud',
+          currency: store?.currency || 'aud',
           orderId: order.id
         })
       });
@@ -836,6 +853,18 @@ export default function CustomerProfilePage() {
       orderType: order.orderType,
       createdAt: order.createdAt
     }))
+  );
+
+  const totalPages = Math.ceil(paymentsList.length / itemsPerPage);
+  const paginatedPayments = paymentsList.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const totalOrderPages = Math.ceil(orders.length / ordersPerPage);
+  const paginatedOrders = orders.slice(
+    (currentOrderPage - 1) * ordersPerPage,
+    currentOrderPage * ordersPerPage
   );
 
   return (
@@ -1212,7 +1241,8 @@ export default function CustomerProfilePage() {
                   </Link>
                 </div>
               ) : (
-                orders.map((order) => {
+                <>
+                  {paginatedOrders.map((order) => {
                   const isPaid = order.payments?.some((p: any) => p.transaction_status === 'success');
                   const canPayOnline = !isPaid && order.status !== 'cancelled';
 
@@ -1368,7 +1398,7 @@ export default function CustomerProfilePage() {
                                 </div>
                               </div>
                               <span className="font-black text-slate-350 text-right shrink-0 ml-3">
-                                {item.quantity}x @ ${parseFloat(item.unit_price).toFixed(2)}
+                                {item.quantity}x @ ${parseFloat(item.unit_price || item.price || 0).toFixed(2)}
                               </span>
                             </div>
                           ))}
@@ -1437,57 +1467,288 @@ export default function CustomerProfilePage() {
                       </div>
                     </div>
                   );
-                })
-              )}
-            </div>
-          )}
+                })}
+
+                {/* Order Pagination controls */}
+                {orders.length > 0 && (
+                  <div className="px-6 py-4 border rounded-3xl border-slate-800/60 bg-[#0c1220]/90 shadow-xl backdrop-blur-md flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-400">
+                    <div className="text-[11px] text-slate-550 text-center sm:text-left">
+                      Showing <span className="text-slate-300">{orders.length === 0 ? 0 : (currentOrderPage - 1) * ordersPerPage + 1}</span> to{' '}
+                      <span className="text-slate-300">{Math.min(currentOrderPage * ordersPerPage, orders.length)}</span> of{' '}
+                      <span className="text-slate-300">{orders.length}</span> orders
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-center gap-4">
+                      {/* Orders per page selector */}
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                        <span>Show:</span>
+                        <select
+                          value={ordersPerPage}
+                          onChange={(e) => {
+                            setOrdersPerPage(Number(e.target.value));
+                            setCurrentOrderPage(1);
+                          }}
+                          className="bg-slate-900 border border-slate-800 text-slate-300 rounded px-1.5 py-1 text-[11px] font-bold outline-none cursor-pointer hover:border-slate-700 transition"
+                        >
+                          <option value={5}>5</option>
+                          <option value={10}>10</option>
+                          <option value={20}>20</option>
+                          <option value={50}>50</option>
+                        </select>
+                        <span>entries</span>
+                      </div>
+
+                      {totalOrderPages > 1 && (
+                        <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => setCurrentOrderPage(1)}
+                            disabled={currentOrderPage === 1}
+                            className="p-2 rounded-lg border border-slate-800 hover:bg-slate-800/40 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition text-slate-400 shrink-0"
+                            title="First Page"
+                          >
+                            <ChevronsLeft className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentOrderPage(currentOrderPage - 1)}
+                            disabled={currentOrderPage === 1}
+                            className="p-2 rounded-lg border border-slate-800 hover:bg-slate-800/40 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition text-slate-400 shrink-0"
+                            title="Previous Page"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </button>
+
+                          <span className="px-3.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-black text-slate-200">
+                            Page {currentOrderPage} of {totalOrderPages}
+                          </span>
+
+                          <button
+                            type="button"
+                            onClick={() => setCurrentOrderPage(currentOrderPage + 1)}
+                            disabled={currentOrderPage === totalOrderPages}
+                            className="p-2 rounded-lg border border-slate-800 hover:bg-slate-800/40 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition text-slate-400 shrink-0"
+                            title="Next Page"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCurrentOrderPage(totalOrderPages)}
+                            disabled={currentOrderPage === totalOrderPages}
+                            className="p-2 rounded-lg border border-slate-800 hover:bg-slate-800/40 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition text-slate-400 shrink-0"
+                            title="Last Page"
+                          >
+                            <ChevronsRight className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
 
           {/* PAYMENT HISTORY VIEW */}
           {activeTab === 'payments' && (
-            <div className="border rounded-3xl overflow-hidden shadow-xl backdrop-blur-md animate-in fade-in duration-300" style={{ backgroundColor: `${primaryColor}e8`, borderColor: `${accentColor}30` }}>
+            <div className="border rounded-3xl overflow-hidden shadow-xl backdrop-blur-md animate-in fade-in duration-300 flex flex-col justify-between min-h-[400px] bg-[#0c1220]/90 border-slate-800/60">
               {paymentsList.length === 0 ? (
-                <div className="text-center py-16 text-slate-500 font-semibold">
-                  <CreditCard className="h-12 w-12 mx-auto stroke-[1.5] text-slate-700 mb-3" />
-                  <p className="text-sm">No billing transactions or receipt records found.</p>
+                <div className="text-center py-20 text-slate-550 font-semibold flex-1 flex flex-col items-center justify-center">
+                  <div className="h-16 w-16 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-center mb-4">
+                    <CreditCard className="h-8 w-8 text-slate-600" />
+                  </div>
+                  <p className="text-sm font-bold text-slate-400">No billing transactions or receipt records found</p>
+                  <p className="text-xs text-slate-500 mt-1 max-w-[280px]">Your completed online and cash transaction receipts will appear here.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-slate-800 bg-slate-950/40 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        <th className="py-4.5 px-6">Date</th>
-                        <th className="py-4.5 px-6">Order ID</th>
-                        <th className="py-4.5 px-6">Method</th>
-                        <th className="py-4.5 px-6">Tx Reference</th>
-                        <th className="py-4.5 px-6">Amount</th>
-                        <th className="py-4.5 px-6 text-right">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-850 text-xs">
-                      {paymentsList.map((pay: any) => (
-                        <tr key={pay.id} className="hover:bg-slate-850/30 transition">
-                          <td className="py-4.5 px-6 text-slate-400">
-                            {new Date(pay.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="py-4.5 px-6 font-extrabold text-white">
-                            {pay.orderNumber}
-                          </td>
-                          <td className="py-4.5 px-6 uppercase text-slate-400 font-extrabold text-[10px] tracking-wider">
-                            {pay.payment_method}
-                          </td>
-                          <td className="py-4.5 px-6 font-mono text-[10px] text-slate-500">
-                            {pay.transaction_reference || 'N/A'}
-                          </td>
-                          <td className="py-4.5 px-6 font-black text-white">
-                            ${parseFloat(pay.amount).toFixed(2)}
-                          </td>
-                          <td className="py-4.5 px-6 text-right">
-                            {getPaymentStatusPill(pay.transaction_status)}
-                          </td>
+                <div className="flex-1 flex flex-col justify-between">
+                  {/* Desktop view (table) */}
+                  <div className="hidden sm:block overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 bg-slate-900/50 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                          <th className="py-4 px-6">Date</th>
+                          <th className="py-4 px-6">Order ID</th>
+                          <th className="py-4 px-6">Payment Method</th>
+                          <th className="py-4 px-6">Tx Reference</th>
+                          <th className="py-4 px-6">Amount</th>
+                          <th className="py-4 px-6 text-right">Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/40 text-xs font-semibold">
+                        {paginatedPayments.map((pay: any) => {
+                          const isSuccess = pay.transaction_status === 'success';
+                          const isPending = pay.transaction_status === 'pending';
+                          return (
+                            <tr key={pay.id} className="hover:bg-slate-850/20 transition duration-150">
+                              <td className="py-4 px-6 text-slate-400 font-medium">
+                                {new Date(pay.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                              </td>
+                              <td className="py-4 px-6 font-extrabold text-white">
+                                {pay.orderNumber}
+                              </td>
+                              <td className="py-4 px-6">
+                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${
+                                  pay.payment_method === 'card'
+                                    ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                                    : pay.payment_method === 'upi'
+                                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                    : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                }`}>
+                                  {pay.payment_method === 'card' ? '💳 Card' : pay.payment_method === 'upi' ? '⚡ UPI' : '💵 Cash'}
+                                </span>
+                              </td>
+                              <td className="py-4 px-6">
+                                <span className="font-mono text-[10px] text-slate-400 bg-slate-900/60 px-2 py-1 rounded border border-slate-800/60 max-w-[140px] truncate block" title={pay.transaction_reference}>
+                                  {pay.transaction_reference || 'N/A'}
+                                </span>
+                              </td>
+                              <td className="py-4 px-6 text-sm font-black text-white">
+                                ${parseFloat(pay.amount).toFixed(2)}
+                              </td>
+                              <td className="py-4 px-6 text-right">
+                                <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-[10px] font-black uppercase tracking-wider ${
+                                  isSuccess
+                                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                    : isPending
+                                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                    : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                                }`}>
+                                  {isSuccess ? 'Paid' : isPending ? 'Pending' : 'Failed'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile view (cards) */}
+                  <div className="block sm:hidden divide-y divide-slate-800/40">
+                    {paginatedPayments.map((pay: any) => {
+                      const isSuccess = pay.transaction_status === 'success';
+                      const isPending = pay.transaction_status === 'pending';
+                      return (
+                        <div key={pay.id} className="p-5 space-y-3.5 hover:bg-slate-850/10 transition duration-150">
+                          <div className="flex justify-between items-center">
+                            <span className="font-extrabold text-white text-xs">{pay.orderNumber}</span>
+                            <span className="text-[10px] text-slate-500 font-bold">
+                              {new Date(pay.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between items-center text-xs">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-wider ${
+                              pay.payment_method === 'card'
+                                ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'
+                                : pay.payment_method === 'upi'
+                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                            }`}>
+                              {pay.payment_method === 'card' ? '💳 Card' : pay.payment_method === 'upi' ? '⚡ UPI' : '💵 Cash'}
+                            </span>
+                            <span className="font-mono text-[9px] text-slate-500 bg-slate-900/60 px-1.5 py-0.5 rounded border border-slate-800/60 max-w-[120px] truncate">
+                              {pay.transaction_reference || 'N/A'}
+                            </span>
+                          </div>
+
+                          <div className="flex justify-between items-center pt-2 border-t border-slate-800/20">
+                            <span className="font-black text-white text-sm">${parseFloat(pay.amount).toFixed(2)}</span>
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-xl text-[9px] font-black uppercase tracking-wider ${
+                              isSuccess
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                : isPending
+                                ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                            }`}>
+                              {isSuccess ? 'Paid' : isPending ? 'Pending' : 'Failed'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Pagination controls */}
+                  {paymentsList.length > 0 && (
+                    <div className="px-6 py-4 border-t border-slate-800/40 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-semibold text-slate-400 bg-slate-950/20">
+                      <div className="text-[11px] text-slate-500 text-center sm:text-left">
+                        Showing <span className="text-slate-300">{paymentsList.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1}</span> to{' '}
+                        <span className="text-slate-300">{Math.min(currentPage * itemsPerPage, paymentsList.length)}</span> of{' '}
+                        <span className="text-slate-300">{paymentsList.length}</span> transactions
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-center gap-4">
+                        {/* Items per page selector */}
+                        <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
+                          <span>Show:</span>
+                          <select
+                            value={itemsPerPage}
+                            onChange={(e) => {
+                              setItemsPerPage(Number(e.target.value));
+                              setCurrentPage(1);
+                            }}
+                            className="bg-slate-900 border border-slate-800 text-slate-300 rounded px-1.5 py-1 text-[11px] font-bold outline-none cursor-pointer hover:border-slate-700 transition"
+                          >
+                            <option value={5}>5</option>
+                            <option value={10}>10</option>
+                            <option value={20}>20</option>
+                            <option value={50}>50</option>
+                          </select>
+                          <span>entries</span>
+                        </div>
+
+                        {totalPages > 1 && (
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => setCurrentPage(1)}
+                              disabled={currentPage === 1}
+                              className="p-2 rounded-lg border border-slate-800 hover:bg-slate-800/40 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition text-slate-400 shrink-0"
+                              title="First Page"
+                            >
+                              <ChevronsLeft className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCurrentPage(currentPage - 1)}
+                              disabled={currentPage === 1}
+                              className="p-2 rounded-lg border border-slate-800 hover:bg-slate-800/40 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition text-slate-400 shrink-0"
+                              title="Previous Page"
+                            >
+                              <ChevronLeft className="h-4 w-4" />
+                            </button>
+
+                            <span className="px-3.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-[11px] font-black text-slate-200">
+                              Page {currentPage} of {totalPages}
+                            </span>
+
+                            <button
+                              type="button"
+                              onClick={() => setCurrentPage(currentPage + 1)}
+                              disabled={currentPage === totalPages}
+                              className="p-2 rounded-lg border border-slate-800 hover:bg-slate-800/40 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition text-slate-400 shrink-0"
+                              title="Next Page"
+                            >
+                              <ChevronRight className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setCurrentPage(totalPages)}
+                              disabled={currentPage === totalPages}
+                              className="p-2 rounded-lg border border-slate-800 hover:bg-slate-800/40 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent transition text-slate-400 shrink-0"
+                              title="Last Page"
+                            >
+                              <ChevronsRight className="h-4 w-4" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

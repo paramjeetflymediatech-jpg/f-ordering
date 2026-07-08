@@ -24,6 +24,9 @@ export async function GET() {
           stripe_publishable_key: null,
           stripe_secret_key: null,
           stripe_webhook_secret: null,
+          is_upi_enabled: false,
+          upi_vpa: null,
+          upi_qr_image: null,
         },
       });
     }
@@ -45,6 +48,9 @@ export async function GET() {
           : null,
         has_secret_key: !!config.stripe_secret_key,
         has_webhook_secret: !!config.stripe_webhook_secret,
+        is_upi_enabled: config.is_upi_enabled,
+        upi_vpa: config.upi_vpa,
+        upi_qr_image: config.upi_qr_image,
       },
     });
   } catch (error: any) {
@@ -63,7 +69,7 @@ export async function PUT(request: Request) {
     const { organization_id } = session.user as any;
     const body = await request.json();
 
-    const { stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, is_stripe_enabled } =
+    const { stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, is_stripe_enabled, is_upi_enabled, upi_vpa, upi_qr_image } =
       body;
 
     // Verify the organization actually exists in the DB (guards against stale JWT sessions)
@@ -91,6 +97,9 @@ export async function PUT(request: Request) {
     if (stripe_webhook_secret && !stripe_webhook_secret.includes('...')) {
       updates.stripe_webhook_secret = stripe_webhook_secret;
     }
+    if (is_upi_enabled !== undefined) updates.is_upi_enabled = is_upi_enabled;
+    if (upi_vpa !== undefined) updates.upi_vpa = upi_vpa || null;
+    if (upi_qr_image !== undefined) updates.upi_qr_image = upi_qr_image || null;
 
     if (config) {
       await config.update(updates);
@@ -101,6 +110,9 @@ export async function PUT(request: Request) {
         stripe_publishable_key: stripe_publishable_key || null,
         stripe_secret_key: stripe_secret_key || null,
         stripe_webhook_secret: stripe_webhook_secret || null,
+        is_upi_enabled: is_upi_enabled ?? false,
+        upi_vpa: upi_vpa || null,
+        upi_qr_image: upi_qr_image || null,
       });
     }
 

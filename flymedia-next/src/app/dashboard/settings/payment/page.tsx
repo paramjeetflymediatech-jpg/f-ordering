@@ -19,6 +19,12 @@ export default function PaymentSettingsPage() {
   const [showSecretKey, setShowSecretKey] = useState(false);
   const [showWebhookSecret, setShowWebhookSecret] = useState(false);
 
+  // UPI Payments configuration states
+  const [isUpiEnabled, setIsUpiEnabled] = useState(false);
+  const [upiVpa, setUpiVpa] = useState('');
+  const [upiQrImage, setUpiQrImage] = useState('');
+  const [uploadingQr, setUploadingQr] = useState(false);
+
   useEffect(() => {
     fetch('/api/dashboard/payment-config')
       .then((r) => r.json())
@@ -28,11 +34,45 @@ export default function PaymentSettingsPage() {
           setPublishableKey(data.config.stripe_publishable_key || '');
           setHasSecretKey(data.config.has_secret_key ?? false);
           setHasWebhookSecret(data.config.has_webhook_secret ?? false);
+          setIsUpiEnabled(data.config.is_upi_enabled ?? false);
+          setUpiVpa(data.config.upi_vpa || '');
+          setUpiQrImage(data.config.upi_qr_image || '');
         }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const handleQrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingQr(true);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('type', 'upi-qr');
+
+    try {
+      const res = await fetch('/api/dashboard/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        setUpiQrImage(data.url);
+        setSuccessMsg('UPI QR Scanner uploaded successfully! Remember to save changes.');
+      } else {
+        setErrorMsg(data.error || 'Failed to upload QR scanner.');
+      }
+    } catch (err) {
+      setErrorMsg('Network error uploading file.');
+    } finally {
+      setUploadingQr(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +83,9 @@ export default function PaymentSettingsPage() {
     const body: any = {
       is_stripe_enabled: isStripeEnabled,
       stripe_publishable_key: publishableKey,
+      is_upi_enabled: isUpiEnabled,
+      upi_vpa: upiVpa,
+      upi_qr_image: upiQrImage,
     };
     if (secretKey) body.stripe_secret_key = secretKey;
     if (webhookSecret) body.stripe_webhook_secret = webhookSecret;
@@ -225,6 +268,100 @@ export default function PaymentSettingsPage() {
             </div>
           </>
         )}
+
+        {/* UPI Payments Section */}
+        <div className="rounded-xl border border-[#1e293b]/60 bg-[#0c101b] p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-bold text-white">Enable UPI Payments</p>
+              <p className="text-xs text-slate-400 mt-0.5">Accept direct mobile payments via UPI QR Code / Intent</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsUpiEnabled((v) => !v)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                isUpiEnabled ? 'bg-amber-500' : 'bg-slate-700'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  isUpiEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {isUpiEnabled && (
+            <div className="pt-2 animate-in fade-in duration-200 space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                  Merchant UPI ID (VPA) <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={upiVpa}
+                  onChange={(e) => setUpiVpa(e.target.value)}
+                  placeholder="e.g. merchant@upi, pay@okhdfcbank"
+                  required={isUpiEnabled}
+                  className="w-full rounded-lg border border-[#1e293b] bg-[#060b14] px-3 py-2.5 text-sm text-white placeholder-slate-650 outline-none focus:border-amber-500 transition font-mono"
+                />
+                <p className="text-[10px] text-slate-500 mt-1.5">
+                  Used to generate dynamic QR codes and intent-pay URI links at checkout.
+                </p>
+              </div>
+
+              <div className="pt-3 border-t border-slate-800/40 space-y-3">
+                <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+                  Static QR Code Scanner Image (Optional)
+                </label>
+
+                {upiQrImage ? (
+                  <div className="relative w-44 h-44 rounded-xl border border-slate-800 bg-[#060b14] overflow-hidden flex items-center justify-center group shadow-md">
+                    <img
+                      src={upiQrImage}
+                      alt="Uploaded Scanner"
+                      className="w-40 h-40 object-contain rounded-lg"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setUpiQrImage('')}
+                      className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs font-bold text-red-400 transition"
+                    >
+                      Remove Image
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-32 rounded-xl border-2 border-dashed border-slate-800 bg-[#060b14] cursor-pointer hover:border-amber-500 hover:bg-[#060b14]/80 transition">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6 text-center px-4">
+                      {uploadingQr ? (
+                        <>
+                          <Loader2 className="h-6 w-6 animate-spin text-amber-500 mb-2" />
+                          <p className="text-xs font-semibold text-slate-400">Uploading scanner...</p>
+                        </>
+                      ) : (
+                        <>
+                          <Info className="h-6 w-6 text-slate-500 mb-2" />
+                          <p className="text-xs font-semibold text-slate-400">Click to upload QR scanner image</p>
+                          <p className="text-[9px] text-slate-600 mt-1">PNG, JPG or SVG up to 5MB</p>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleQrUpload}
+                      disabled={uploadingQr}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+                <p className="text-[10px] text-slate-500">
+                  If uploaded, customers will scan this static image instead of a generated VPA QR code.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Messages */}
         {successMsg && (

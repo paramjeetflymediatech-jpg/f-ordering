@@ -62,10 +62,13 @@ export async function POST(request: Request) {
       }
     }
 
+    // Resolve store-specific currency configured in the database to support Stripe UPI (requires INR)
+    const storeCurrency = (store.currency || currency || 'aud').toLowerCase();
+
     // Build intent options
     const intentOptions: Stripe.PaymentIntentCreateParams = {
       amount: Math.round(amount * 100), // Stripe expects cents
-      currency: (currency || 'aud').toLowerCase(),
+      currency: storeCurrency,
       metadata: {
         store_id: storeId,
         organization_id: store.organization_id,

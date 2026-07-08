@@ -31,10 +31,11 @@ export async function POST(request: Request) {
     const type = formData.get('type') as string | null;
     const isLogo = type === 'logo';
     const isBanner = type === 'banner';
+    const isUpiQr = type === 'upi-qr';
 
-    // Save to uploads/{slug}/logo, uploads/{slug}/banner or uploads/{slug}/menu
-    const subFolder = isLogo ? 'logo' : isBanner ? 'banner' : 'menu';
-    const prefix = isLogo ? 'logo' : isBanner ? 'banner' : 'menu-item';
+    // Save to uploads/{slug}/logo, uploads/{slug}/banner, uploads/{slug}/upi or uploads/{slug}/menu
+    const subFolder = isLogo ? 'logo' : isBanner ? 'banner' : isUpiQr ? 'upi' : 'menu';
+    const prefix = isLogo ? 'logo' : isBanner ? 'banner' : isUpiQr ? 'upi-qr' : 'menu-item';
 
     const uploadDir = path.join(process.cwd(), 'uploads', slug, subFolder);
     await mkdir(uploadDir, { recursive: true });
