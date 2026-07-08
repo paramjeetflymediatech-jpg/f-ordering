@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { io } from 'socket.io-client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { loadStripe } from '@stripe/stripe-js';
@@ -33,6 +33,7 @@ import {
   Info,
   Sparkles,
   Loader2,
+  ChevronDown,
 } from 'lucide-react';
 
 interface CartItem {
@@ -632,6 +633,27 @@ export default function PublicOrderPage() {
   const [upiUtrRef, setUpiUtrRef] = useState('');
   const [verifyingUpi, setVerifyingUpi] = useState(false);
 
+  // Profile Dropdown state
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+
+  // Expanded parent category in sidebar
+  const [expandedParentId, setExpandedParentId] = useState<string | null>(null);
+
+  // Organize parent-child categories hierarchy
+  const orderedCategories = useMemo(() => {
+    const parentCats = categories.filter(c => !c.parent_id);
+    const result: any[] = [];
+    parentCats.forEach(parent => {
+      result.push(parent);
+      const subs = categories.filter(c => c.parent_id === parent.id);
+      result.push(...subs);
+    });
+    // Add any category that has a parent_id that is not found (fallback)
+    const orphans = categories.filter(c => c.parent_id && !categories.some(p => p.id === c.parent_id));
+    result.push(...orphans);
+    return result;
+  }, [categories]);
+
   // Handle Stripe Checkout Redirect Callbacks
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
@@ -780,6 +802,20 @@ export default function PublicOrderPage() {
       window.removeEventListener('profileUpdated', handler);
     };
   }, [orgSlug]);
+
+  // Sync selected category with accordion expanded state
+  useEffect(() => {
+    if (selectedCategoryId && selectedCategoryId !== 'all') {
+      const selectedCat = categories.find(c => c.id === selectedCategoryId);
+      if (selectedCat) {
+        if (selectedCat.parent_id) {
+          setExpandedParentId(selectedCat.parent_id);
+        } else {
+          setExpandedParentId(selectedCat.id);
+        }
+      }
+    }
+  }, [selectedCategoryId, categories]);
 
   // Real-time table status updates
   useEffect(() => {
@@ -1251,12 +1287,19 @@ export default function PublicOrderPage() {
   const totals = getCartTotal();
 
   const categoriesWithFilteredItems = categories.map((cat) => {
-    const matched = (cat.MenuItems || []).filter((item: any) => {
-      const matchesCategory = selectedCategoryId === 'all' || item.category_id === selectedCategoryId;
-      const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
+    const isCategorySelected = 
+      selectedCategoryId === 'all' || 
+      cat.id === selectedCategoryId || 
+      cat.parent_id === selectedCategoryId;
+
+    const matched = isCategorySelected
+      ? (cat.MenuItems || []).filter((item: any) => {
+          const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+          return matchesSearch;
+        })
+      : [];
+
     return { ...cat, filteredItems: matched };
   }).filter(cat => cat.filteredItems.length > 0);
 
@@ -1370,29 +1413,94 @@ export default function PublicOrderPage() {
               Book Table
             </Link>
             {customer ? (
-              <>
-                <Link
-                  href={`/order-online/${orgSlug}/customer/profile`}
-                  className="text-white transition flex items-center gap-1.5"
+              <div className="relative">
+                <button
+                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                  className="text-white hover:opacity-90 transition flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-bold shrink-0"
                 >
-                  <User className="h-4 w-4" /> Hi, {customer.name}
-                </Link>
-                {customer.loyaltyPoints !== undefined && (
-                  <span
-                    className="inline-flex items-center gap-1 rounded px-2 py-0.5 text-xs font-bold border"
-                    style={{
-                      backgroundColor: `${accentColor}1a`,
-                      color: accentColor,
-                      borderColor: `${accentColor}26`,
-                    }}
-                  >
-                    <Award className="h-3.5 w-3.5" /> {customer.loyaltyPoints} PTS
-                  </span>
-                )}
-                <button onClick={handleLogout} className="text-slate-400 hover:text-red-400 transition" title="Log Out">
-                  <LogOut className="h-4 w-4" />
+                  <User className="h-4 w-4" />
+                  <span>Hi, {customer.name}</span>
+                  <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
-              </>
+
+                <AnimatePresence>
+                  {profileDropdownOpen && (
+                    <>
+                      {/* Invisible click overlay to close the dropdown when clicking outside */}
+                      <div
+                        className="fixed inset-0 z-40"
+                        onClick={() => setProfileDropdownOpen(false)}
+                      />
+                      
+                      <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className={`absolute right-0 mt-2 w-56 rounded-2xl border p-4 shadow-xl z-50 space-y-3.5 ${
+                          layoutStyle === 'modern_dark'
+                            ? 'bg-[#0f1422] border-[#1e293b]/60 text-white shadow-slate-950/40'
+                            : 'bg-white border-slate-100 text-slate-800 shadow-slate-200/50'
+                        }`}
+                      >
+                        {/* Profile Info Summary */}
+                        <div className="border-b pb-3 border-slate-100/10 dark:border-slate-800/60">
+                          <p className="text-xs font-black tracking-wide truncate text-left">{customer.name}</p>
+                          <p className="text-[10px] text-slate-400 truncate mt-0.5 text-left">{customer.email || 'Loyal Diner'}</p>
+                        </div>
+
+                        {/* Loyalty Points display */}
+                        {customer.loyaltyPoints !== undefined && (
+                          <div
+                            className="flex items-center justify-between rounded-xl px-3 py-2 border text-xs font-bold"
+                            style={{
+                              backgroundColor: `${accentColor}0a`,
+                              color: accentColor,
+                              borderColor: `${accentColor}18`,
+                            }}
+                          >
+                            <span className="flex items-center gap-1.5">
+                              <Award className="h-4 w-4" /> Loyalty Points
+                            </span>
+                            <span>{customer.loyaltyPoints} PTS</span>
+                          </div>
+                        )}
+
+                        {/* Navigation Menu */}
+                        <div className="space-y-1">
+                          <Link
+                            href={`/order-online/${orgSlug}/customer/profile`}
+                            onClick={() => setProfileDropdownOpen(false)}
+                            className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-bold transition text-left ${
+                              layoutStyle === 'modern_dark'
+                                ? 'text-slate-300 hover:bg-slate-900/60 hover:text-white'
+                                : 'text-slate-600 hover:bg-slate-50'
+                            }`}
+                          >
+                            <User className="h-3.5 w-3.5" />
+                            My Profile
+                          </Link>
+                          
+                          <button
+                            onClick={() => {
+                              setProfileDropdownOpen(false);
+                              handleLogout();
+                            }}
+                            className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-bold transition text-red-500 text-left ${
+                              layoutStyle === 'modern_dark'
+                                ? 'hover:bg-red-950/20'
+                                : 'hover:bg-red-50'
+                            }`}
+                          >
+                            <LogOut className="h-3.5 w-3.5" />
+                            Log Out
+                          </button>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
             ) : (
               <>
                 <Link href={`/order-online/${orgSlug}/customer/login`} className="text-white transition flex items-center gap-1">
@@ -1541,21 +1649,24 @@ export default function PublicOrderPage() {
         >
           All Items
         </button>
-        {categories.map((cat) => (
-          <button
-            key={cat.id}
-            onClick={() => setSelectedCategoryId(cat.id)}
-            className={`px-4 py-2 rounded-full text-xs font-bold transition shrink-0 ${selectedCategoryId === cat.id
-              ? 'text-white'
-              : layoutStyle === 'modern_dark'
-                ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
-                : 'text-slate-600 bg-slate-50 border border-slate-100'
-              }`}
-            style={selectedCategoryId === cat.id ? { backgroundColor: primaryColor } : undefined}
-          >
-            {cat.name}
-          </button>
-        ))}
+        {orderedCategories.map((cat: any) => {
+          const isSub = !!cat.parent_id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategoryId(cat.id)}
+              className={`px-4 py-2 rounded-full text-xs font-bold transition shrink-0 ${selectedCategoryId === cat.id
+                ? 'text-white'
+                : layoutStyle === 'modern_dark'
+                  ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
+                  : 'text-slate-600 bg-slate-50 border border-slate-100'
+                }`}
+              style={selectedCategoryId === cat.id ? { backgroundColor: primaryColor } : undefined}
+            >
+              {isSub ? `↳ ${cat.name}` : cat.name}
+            </button>
+          );
+        })}
       </div>
 
       {/* BODY LAYOUT */}
@@ -1582,25 +1693,82 @@ export default function PublicOrderPage() {
             >
               All Items
             </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setSelectedCategoryId(cat.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition ${selectedCategoryId === cat.id
-                  ? 'text-white border-l-4 font-extrabold'
-                  : layoutStyle === 'modern_dark'
-                    ? 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
-                    : 'text-slate-600 hover:bg-slate-50'
-                  }`}
-                style={
-                  selectedCategoryId === cat.id
-                    ? { backgroundColor: primaryColor, borderLeftColor: accentColor }
-                    : undefined
-                }
-              >
-                {cat.name}
-              </button>
-            ))}
+            {categories.filter((cat) => !cat.parent_id).map((cat) => {
+              const subs = categories.filter((c) => c.parent_id === cat.id);
+              const isExpanded = expandedParentId === cat.id || selectedCategoryId === cat.id || categories.find((c: any) => c.id === selectedCategoryId)?.parent_id === cat.id;
+
+              return (
+                <div key={cat.id} className="space-y-1">
+                  <button
+                    onClick={() => {
+                      setSelectedCategoryId(cat.id);
+                      setExpandedParentId(expandedParentId === cat.id ? null : cat.id);
+                    }}
+                    className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition flex items-center justify-between ${selectedCategoryId === cat.id
+                      ? 'text-white border-l-4 font-extrabold'
+                      : layoutStyle === 'modern_dark'
+                        ? 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+                        : 'text-slate-600 hover:bg-slate-50'
+                      }`}
+                    style={
+                      selectedCategoryId === cat.id
+                        ? { backgroundColor: primaryColor, borderLeftColor: accentColor }
+                        : undefined
+                    }
+                  >
+                    <span>{cat.name}</span>
+                    {subs.length > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                          selectedCategoryId === cat.id
+                            ? 'bg-white/20 text-white'
+                            : 'bg-slate-800 text-slate-400'
+                        }`}>
+                          {subs.length}
+                        </span>
+                        <ChevronDown className={`h-3.5 w-3.5 opacity-55 transition-transform duration-200 ${
+                          isExpanded ? 'rotate-180' : ''
+                        }`} />
+                      </div>
+                    )}
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isExpanded && subs.length > 0 && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="pl-4 border-l border-slate-350 dark:border-slate-800/40 ml-3.5 space-y-1 mt-1 overflow-hidden"
+                      >
+                        {subs.map((sub) => (
+                          <button
+                            key={sub.id}
+                            onClick={() => setSelectedCategoryId(sub.id)}
+                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition flex items-center gap-1.5 ${
+                              selectedCategoryId === sub.id
+                                ? 'text-white font-extrabold'
+                                : layoutStyle === 'modern_dark'
+                                  ? 'text-slate-500 hover:text-slate-300'
+                                  : 'text-slate-500 hover:text-slate-850 hover:bg-slate-50/50'
+                            }`}
+                            style={
+                              selectedCategoryId === sub.id
+                                ? { color: accentColor }
+                                : undefined
+                            }
+                          >
+                            <span className="opacity-50">↳</span>
+                            <span>{sub.name}</span>
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -1714,8 +1882,16 @@ export default function PublicOrderPage() {
                     borderColor: `${primaryColor}dd`,
                   }}
                 >
-                  <h2 className="font-black tracking-widest text-white text-sm uppercase" style={{ fontFamily: fontStyle === 'playfair' ? '"Playfair Display", serif' : 'inherit' }}>
-                    {cat.name}
+                  <h2 className="font-black tracking-widest text-white text-sm uppercase flex items-center gap-1.5" style={{ fontFamily: fontStyle === 'playfair' ? '"Playfair Display", serif' : 'inherit' }}>
+                    {cat.parent_id ? (
+                      <>
+                        <span className="opacity-60 font-semibold normal-case">
+                          {categories.find((c: any) => c.id === cat.parent_id)?.name || ''}
+                        </span>
+                        <span className="opacity-40">&rsaquo;</span>
+                      </>
+                    ) : null}
+                    <span>{cat.name}</span>
                   </h2>
                 </div>
                 <div className={`divide-y ${layoutStyle === 'modern_dark' ? 'divide-[#1e293b]/40' : 'divide-slate-100'}`}>
