@@ -70,6 +70,36 @@ async function run() {
     `);
     console.log("'user_devices' table verification complete.");
 
+    // 5. Add stripe_customer_id to customers table
+    const [stripeCustomerCol] = await sequelize.query("SHOW COLUMNS FROM `customers` LIKE 'stripe_customer_id'");
+    if (stripeCustomerCol.length === 0) {
+      console.log("Adding column 'stripe_customer_id' to 'customers' table...");
+      await sequelize.query("ALTER TABLE `customers` ADD COLUMN `stripe_customer_id` VARCHAR(255) NULL DEFAULT NULL");
+    } else {
+      console.log("Column 'stripe_customer_id' already exists on 'customers' table.");
+    }
+
+    // 6. Add UPI payment configurations to store_payment_configs table
+    const [upiEnabledCol] = await sequelize.query("SHOW COLUMNS FROM `store_payment_configs` LIKE 'is_upi_enabled'");
+    if (upiEnabledCol.length === 0) {
+      console.log("Adding UPI columns to 'store_payment_configs' table...");
+      await sequelize.query("ALTER TABLE `store_payment_configs` ADD COLUMN `is_upi_enabled` TINYINT(1) NOT NULL DEFAULT 0");
+      await sequelize.query("ALTER TABLE `store_payment_configs` ADD COLUMN `upi_vpa` VARCHAR(255) NULL DEFAULT NULL");
+      await sequelize.query("ALTER TABLE `store_payment_configs` ADD COLUMN `upi_qr_image` VARCHAR(500) NULL DEFAULT NULL");
+    } else {
+      console.log("UPI columns already exist on 'store_payment_configs' table.");
+    }
+
+    // 7. Add rating and rating_comment to orders table
+    const [ratingCol] = await sequelize.query("SHOW COLUMNS FROM `orders` LIKE 'rating'");
+    if (ratingCol.length === 0) {
+      console.log("Adding rating columns to 'orders' table...");
+      await sequelize.query("ALTER TABLE `orders` ADD COLUMN `rating` INT NULL DEFAULT NULL");
+      await sequelize.query("ALTER TABLE `orders` ADD COLUMN `rating_comment` TEXT NULL DEFAULT NULL");
+    } else {
+      console.log("Rating columns already exist on 'orders' table.");
+    }
+
     console.log("Table alterations complete.");
   } catch (err) {
     console.error("Migration error:", err);
