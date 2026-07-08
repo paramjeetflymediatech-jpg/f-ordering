@@ -613,6 +613,8 @@ export default function PublicOrderPage() {
     activeModalRef.current = activeModal;
   }, [activeModal]);
 
+  const processedRedirectRef = useRef(false);
+
   // Payment
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi'>('cash');
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
@@ -638,6 +640,9 @@ export default function PublicOrderPage() {
     const payloadStr = searchParams.get('payload');
 
     if (checkoutSuccess === 'true' && sessionId && payloadStr) {
+      if (processedRedirectRef.current) return;
+      processedRedirectRef.current = true;
+
       // Clear URL params so page reloads don't duplicate order
       window.history.replaceState(null, '', window.location.pathname);
 
