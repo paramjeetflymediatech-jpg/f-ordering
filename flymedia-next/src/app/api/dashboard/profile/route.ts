@@ -166,6 +166,11 @@ export async function PUT(request: Request) {
       await store.update(storeUpdates);
     }
 
+    const io = (request as any).io || (global as any).__socketIo;
+    if (io) {
+      io.to(store.id).emit('store_update');
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Business profile updated successfully',

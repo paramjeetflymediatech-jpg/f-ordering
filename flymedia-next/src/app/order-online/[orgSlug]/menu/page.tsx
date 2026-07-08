@@ -114,7 +114,7 @@ function StripeCardCheckout({
   useEffect(() => {
     if (customer && storeId) {
       setLoadingCards(true);
-      fetch(`/api/public/customer/saved-cards?storeId=${storeId}`)
+      fetch(`/api/public/customer/saved-cards?storeId=${storeId}`, { cache: 'no-store' })
         .then((res) => res.json())
         .then((data) => {
           if (data.success && data.cards && data.cards.length > 0) {
@@ -137,7 +137,7 @@ function StripeCardCheckout({
         onError('Please enter a valid delivery address.');
         return;
       }
-      
+
       try {
         const geoRes = await fetch(
           `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(orderPayload.deliveryAddress)}&limit=1`,
@@ -147,7 +147,7 @@ function StripeCardCheckout({
         let lat = undefined;
         let lng = undefined;
         let zipcode = undefined;
-        
+
         if (geoData && geoData[0]) {
           lat = parseFloat(geoData[0].lat);
           lng = parseFloat(geoData[0].lon);
@@ -302,18 +302,16 @@ function StripeCardCheckout({
           <button
             type="button"
             onClick={() => setUseSaved(true)}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-              useSaved ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${useSaved ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
           >
             Saved Card
           </button>
           <button
             type="button"
             onClick={() => setUseSaved(false)}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
-              !useSaved ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-            }`}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${!useSaved ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+              }`}
           >
             New Card
           </button>
@@ -328,11 +326,10 @@ function StripeCardCheckout({
               <label
                 key={card.id}
                 onClick={() => setSelectedCardId(card.id)}
-                className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${
-                  selectedCardId === card.id
+                className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${selectedCardId === card.id
                     ? 'border-[#635BFF] bg-[#635bff0a] shadow-sm'
                     : 'border-slate-200 bg-white hover:bg-slate-50'
-                }`}
+                  }`}
               >
                 <div className="flex items-center gap-3">
                   <input
@@ -378,7 +375,7 @@ function StripeCardCheckout({
               }}
             />
           </div>
-          
+
           {customer && (
             <label className="flex items-center gap-2 cursor-pointer py-1 select-none">
               <input
@@ -466,7 +463,7 @@ export default function PublicOrderPage() {
       let lat = undefined;
       let lng = undefined;
       let zipcode = undefined;
-      
+
       if (geoData && geoData[0]) {
         lat = parseFloat(geoData[0].lat);
         lng = parseFloat(geoData[0].lon);
@@ -610,12 +607,12 @@ export default function PublicOrderPage() {
   const [stripeStoreId, setStripeStoreId] = useState<string | null>(null);
 
   // Fetch Store Info and Menu by Organization Slug
-  const fetchStoreAndMenu = async () => {
+  const fetchStoreAndMenu = async (showLoading = true) => {
     try {
-      setLoading(true);
+      if (showLoading) setLoading(true);
 
       // 1. Fetch Store Config by Org Slug
-      const storeRes = await fetch(`/api/public/store?orgSlug=${orgSlug}`);
+      const storeRes = await fetch(`/api/public/store?orgSlug=${orgSlug}`, { cache: 'no-store' });
       const storeData = await storeRes.json();
       if (!storeRes.ok || !storeData.success) {
         throw new Error(storeData.error || 'Failed to load store information.');
@@ -628,7 +625,7 @@ export default function PublicOrderPage() {
       // Check if Stripe is configured for this store (lightweight — no PaymentIntent created)
       if (storeData.store?.id) {
         try {
-          const cfgRes = await fetch(`/api/public/stripe/config?storeId=${storeData.store.id}`);
+          const cfgRes = await fetch(`/api/public/stripe/config?storeId=${storeData.store.id}`, { cache: 'no-store' });
           const cfgData = await cfgRes.json();
           if (cfgData.enabled && cfgData.publishableKey) {
             setStripeEnabled(true);
@@ -640,7 +637,7 @@ export default function PublicOrderPage() {
       }
 
       // 2. Fetch Menu by Org Slug
-      const menuRes = await fetch(`/api/public/menu?orgSlug=${orgSlug}`);
+      const menuRes = await fetch(`/api/public/menu?orgSlug=${orgSlug}`, { cache: 'no-store' });
       const menuData = await menuRes.json();
       if (!menuRes.ok || !menuData.success) {
         throw new Error(menuData.error || 'Failed to load menu listing.');
@@ -650,7 +647,7 @@ export default function PublicOrderPage() {
       // 3. Fetch active coupons / offers for banner carousel
       if (storeData.store?.id) {
         try {
-          const promoRes = await fetch(`/api/public/coupons?storeId=${storeData.store.id}`);
+          const promoRes = await fetch(`/api/public/coupons?storeId=${storeData.store.id}`, { cache: 'no-store' });
           const promoData = await promoRes.json();
           if (promoRes.ok && promoData.success) {
             setOffers(promoData.coupons || []);
@@ -662,7 +659,7 @@ export default function PublicOrderPage() {
 
       // 4. Fetch logged in customer info if exists (for prefilling)
       try {
-        const custRes = await fetch('/api/public/customer/me');
+        const custRes = await fetch('/api/public/customer/me', { cache: 'no-store' });
         const custData = await custRes.json();
         if (custRes.ok && custData.success && custData.customer) {
           setCustomer(custData.customer);
@@ -676,7 +673,7 @@ export default function PublicOrderPage() {
     } catch (err: any) {
       setError(err.message || 'An error occurred while setting up the terminal.');
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   };
 
@@ -713,7 +710,7 @@ export default function PublicOrderPage() {
     socket.on('table_status_update', async () => {
       console.log('[Public Menu Socket] Table status updated, refetching tables...');
       try {
-        const storeRes = await fetch(`/api/public/store?orgSlug=${orgSlug}`);
+        const storeRes = await fetch(`/api/public/store?orgSlug=${orgSlug}`, { cache: 'no-store' });
         const storeData = await storeRes.json();
         if (storeRes.ok && storeData.success) {
           const updatedTables = storeData.tables || [];
@@ -733,6 +730,24 @@ export default function PublicOrderPage() {
       } catch (err) {
         console.error('[Public Menu Socket] Failed to refetch tables:', err);
       }
+    });
+
+    socket.on('menu_update', async () => {
+      console.log('[Public Menu Socket] Menu updated, refetching menu...');
+      try {
+        const menuRes = await fetch(`/api/public/menu?orgSlug=${orgSlug}`, { cache: 'no-store' });
+        const menuData = await menuRes.json();
+        if (menuRes.ok && menuData.success) {
+          setCategories(menuData.categories || []);
+        }
+      } catch (err) {
+        console.error('[Public Menu Socket] Failed to refetch menu:', err);
+      }
+    });
+
+    socket.on('store_update', async () => {
+      console.log('[Public Menu Socket] Store updated, refetching store/menu in background...');
+      fetchStoreAndMenu(false);
     });
 
     return () => {
@@ -893,9 +908,9 @@ export default function PublicOrderPage() {
       .map((b) => b.id)
       .sort()
       .join(',')}-${selectedVariant?.id || 'none'}-${selectedAddons
-      .map((a) => a.id)
-      .sort()
-      .join(',')}`;
+        .map((a) => a.id)
+        .sort()
+        .join(',')}`;
 
     const existingIndex = cart.findIndex((item) => item.id === cartItemId);
 
@@ -996,13 +1011,13 @@ export default function PublicOrderPage() {
         setSubmitting(false);
         return;
       }
-      
+
       if (deliveryError) {
         showToast(deliveryError, 'error');
         setSubmitting(false);
         return;
       }
-      
+
       if (!deliverySuccessMsg) {
         try {
           const geoRes = await fetch(
@@ -1013,7 +1028,7 @@ export default function PublicOrderPage() {
           let lat = undefined;
           let lng = undefined;
           let zipcode = undefined;
-          
+
           if (geoData && geoData[0]) {
             lat = parseFloat(geoData[0].lat);
             lng = parseFloat(geoData[0].lon);
@@ -1106,7 +1121,7 @@ export default function PublicOrderPage() {
   // Helper to format opening hours label based on store business_hours and order type
   const getBusinessHoursLabel = (type: 'takeaway' | 'delivery' | 'dine_in') => {
     if (!store?.business_hours) return '';
-    const dayNames = ['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const today = new Date();
     const dayKey = dayNames[today.getDay()];
     // Business hours may be stored with capitalized day keys or as numbers; try several lookups
@@ -1190,7 +1205,7 @@ export default function PublicOrderPage() {
                 About Us
               </Link>
             )}
-         
+
             <Link href={`/order-online/${orgSlug}/book`} className="text-white transition">
               Book Table
             </Link>
@@ -1226,7 +1241,7 @@ export default function PublicOrderPage() {
                 <Link
                   href={`/order-online/${orgSlug}/customer/register`}
                   className="px-3 py-1.5 rounded-lg transition text-xs font-bold uppercase tracking-wider hover:opacity-90"
-                  style={{ backgroundColor: primaryColor,color:accentColor }}
+                  style={{ backgroundColor: primaryColor, color: accentColor }}
                 >
                   Sign Up
                 </Link>
@@ -1305,11 +1320,10 @@ export default function PublicOrderPage() {
                   <Link
                     href={`/order-online/${orgSlug}/customer/profile`}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`w-full text-center block rounded-xl border py-2.5 text-xs font-bold transition ${
-                      layoutStyle === 'modern_dark'
+                    className={`w-full text-center block rounded-xl border py-2.5 text-xs font-bold transition ${layoutStyle === 'modern_dark'
                         ? 'border-slate-800 text-slate-200 hover:bg-slate-900'
                         : 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     My Account
                   </Link>
@@ -1330,14 +1344,14 @@ export default function PublicOrderPage() {
                     href={`/order-online/${orgSlug}/customer/login`}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`w-full text-center rounded-xl border border-slate-200 py-2.5 text-xs font-bold `}
-                    style={{ backgroundColor: primaryColor,color:accentColor }}>
+                    style={{ backgroundColor: primaryColor, color: accentColor }}>
                     Login
                   </Link>
                   <Link
                     href={`/order-online/${orgSlug}/customer/register`}
                     onClick={() => setMobileMenuOpen(false)}
                     className="w-full text-center  py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider"
-                    style={{ backgroundColor: primaryColor,color:accentColor }}
+                    style={{ backgroundColor: primaryColor, color: accentColor }}
                   >
                     Sign Up
                   </Link>
@@ -1351,17 +1365,17 @@ export default function PublicOrderPage() {
       {/* MOBILE CATEGORIES HORIZONTAL SLIDER */}
       <div
         className={`lg:hidden sticky top-[96px] z-30 border-b px-6 py-3 overflow-x-auto whitespace-nowrap flex gap-2 custom-scrollbar ${layoutStyle === 'modern_dark'
-            ? 'bg-[#0c101b] border-[#1e293b]/60'
-            : 'bg-white border-slate-200'
+          ? 'bg-[#0c101b] border-[#1e293b]/60'
+          : 'bg-white border-slate-200'
           }`}
       >
         <button
           onClick={() => setSelectedCategoryId('all')}
           className={`px-4 py-2 rounded-full text-xs font-bold transition shrink-0 ${selectedCategoryId === 'all'
-              ? 'text-white'
-              : layoutStyle === 'modern_dark'
-                ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
-                : 'text-slate-600 bg-slate-50 border border-slate-100'
+            ? 'text-white'
+            : layoutStyle === 'modern_dark'
+              ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
+              : 'text-slate-600 bg-slate-50 border border-slate-100'
             }`}
           style={selectedCategoryId === 'all' ? { backgroundColor: primaryColor } : undefined}
         >
@@ -1372,10 +1386,10 @@ export default function PublicOrderPage() {
             key={cat.id}
             onClick={() => setSelectedCategoryId(cat.id)}
             className={`px-4 py-2 rounded-full text-xs font-bold transition shrink-0 ${selectedCategoryId === cat.id
-                ? 'text-white'
-                : layoutStyle === 'modern_dark'
-                  ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
-                  : 'text-slate-600 bg-slate-50 border border-slate-100'
+              ? 'text-white'
+              : layoutStyle === 'modern_dark'
+                ? 'text-slate-400 bg-slate-900/40 border border-[#1e293b]'
+                : 'text-slate-600 bg-slate-50 border border-slate-100'
               }`}
             style={selectedCategoryId === cat.id ? { backgroundColor: primaryColor } : undefined}
           >
@@ -1391,18 +1405,18 @@ export default function PublicOrderPage() {
         <div className="w-64 shrink-0 hidden lg:block">
           <div
             className={`sticky top-24 border rounded-2xl p-4 shadow-sm space-y-1 overflow-y-auto max-h-[calc(100vh-140px)] custom-scrollbar ${layoutStyle === 'modern_dark'
-                ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
-                : 'bg-white border-slate-200 text-slate-800'
+              ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
+              : 'bg-white border-slate-200 text-slate-800'
               }`}
           >
             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 px-2">Categories</h3>
             <button
               onClick={() => setSelectedCategoryId('all')}
               className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition ${selectedCategoryId === 'all'
-                  ? 'text-white font-extrabold'
-                  : layoutStyle === 'modern_dark'
-                    ? 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
-                    : 'text-slate-600 hover:bg-slate-50'
+                ? 'text-white font-extrabold'
+                : layoutStyle === 'modern_dark'
+                  ? 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+                  : 'text-slate-600 hover:bg-slate-50'
                 }`}
               style={selectedCategoryId === 'all' ? { backgroundColor: primaryColor } : undefined}
             >
@@ -1413,10 +1427,10 @@ export default function PublicOrderPage() {
                 key={cat.id}
                 onClick={() => setSelectedCategoryId(cat.id)}
                 className={`w-full text-left px-3 py-2.5 rounded-xl text-xs font-bold transition ${selectedCategoryId === cat.id
-                    ? 'text-white border-l-4 font-extrabold'
-                    : layoutStyle === 'modern_dark'
-                      ? 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
-                      : 'text-slate-600 hover:bg-slate-50'
+                  ? 'text-white border-l-4 font-extrabold'
+                  : layoutStyle === 'modern_dark'
+                    ? 'text-slate-400 hover:bg-slate-900/50 hover:text-white'
+                    : 'text-slate-600 hover:bg-slate-50'
                   }`}
                 style={
                   selectedCategoryId === cat.id
@@ -1463,8 +1477,8 @@ export default function PublicOrderPage() {
           {/* Order Type & Search Bar */}
           <div
             className={`border rounded-2xl p-6 shadow-sm ${layoutStyle === 'modern_dark'
-                ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
-                : 'bg-white border-slate-200 text-slate-800'
+              ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
+              : 'bg-white border-slate-200 text-slate-800'
               }`}
           >
             <h3 className="text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Select Order Type</h3>
@@ -1473,10 +1487,10 @@ export default function PublicOrderPage() {
                 type="button"
                 onClick={() => setOrderType('takeaway')}
                 className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${orderType === 'takeaway'
-                    ? 'border-transparent text-white font-extrabold shadow-md'
-                    : layoutStyle === 'modern_dark'
-                      ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
-                      : 'border-slate-200 hover:border-slate-300'
+                  ? 'border-transparent text-white font-extrabold shadow-md'
+                  : layoutStyle === 'modern_dark'
+                    ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
+                    : 'border-slate-200 hover:border-slate-300'
                   }`}
                 style={orderType === 'takeaway' ? { backgroundColor: primaryColor } : undefined}
               >
@@ -1487,10 +1501,10 @@ export default function PublicOrderPage() {
                 type="button"
                 onClick={() => setOrderType('delivery')}
                 className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${orderType === 'delivery'
-                    ? 'border-transparent text-white font-extrabold shadow-md'
-                    : layoutStyle === 'modern_dark'
-                      ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
-                      : 'border-slate-200 hover:border-slate-300'
+                  ? 'border-transparent text-white font-extrabold shadow-md'
+                  : layoutStyle === 'modern_dark'
+                    ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
+                    : 'border-slate-200 hover:border-slate-300'
                   }`}
                 style={orderType === 'delivery' ? { backgroundColor: primaryColor } : undefined}
               >
@@ -1507,8 +1521,8 @@ export default function PublicOrderPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className={`w-full rounded-xl border py-3 pl-10 pr-4 text-sm outline-none transition ${layoutStyle === 'modern_dark'
-                    ? 'border-[#1e293b] bg-slate-950 text-white focus:border-slate-700 focus:bg-slate-950/90'
-                    : 'border-slate-200 bg-slate-50 text-slate-800 focus:border-slate-400 focus:bg-white'
+                  ? 'border-[#1e293b] bg-slate-950 text-white focus:border-slate-700 focus:bg-slate-950/90'
+                  : 'border-slate-200 bg-slate-50 text-slate-800 focus:border-slate-400 focus:bg-white'
                   }`}
               />
             </div>
@@ -1518,8 +1532,8 @@ export default function PublicOrderPage() {
           {categoriesWithFilteredItems.length === 0 ? (
             <div
               className={`text-center py-12 border rounded-2xl ${layoutStyle === 'modern_dark'
-                  ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-slate-400 shadow-xl'
-                  : 'bg-white border-slate-200 text-slate-400'
+                ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-slate-400 shadow-xl'
+                : 'bg-white border-slate-200 text-slate-400'
                 }`}
             >
               <p className="font-semibold">No food items found matching your filter.</p>
@@ -1529,8 +1543,8 @@ export default function PublicOrderPage() {
               <div
                 key={cat.id}
                 className={`border rounded-2xl shadow-sm overflow-hidden mb-6 ${layoutStyle === 'modern_dark'
-                    ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
-                    : 'bg-white border-slate-200 text-slate-805'
+                  ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
+                  : 'bg-white border-slate-200 text-slate-805'
                   }`}
               >
                 <div
@@ -1644,7 +1658,7 @@ export default function PublicOrderPage() {
                                     style={{
                                       backgroundColor: `${accentColor}12`,
                                       borderColor: `${accentColor}40`,
-                                      
+
                                     }}
                                   >
                                     <Plus className="h-3.5 w-3.5" />
@@ -1668,8 +1682,8 @@ export default function PublicOrderPage() {
         <div className="w-full lg:w-80 shrink-0 hidden lg:block">
           <div
             className={`sticky top-24 border rounded-2xl shadow-sm overflow-hidden flex flex-col max-h-[80vh] ${layoutStyle === 'modern_dark'
-                ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
-                : 'bg-white border-slate-200 text-slate-805'
+              ? 'bg-[#0c101b]/80 border-[#1e293b]/60 text-white shadow-xl shadow-slate-950/20'
+              : 'bg-white border-slate-200 text-slate-805'
               }`}
           >
             <div
@@ -1797,7 +1811,7 @@ export default function PublicOrderPage() {
             onClick={() => setActiveModal('checkout')}
             className="rounded-xl px-6 py-3 text-xs font-bold text-white transition shadow-md"
             style={{
-              backgroundColor: accentColor,
+              backgroundColor: primaryColor,
               boxShadow: `0 4px 12px 0 ${accentColor}33`
             }}
           >
@@ -1810,7 +1824,7 @@ export default function PublicOrderPage() {
       {selectedItem && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
           <div className="w-full max-w-5xl rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-2xl flex flex-col md:flex-row relative max-h-[92vh] md:max-h-[85vh]">
-            
+
             {/* Close Button */}
             <button
               onClick={() => setSelectedItem(null)}
@@ -1822,9 +1836,9 @@ export default function PublicOrderPage() {
             {/* Left Side: Product Image / Visual details */}
             <div className="w-full md:w-5/12 bg-slate-50 border-b md:border-b-0 md:border-r border-slate-200 flex items-center justify-center relative h-36 md:h-auto flex-shrink-0">
               {selectedItem.image_url ? (
-                <img 
-                  src={selectedItem.image_url} 
-                  alt="detail" 
+                <img
+                  src={selectedItem.image_url}
+                  alt="detail"
                   className="w-full h-full object-cover absolute inset-0"
                 />
               ) : (
@@ -1861,8 +1875,8 @@ export default function PublicOrderPage() {
                             key={b.id}
                             onClick={() => handleToggleBase(b)}
                             className={`p-3 rounded-xl border text-left text-xs uppercase font-bold transition flex flex-col justify-between ${isSelected
-                                ? 'border-[#C39A3C] bg-[#C39A3C]/10 text-[#2A0E07]'
-                                : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                              ? 'border-[#C39A3C] bg-[#C39A3C]/10 text-[#2A0E07]'
+                              : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
                               }`}
                           >
                             <p>{b.name}</p>
@@ -1889,8 +1903,8 @@ export default function PublicOrderPage() {
                             key={v.id}
                             onClick={() => setSelectedVariant(v)}
                             className={`p-3 rounded-xl border text-left text-xs uppercase font-bold transition flex flex-col justify-between ${isSelected
-                                ? 'border-[#C39A3C] bg-[#C39A3C]/10 text-[#2A0E07]'
-                                : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                              ? 'border-[#C39A3C] bg-[#C39A3C]/10 text-[#2A0E07]'
+                              : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
                               }`}
                           >
                             <p>{v.name}</p>
@@ -1917,8 +1931,8 @@ export default function PublicOrderPage() {
                             key={addon.id}
                             onClick={() => handleToggleAddon(addon)}
                             className={`flex items-center justify-between p-3 rounded-xl border text-xs font-semibold cursor-pointer transition ${isSelected
-                                ? 'border-[#C39A3C] bg-[#C39A3C]/5 text-[#2A0E07]'
-                                : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                              ? 'border-[#C39A3C] bg-[#C39A3C]/5 text-[#2A0E07]'
+                              : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
                               }`}
                           >
                             <span className="uppercase">{addon.name}</span>
@@ -2116,8 +2130,8 @@ export default function PublicOrderPage() {
                       key={mode} type="button"
                       onClick={() => setOrderType(mode)}
                       className={`py-2 rounded-lg border text-[10px] font-bold uppercase tracking-wide transition ${orderType === mode
-                          ? 'border-slate-800 bg-slate-800 text-white'
-                          : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                        ? 'border-slate-800 bg-slate-800 text-white'
+                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
                         }`}
                     >
                       {mode === 'dine_in' ? 'Dine In' : mode === 'takeaway' ? 'Takeaway' : 'Delivery'}
@@ -2182,9 +2196,9 @@ export default function PublicOrderPage() {
                   )}
 
                   <textarea
-                    required 
+                    required
                     placeholder="Enter complete delivery address..."
-                    value={deliveryAddress} 
+                    value={deliveryAddress}
                     onChange={(e) => {
                       setDeliveryAddress(e.target.value);
                       setDeliveryError(null);
@@ -2225,8 +2239,8 @@ export default function PublicOrderPage() {
                         key={method} type="button"
                         onClick={() => { setPaymentMethod(method); setCardError(null); }}
                         className={`py-2.5 rounded-lg border text-[11px] font-bold uppercase tracking-wide transition flex items-center justify-center gap-1.5 ${paymentMethod === method
-                            ? 'border-slate-800 bg-slate-800 text-white'
-                            : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                          ? 'border-slate-800 bg-slate-800 text-white'
+                          : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
                           }`}
                       >
                         {method === 'card' ? '💳 Card' : '💵 Cash'}
@@ -2274,9 +2288,11 @@ export default function PublicOrderPage() {
 
             {/* ── Footer (sticky) ── */}
             <div className="shrink-0 px-5 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
-              <div className="flex items-center justify-between mb-3 text-xs font-bold text-slate-800">
+              <div className="flex items-center justify-between mb-3 text-xs font-bold " >
                 <span>Total (incl. tax)</span>
-                <span className="text-base">${totals.total.toFixed(2)}</span>
+                <span className="text-base" style={{
+                  color: primaryColor
+                }} >${totals.total.toFixed(2)}</span>
               </div>
               {(!stripeEnabled || paymentMethod === 'cash') && (
                 <button
@@ -2362,7 +2378,7 @@ export default function PublicOrderPage() {
 
       <footer
         className="py-6 border-t text-center text-[10px] text-slate-400 flex flex-col justify-center gap-3"
-        style={{ borderColor: `${primaryColor}1a`,backgroundColor:"white" }}
+        style={{ borderColor: `${primaryColor}1a`, backgroundColor: "white" }}
       >
         <div className=' '>
           <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
@@ -2385,16 +2401,16 @@ export default function PublicOrderPage() {
               exit={{ opacity: 0, scale: 0.9, y: -10 }}
               transition={{ duration: 0.2 }}
               className={`pointer-events-auto flex items-center gap-3 p-4 rounded-2xl shadow-xl backdrop-blur-md border ${layoutStyle === 'modern_dark'
-                  ? toast.type === 'success'
-                    ? 'bg-emerald-950/95 border-emerald-900/50 text-emerald-100'
-                    : toast.type === 'error'
-                      ? 'bg-rose-950/95 border-rose-900/50 text-rose-100'
-                      : 'bg-slate-900/95 border-slate-800/80 text-slate-100'
-                  : toast.type === 'success'
-                    ? 'bg-emerald-50/95 border-emerald-100 text-emerald-800'
-                    : toast.type === 'error'
-                      ? 'bg-rose-50/95 border-rose-100 text-rose-800'
-                      : 'bg-slate-50/95 border-slate-100 text-slate-800'
+                ? toast.type === 'success'
+                  ? 'bg-emerald-950/95 border-emerald-900/50 text-emerald-100'
+                  : toast.type === 'error'
+                    ? 'bg-rose-950/95 border-rose-900/50 text-rose-100'
+                    : 'bg-slate-900/95 border-slate-800/80 text-slate-100'
+                : toast.type === 'success'
+                  ? 'bg-emerald-50/95 border-emerald-100 text-emerald-800'
+                  : toast.type === 'error'
+                    ? 'bg-rose-50/95 border-rose-100 text-rose-800'
+                    : 'bg-slate-50/95 border-slate-100 text-slate-800'
                 }`}
             >
               {toast.type === 'success' && <CheckCircle className="h-5 w-5 text-emerald-500 shrink-0" />}

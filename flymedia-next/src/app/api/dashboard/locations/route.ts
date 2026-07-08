@@ -116,6 +116,11 @@ export async function PUT(request: Request) {
       { where: { id, organization_id } }
     );
 
+    const io = (request as any).io || (global as any).__socketIo;
+    if (io) {
+      io.to(id).emit('store_update');
+    }
+
     return NextResponse.json({ success: true });
   } catch (error: any) {
     console.error('Update Location Error:', error);

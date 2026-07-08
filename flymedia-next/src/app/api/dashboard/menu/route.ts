@@ -163,6 +163,11 @@ export async function POST(request: Request) {
         console.error('Failed to sync created category to tenant DB:', err.message);
       }
 
+      const io = (request as any).io || (global as any).__socketIo;
+      if (io && store_id) {
+        io.to(store_id).emit('menu_update');
+      }
+
       return NextResponse.json({ 
         success: true, 
         category: mainCategory,
@@ -288,6 +293,11 @@ export async function POST(request: Request) {
         console.error('Failed to sync created menu item to tenant DB:', err.message);
       }
 
+      const io = (request as any).io || (global as any).__socketIo;
+      if (io && store_id) {
+        io.to(store_id).emit('menu_update');
+      }
+
       return NextResponse.json({ success: true, item });
     }
 
@@ -299,6 +309,11 @@ export async function POST(request: Request) {
 
       for (const item of orders) {
         await MenuCategory.update({ sort_order: item.sort_order }, { where: { id: item.id } });
+      }
+
+      const io = (request as any).io || (global as any).__socketIo;
+      if (io && store_id) {
+        io.to(store_id).emit('menu_update');
       }
 
       return NextResponse.json({ success: true });
@@ -343,7 +358,7 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'ID is required' }, { status: 400 });
     }
 
-    const { organization_id } = session.user as any;
+    const { organization_id, store_id } = session.user as any;
 
     if (type === 'category') {
       await MenuCategory.update({ 
@@ -365,6 +380,11 @@ export async function PUT(request: Request) {
         }
       } catch (err: any) {
         console.error('Failed to sync updated category to tenant DB:', err.message);
+      }
+
+      const io = (request as any).io || (global as any).__socketIo;
+      if (io && store_id) {
+        io.to(store_id).emit('menu_update');
       }
 
       return NextResponse.json({ success: true });
@@ -495,6 +515,11 @@ export async function PUT(request: Request) {
         console.error('Failed to sync updated menu item to tenant DB:', err.message);
       }
 
+      const io = (request as any).io || (global as any).__socketIo;
+      if (io && store_id) {
+        io.to(store_id).emit('menu_update');
+      }
+
       return NextResponse.json({ success: true });
     }
 
@@ -520,7 +545,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: 'ID and Type are required' }, { status: 400 });
     }
 
-    const { organization_id } = session.user as any;
+    const { organization_id, store_id } = session.user as any;
 
     if (type === 'category') {
       await MenuCategory.destroy({ where: { id } });
@@ -534,6 +559,11 @@ export async function DELETE(request: Request) {
         }
       } catch (err: any) {
         console.error('Failed to sync deleted category to tenant DB:', err.message);
+      }
+
+      const io = (request as any).io || (global as any).__socketIo;
+      if (io && store_id) {
+        io.to(store_id).emit('menu_update');
       }
 
       return NextResponse.json({ success: true });
@@ -556,6 +586,11 @@ export async function DELETE(request: Request) {
         }
       } catch (err: any) {
         console.error('Failed to sync deleted menu item to tenant DB:', err.message);
+      }
+
+      const io = (request as any).io || (global as any).__socketIo;
+      if (io && store_id) {
+        io.to(store_id).emit('menu_update');
       }
 
       return NextResponse.json({ success: true });
