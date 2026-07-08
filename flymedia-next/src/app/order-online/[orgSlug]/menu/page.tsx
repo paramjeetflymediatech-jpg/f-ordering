@@ -630,7 +630,58 @@ export default function PublicOrderPage() {
   const [upiUtrRef, setUpiUtrRef] = useState('');
   const [verifyingUpi, setVerifyingUpi] = useState(false);
 
+  // Handle Stripe Checkout Redirect Callbacks
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const checkoutSuccess = searchParams.get('checkout_success');
+    const sessionId = searchParams.get('session_id');
+    const payloadStr = searchParams.get('payload');
 
+    if (checkoutSuccess === 'true' && sessionId && payloadStr) {
+      // Clear URL params so page reloads don't duplicate order
+      window.history.replaceState(null, '', window.location.pathname);
+
+      try {
+        const payload = JSON.parse(decodeURIComponent(payloadStr));
+        setSubmitting(true);
+
+        // Submit order with session ID as transaction reference and mark transaction status as success
+        fetch('/api/public/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...payload,
+            paymentMethod: 'upi',
+            stripePaymentIntentId: sessionId,
+            transactionReference: sessionId,
+          }),
+        })
+          .then((res) => res.json())
+          .then((orderData) => {
+            if (orderData.success && orderData.order) {
+              triggerOrderCreatedNotification(orderData.order, orderData.order.OrderItems || [], orderData.order.orderType);
+              setRecentOrder(orderData.order);
+              setCart([]);
+              setDeliveryAddress('');
+              setSelectedTableId('');
+              setActiveModal('success');
+            } else {
+              showToast(orderData.error || 'Failed to register checkout order.', 'error');
+            }
+          })
+          .catch((err) => {
+            console.error('Order placement error:', err);
+            showToast('Network error placing order.', 'error');
+          })
+          .finally(() => setSubmitting(false));
+      } catch (err) {
+        console.error('Failed to parse order payload:', err);
+      }
+    } else if (searchParams.get('checkout_cancelled') === 'true') {
+      window.history.replaceState(null, '', window.location.pathname);
+      showToast('Checkout was cancelled.', 'info');
+    }
+  }, [store, orgSlug]);
 
   // Fetch Store Info and Menu by Organization Slug
   const fetchStoreAndMenu = async (showLoading = true) => {
@@ -983,7 +1034,7 @@ export default function PublicOrderPage() {
     }
   };
 
-  const triggerOrderCreatedNotification = (order: any, items: any[], type: string) => {
+  function triggerOrderCreatedNotification(order: any, items: any[], type: string) {
     try {
       const socket = io({
         transports: ['websocket', 'polling']
@@ -1012,60 +1063,7 @@ export default function PublicOrderPage() {
     } catch (err) {
       console.error('[Socket Notification] Failed to notify order creation:', err);
     }
-  };
-
-  // Handle Stripe Checkout Redirect Callbacks
-  useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search);
-    const checkoutSuccess = searchParams.get('checkout_success');
-    const sessionId = searchParams.get('session_id');
-    const payloadStr = searchParams.get('payload');
-
-    if (checkoutSuccess === 'true' && sessionId && payloadStr) {
-      // Clear URL params so page reloads don't duplicate order
-      window.history.replaceState(null, '', window.location.pathname);
-
-      try {
-        const payload = JSON.parse(decodeURIComponent(payloadStr));
-        setSubmitting(true);
-
-        // Submit order with session ID as transaction reference and mark transaction status as success
-        fetch('/api/public/orders', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            ...payload,
-            paymentMethod: 'upi',
-            stripePaymentIntentId: sessionId,
-            transactionReference: sessionId,
-          }),
-        })
-          .then((res) => res.json())
-          .then((orderData) => {
-            if (orderData.success && orderData.order) {
-              triggerOrderCreatedNotification(orderData.order, orderData.order.OrderItems || [], orderData.order.orderType);
-              setRecentOrder(orderData.order);
-              setCart([]);
-              setDeliveryAddress('');
-              setSelectedTableId('');
-              setActiveModal('success');
-            } else {
-              showToast(orderData.error || 'Failed to register checkout order.', 'error');
-            }
-          })
-          .catch((err) => {
-            console.error('Order placement error:', err);
-            showToast('Network error placing order.', 'error');
-          })
-          .finally(() => setSubmitting(false));
-      } catch (err) {
-        console.error('Failed to parse order payload:', err);
-      }
-    } else if (searchParams.get('checkout_cancelled') === 'true') {
-      window.history.replaceState(null, '', window.location.pathname);
-      showToast('Checkout was cancelled.', 'info');
-    }
-  }, [store, orgSlug]);
+  }
 
   const handleCashCheckout = async (cartItems: CartItem[], payload: any) => {
     const res = await fetch('/api/public/orders', {
