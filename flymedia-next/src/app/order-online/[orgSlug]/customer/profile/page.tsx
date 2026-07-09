@@ -2078,7 +2078,6 @@ export default function CustomerProfilePage() {
                   type="button"
                   onClick={() => setSelectedOrderForDetails(null)}
                   className="px-5 py-2.5 rounded-xl text-xs font-black text-white transition hover:opacity-90 shadow-md"
-                  style={{ backgroundColor: accentColor }}
                 >
                   Close Receipt
                 </button>
