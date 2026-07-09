@@ -260,9 +260,9 @@ export default function PaymentSettingsPage() {
             <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-2">
               <p className="text-xs font-bold text-emerald-400">Test Card Numbers</p>
               <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-400">
-                <div><code className="text-white font-mono">4242 4242 4242 4242</code> — Success</div>
-                <div><code className="text-white font-mono">4000 0000 0000 0002</code> — Declined</div>
-                <div><code className="text-white font-mono">4000 0025 0000 3155</code> — 3D Secure</div>
+                <div><code className=" font-mono">4242 4242 4242 4242</code> — Success</div>
+                <div><code className=" font-mono">4000 0000 0000 0002</code> — Declined</div>
+                <div><code className=" font-mono">4000 0025 0000 3155</code> — 3D Secure</div>
                 <div className="text-slate-500">Any future date & CVC</div>
               </div>
             </div>

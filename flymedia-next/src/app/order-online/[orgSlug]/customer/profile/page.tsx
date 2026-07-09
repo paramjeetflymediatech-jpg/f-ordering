@@ -35,7 +35,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
-  ChevronsRight
+  ChevronsRight,
+  Download
 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -254,6 +255,145 @@ export default function CustomerProfilePage() {
   // Order History Pagination States
   const [currentOrderPage, setCurrentOrderPage] = useState(1);
   const [ordersPerPage, setOrdersPerPage] = useState(5);
+
+  const handleDownloadReceipt = (order: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert('Please allow popups to download/print receipt');
+      return;
+    }
+
+    const storeName = store?.name || 'Restaurant';
+    const storeLogo = store?.Organization?.logo || '';
+    const currencySymbol = store?.currency === 'inr' ? '₹' : '$';
+    const isPaid = order.payments?.some((p: any) => p.transaction_status === 'success');
+
+    const itemsHtml = order.items?.map((item: any) => {
+      const itemTotal = item.price * item.quantity;
+      let detailsText = '';
+      if (item.variant) {
+        detailsText += `<div>Variant: ${item.variant.name} (+${currencySymbol}${item.variant.additionalPrice.toFixed(2)})</div>`;
+      }
+      if (item.addons && item.addons.length > 0) {
+        detailsText += `<div>Addons: ${item.addons.map((a: any) => `${a.name} (+${currencySymbol}${parseFloat(a.price || 0).toFixed(2)})`).join(', ')}</div>`;
+      }
+      if (item.bases && item.bases.length > 0) {
+        detailsText += `<div>Option: ${item.bases.map((b: any) => `${b.name} (+${currencySymbol}${parseFloat(b.price || 0).toFixed(2)})`).join(', ')}</div>`;
+      }
+      if (item.notes && !item.notes.startsWith('Delivery Address:')) {
+        detailsText += `<div style="font-style: italic; color: #666;">Note: "${item.notes}"</div>`;
+      }
+
+      return `
+        <tr style="border-bottom: 1px solid #f1f5f9;">
+          <td style="padding: 10px 0; vertical-align: top;">
+            <div style="font-weight: bold; color: #1e293b;">${item.name}</div>
+            <div style="font-size: 10px; color: #64748b; margin-top: 2px;">${detailsText}</div>
+          </td>
+          <td style="padding: 10px 0; text-align: center; color: #475569; vertical-align: top;">${item.quantity}</td>
+          <td style="padding: 10px 0; text-align: right; color: #475569; vertical-align: top;">${currencySymbol}${item.price.toFixed(2)}</td>
+          <td style="padding: 10px 0; text-align: right; font-weight: bold; color: #0f172a; vertical-align: top;">${currencySymbol}${itemTotal.toFixed(2)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const receiptHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Receipt - Order #${order.orderNumber || order.id.slice(0, 8)}</title>
+          <style>
+            body { font-family: 'Inter', system-ui, -apple-system, sans-serif; padding: 30px; color: #1e293b; max-width: 480px; margin: 0 auto; background-color: #ffffff; }
+            .header { text-align: center; margin-bottom: 25px; }
+            .logo { max-height: 50px; margin-bottom: 10px; }
+            .store-name { font-size: 20px; font-weight: 800; color: #0f172a; margin: 0; }
+            .divider { border-top: 1px dashed #cbd5e1; margin: 20px 0; }
+            .meta-info { font-size: 12px; color: #475569; line-height: 1.6; }
+            .meta-row { display: flex; justify-content: space-between; }
+            table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 13px; }
+            th { text-align: left; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; color: #64748b; font-weight: bold; font-size: 11px; text-transform: uppercase; }
+            .summary { margin-top: 20px; font-size: 13px; }
+            .summary-row { display: flex; justify-content: space-between; padding: 4px 0; color: #475569; }
+            .total-row { border-top: 2px solid #0f172a; margin-top: 10px; padding-top: 10px; font-weight: 800; font-size: 16px; color: #0f172a; }
+            .footer { text-align: center; margin-top: 40px; font-size: 11px; color: #94a3b8; }
+            @media print {
+              body { padding: 15px; }
+              .no-print { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            ${storeLogo ? `<img class="logo" src="${storeLogo}" alt="Logo" />` : ''}
+            <h1 class="store-name">${storeName}</h1>
+            <p style="font-size: 11px; color: #64748b; margin: 5px 0 0 0;">ORDER RECEIPT</p>
+          </div>
+          
+          <div class="meta-info">
+            <div class="meta-row"><strong>Order ID:</strong> <span>#${order.orderNumber || order.id}</span></div>
+            <div class="meta-row"><strong>Date:</strong> <span>${new Date(order.createdAt).toLocaleString()}</span></div>
+            <div class="meta-row"><strong>Fulfillment:</strong> <span style="text-transform: uppercase;">${order.orderType.replace('_', ' ')}</span></div>
+            <div class="meta-row"><strong>Status:</strong> <span>${isPaid ? 'PAID' : 'UNPAID'}</span></div>
+          </div>
+
+          <div class="divider"></div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 50%;">Item</th>
+                <th style="text-align: center; width: 10%;">Qty</th>
+                <th style="text-align: right; width: 20%;">Price</th>
+                <th style="text-align: right; width: 20%;">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+
+          <div class="divider"></div>
+
+          <div class="summary">
+            <div class="summary-row">
+              <span>Subtotal</span>
+              <span>${currencySymbol}${order.subtotal.toFixed(2)}</span>
+            </div>
+            ${order.taxAmount > 0 ? `
+              <div class="summary-row">
+                <span>Tax</span>
+                <span>${currencySymbol}${order.taxAmount.toFixed(2)}</span>
+              </div>
+            ` : ''}
+            ${order.discountAmount > 0 ? `
+              <div class="summary-row" style="color: #ef4444;">
+                <span>Discount</span>
+                <span>-${currencySymbol}${order.discountAmount.toFixed(2)}</span>
+              </div>
+            ` : ''}
+            <div class="summary-row total-row">
+              <span>Total Amount</span>
+              <span>${currencySymbol}${order.totalAmount.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div class="footer">
+            <p>Thank you for ordering with us!</p>
+            <p style="font-size: 9px; margin-top: 5px; color: #cbd5e1;">Generated on ${new Date().toLocaleDateString()}</p>
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            }
+          </script>
+        </body>
+      </html>
+    `;
+    printWindow.document.write(receiptHtml);
+    printWindow.document.close();
+  };
 
   useEffect(() => {
     setCurrentPage(1);
@@ -2076,8 +2216,15 @@ export default function CustomerProfilePage() {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
+                  onClick={() => handleDownloadReceipt(order)}
+                  className="px-5 py-2.5 rounded-xl text-xs font-black text-white transition hover:opacity-90 shadow-md flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-500"
+                >
+                  <Download className="h-3.5 w-3.5" /> Download Receipt
+                </button>
+                <button
+                  type="button"
                   onClick={() => setSelectedOrderForDetails(null)}
-                  className="px-5 py-2.5 rounded-xl text-xs font-black text-white transition hover:opacity-90 shadow-md"
+                  className="px-5 py-2.5 rounded-xl text-xs font-black text-white transition hover:opacity-90 shadow-md bg-slate-800 hover:bg-slate-700"
                 >
                   Close Receipt
                 </button>

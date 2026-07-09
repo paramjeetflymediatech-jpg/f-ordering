@@ -485,3 +485,75 @@ SIMULATED DISPATCH DETAIL:
   Admin notified: owner@fordering.com
   
 
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/9/2026, 6:19:29 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00001
+Order Type: TAKEAWAY
+Timestamp: 7/9/2026, 6:19:29 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221103
+Email: param@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Jal Jeera @ $3.99 each = $3.99
+
+Subtotal: $3.99
+Tax: $0.33
+Total Amount: $4.32
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $4.32
+Transaction Reference: ONL-TX-1783601369426
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: param@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/9/2026, 6:20:08 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00002
+Order Type: TAKEAWAY
+Timestamp: 7/9/2026, 6:20:08 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221103
+Email: param@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 6x Mutton Fry Biryani @ $19.99 each = $119.94
+
+Subtotal: $119.94
+Tax: $9.90
+Total Amount: $129.84
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CARD
+Amount Paid: $129.84
+Transaction Reference: pi_3TrHP02NxSGni9xK1OAZvFEv
+Payment Status: SUCCESS
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: param@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
