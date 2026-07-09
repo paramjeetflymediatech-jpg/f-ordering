@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Harry Bistro',
   webDir: 'public',
   server: {
-    url: 'https://harry-bistro.fly-pos.com/menu',
+    url: 'https://harry-bistro.fly-pos.com/order-online/harry-bistro/menu',
     cleartext: true
   }
 };

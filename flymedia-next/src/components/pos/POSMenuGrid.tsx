@@ -329,8 +329,8 @@ export function POSMenuGrid({
 
       {/* CUSTOMIZATION DIALOG MODAL */}
       {customizingItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-slate-800/80 bg-slate-900 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/85 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-800/80 bg-slate-900 shadow-2xl overflow-hidden flex flex-col ">
             
             {/* Header */}
             <div className="flex justify-between items-center border-b border-slate-800 p-4 bg-slate-950/40">
@@ -377,7 +377,7 @@ export function POSMenuGrid({
                           onClick={() => setSelectedVariant(v)}
                           className={`p-3 rounded-xl border text-left text-xs font-bold transition-all duration-155 ${
                             isSelected
-                              ? 'border-orange-500 bg-gradient-to-br from-orange-600/10 to-amber-500/10 text-white shadow-lg shadow-orange-500/5'
+                              ? 'border-orange-500 bg-gradient-to-br from-orange-600/10 to-amber-500/10 shadow-lg shadow-orange-500/5'
                               : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:bg-slate-900'
                           }`}
                         >
@@ -411,7 +411,7 @@ export function POSMenuGrid({
                           onClick={() => handleToggleAddon(addon)}
                           className={`flex items-center justify-between p-3 rounded-xl border text-left text-xs font-semibold transition-all duration-155 ${
                             isSelected
-                              ? 'border-orange-500 bg-gradient-to-br from-orange-600/5 to-amber-500/5 text-white shadow-sm'
+                              ? 'border-orange-500 bg-gradient-to-br from-orange-600/10 to-amber-500/10 shadow-sm'
                               : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:bg-slate-900'
                           }`}
                         >
