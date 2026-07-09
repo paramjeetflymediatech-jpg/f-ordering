@@ -2316,7 +2316,7 @@ export default function PublicOrderPage() {
             {/* ── Header ── */}
             <div className="flex justify-between items-center px-5 py-4 border-b border-slate-100 shrink-0">
               <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                <ShoppingBag className="h-4 w-4" style={{ color: accentColor }} />
+                <ShoppingBag className="h-4 w-4 text-[#816659]" />
                 Checkout
               </h3>
               <button onClick={() => setActiveModal(null)} className="text-slate-400 hover:text-slate-700 transition rounded-full hover:bg-slate-100 p-1">
@@ -2365,8 +2365,8 @@ export default function PublicOrderPage() {
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs flex items-center justify-between gap-2">
                   <span className="text-slate-500">Guest checkout</span>
                   <div className="flex gap-3">
-                    <Link href={`/order-online/${orgSlug}/customer/login`} className="font-bold underline" style={{ color: accentColor }}>Log In</Link>
-                    <Link href={`/order-online/${orgSlug}/customer/register`} className="font-bold underline" style={{ color: accentColor }}>Sign Up</Link>
+                    <Link href={`/order-online/${orgSlug}/customer/login`} className="font-bold underline text-slate-400" >Log In</Link>
+                    <Link href={`/order-online/${orgSlug}/customer/register`} className="font-bold underline text-slate-400" >Sign Up</Link>
                   </div>
                 </div>
               )}

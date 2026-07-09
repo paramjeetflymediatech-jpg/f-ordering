@@ -24,6 +24,7 @@ import {
   X,
   CheckCircle,
   Truck,
+  ImageIcon,
 } from 'lucide-react';
 
 export default function ManageItemPage() {
@@ -77,6 +78,11 @@ export default function ManageItemPage() {
 
   // CSV file ref
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Bulk Image folder ref
+  const imageFolderInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [imageUploadProgress, setImageUploadProgress] = useState({ current: 0, total: 0 });
 
   // Recipe/Ingredient states
   const [selectedDishId, setSelectedDishId] = useState('');
@@ -252,59 +258,438 @@ export default function ManageItemPage() {
     triggerAlert('Inventory CSV downloaded.');
   };
 
-  // CSV Importer
-  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // CSV / Excel / JSON Importer
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    const fileType = file.name.split('.').pop()?.toLowerCase();
     const reader = new FileReader();
-    reader.onload = async (event) => {
-      const text = event.target?.result as string;
-      const lines = text.split('\n').filter((l) => l.trim() !== '');
-      if (lines.length <= 1) {
-        triggerAlert('CSV file is empty or invalid.', true);
-        return;
-      }
 
-      // Basic parser assuming columns: Name, CategoryId, Price, SKU, Barcode, Stock, Unit
-      const newItemsCreated = [];
-      let successCount = 0;
+    // Cache to lookup categories by name and avoid duplicate network requests
+    const categoryCache: Record<string, string> = {};
+    categories.forEach((cat) => {
+      categoryCache[cat.name.toLowerCase()] = cat.id;
+    });
 
-      for (let i = 1; i < lines.length; i++) {
-        const parts = lines[i].split(',').map((p) => p.replace(/"/g, '').trim());
-        if (parts.length < 3) continue;
+    const resolveCategoryId = async (catInput: string, cache: Record<string, string>) => {
+      if (!catInput) return null;
+      const trimmed = catInput.trim();
+      if (!trimmed) return null;
 
-        const [name, categoryId, price, sku, barcode, stock, unit] = parts;
-        if (!name || !price) continue;
+      // Check if it is a valid UUID format
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed);
+      if (isUUID) return trimmed;
 
-        try {
-          const res = await fetch('/api/dashboard/menu', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              type: 'item',
-              name,
-              categoryId: categoryId || null,
-              price: parseFloat(price) || 0,
-              sku: sku || null,
-              barcode: barcode || null,
-              stockCount: parseInt(stock) || 0,
-              unit: unit || 'pcs',
-            }),
-          });
-          const data = await res.json();
-          if (data.success) {
-            successCount++;
+      // Parse nested hierarchy separated by "/", ">", or "->"
+      const parts = trimmed.split(/\s*[\/>]|\s+->\s*/).map(p => p.trim()).filter(Boolean);
+      if (parts.length === 0) return null;
+
+      let currentParentId: string | null = null;
+      let pathAccumulator = "";
+
+      for (let i = 0; i < parts.length; i++) {
+        const part = parts[i];
+        pathAccumulator = pathAccumulator ? `${pathAccumulator} / ${part}` : part;
+        const lowerPath = pathAccumulator.toLowerCase();
+
+        if (cache[lowerPath]) {
+          currentParentId = cache[lowerPath];
+          continue;
+        }
+
+        // Check if category with matching name and parent exists in local categories state
+        const existingCat = categories.find(
+          (c) => c.name.toLowerCase() === part.toLowerCase() && 
+                 (c.parent_id === currentParentId || (!c.parent_id && !currentParentId))
+        );
+
+        if (existingCat) {
+          currentParentId = existingCat.id;
+          cache[lowerPath] = existingCat.id;
+        } else {
+          // Create the category on the fly
+          try {
+            const catRes: any = await fetch('/api/dashboard/menu', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'category',
+                name: part,
+                parentId: currentParentId,
+              }),
+            });
+            const catData: any = await catRes.json();
+            if (catData.success && catData.category) {
+              const catNewId: any = catData.category.id;
+              cache[lowerPath] = catNewId;
+              currentParentId = catNewId;
+
+              // Append to local state list immediately
+              setCategories((prev) => {
+                if (prev.some((c) => c.id === catNewId)) return prev;
+                return [...prev, catData.category];
+              });
+            } else {
+              return null; // failed to create
+            }
+          } catch (err) {
+            console.error('Failed to create subcategory on-the-fly:', err);
+            return null;
           }
-        } catch (err) {
-          console.error(err);
         }
       }
 
-      triggerAlert(`Successfully imported ${successCount} items from CSV.`);
-      await fetchMenuData();
+      return currentParentId;
     };
-    reader.readAsText(file);
+
+    if (fileType === 'json') {
+      reader.onload = async (event) => {
+        try {
+          const text = event.target?.result as string;
+          const items = JSON.parse(text);
+          if (!Array.isArray(items)) {
+            triggerAlert('JSON file must contain an array of items.', true);
+            return;
+          }
+
+          let successCount = 0;
+          for (const item of items) {
+            if (!item.name || item.price === undefined) continue;
+
+            const resolvedCatId = await resolveCategoryId(item.categoryId || item.category_id || '', categoryCache);
+
+            try {
+              const res = await fetch('/api/dashboard/menu', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'item',
+                  name: item.name,
+                  categoryId: resolvedCatId,
+                  price: parseFloat(item.price) || 0,
+                  description: item.description || '',
+                  imageUrl: item.imageUrl || item.image_url || null,
+                  sku: item.sku || null,
+                  barcode: item.barcode || null,
+                  stockCount: parseInt(item.stockCount || item.stock_count) || 0,
+                  unit: item.unit || 'pcs',
+                  variants: item.variants || [],
+                  addons: item.addons || [],
+                  bases: item.bases || [],
+                }),
+              });
+              const data = await res.json();
+              if (data.success) successCount++;
+            } catch (err) {
+              console.error(err);
+            }
+          }
+          triggerAlert(`Successfully imported ${successCount} items from JSON.`);
+          await fetchMenuData();
+        } catch (err) {
+          triggerAlert('Failed to parse JSON file.', true);
+        }
+      };
+      reader.readAsText(file);
+    } else if (fileType === 'xlsx' || fileType === 'xls') {
+      reader.onload = async (event) => {
+        try {
+          const arrayBuffer = event.target?.result as ArrayBuffer;
+          
+          // Dynamically load SheetJS from CDN
+          const XLSX = await (new Promise((resolve, reject) => {
+            if ((window as any).XLSX) {
+              resolve((window as any).XLSX);
+              return;
+            }
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+            script.onload = () => resolve((window as any).XLSX);
+            script.onerror = () => reject(new Error('Failed to load Excel parser.'));
+            document.head.appendChild(script);
+          }) as Promise<any>);
+
+          const data = new Uint8Array(arrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const rows = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+
+          if (rows.length <= 1) {
+            triggerAlert('Excel sheet is empty or invalid.', true);
+            return;
+          }
+
+          let successCount = 0;
+          // Row parser assuming headers: Name, CategoryId, Price, SKU, Barcode, StockCount, Unit, Variants, Addons
+          for (let i = 1; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length < 3) continue;
+
+            const name = row[0]?.toString().trim();
+            const categoryInput = row[1]?.toString().trim() || '';
+            const price = row[2];
+            const sku = row[3]?.toString().trim();
+            const barcode = row[4]?.toString().trim();
+            const stock = row[5];
+            const unit = row[6]?.toString().trim();
+            const variantsStr = row[7]?.toString().trim() || '';
+            const addonsStr = row[8]?.toString().trim() || '';
+
+            if (!name || price === undefined) continue;
+
+            const resolvedCatId = await resolveCategoryId(categoryInput, categoryCache);
+
+            const itemVariants: any[] = [];
+            if (variantsStr) {
+              const varParts = variantsStr.split(';').map((v: string) => v.trim()).filter(Boolean);
+              for (const vp of varParts) {
+                if (vp.includes(':')) {
+                  const [vName, vPrice] = vp.split(':');
+                  itemVariants.push({
+                    name: vName.trim(),
+                    additional_price: parseFloat(vPrice.trim()) || 0
+                  });
+                } else {
+                  itemVariants.push({
+                    name: vp.trim(),
+                    additional_price: 0
+                  });
+                }
+              }
+            }
+
+            const itemAddons: any[] = [];
+            if (addonsStr) {
+              const addonParts = addonsStr.split(';').map((a: string) => a.trim()).filter(Boolean);
+              for (const ap of addonParts) {
+                if (ap.includes(':')) {
+                  const [aName, aPrice] = ap.split(':');
+                  itemAddons.push({
+                    name: aName.trim(),
+                    price: parseFloat(aPrice.trim()) || 0
+                  });
+                } else {
+                  itemAddons.push({
+                    name: ap.trim(),
+                    price: 0
+                  });
+                }
+              }
+            }
+
+            try {
+              const res = await fetch('/api/dashboard/menu', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  type: 'item',
+                  name,
+                  categoryId: resolvedCatId,
+                  price: parseFloat(price.toString()) || 0,
+                  sku: sku || null,
+                  barcode: barcode || null,
+                  stockCount: parseInt(stock?.toString()) || 0,
+                  unit: unit || 'pcs',
+                  variants: itemVariants,
+                  addons: itemAddons,
+                }),
+              });
+              const data = await res.json();
+              if (data.success) successCount++;
+            } catch (err) {
+              console.error(err);
+            }
+          }
+          triggerAlert(`Successfully imported ${successCount} items from Excel.`);
+          await fetchMenuData();
+        } catch (err) {
+          triggerAlert('Failed to parse Excel file.', true);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      // Fallback/CSV loader
+      reader.onload = async (event) => {
+        const text = event.target?.result as string;
+        const lines = text.split('\n').filter((l) => l.trim() !== '');
+        if (lines.length <= 1) {
+          triggerAlert('CSV file is empty or invalid.', true);
+          return;
+        }
+
+        let successCount = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const parts = lines[i].split(',').map((p) => p.replace(/"/g, '').trim());
+          if (parts.length < 3) continue;
+
+          const [name, categoryInput, price, sku, barcode, stock, unit, variantsStr, addonsStr] = parts;
+          if (!name || !price) continue;
+
+          const resolvedCatId = await resolveCategoryId(categoryInput || '', categoryCache);
+
+          const itemVariants: any[] = [];
+          if (variantsStr) {
+            const varParts = variantsStr.split(';').map((v: string) => v.trim()).filter(Boolean);
+            for (const vp of varParts) {
+              if (vp.includes(':')) {
+                const [vName, vPrice] = vp.split(':');
+                itemVariants.push({
+                  name: vName.trim(),
+                  additional_price: parseFloat(vPrice.trim()) || 0
+                });
+              } else {
+                itemVariants.push({
+                  name: vp.trim(),
+                  additional_price: 0
+                });
+              }
+            }
+          }
+
+          const itemAddons: any[] = [];
+          if (addonsStr) {
+            const addonParts = addonsStr.split(';').map((a: string) => a.trim()).filter(Boolean);
+            for (const ap of addonParts) {
+              if (ap.includes(':')) {
+                const [aName, aPrice] = ap.split(':');
+                itemAddons.push({
+                  name: aName.trim(),
+                  price: parseFloat(aPrice.trim()) || 0
+                });
+              } else {
+                itemAddons.push({
+                  name: ap.trim(),
+                  price: 0
+                });
+              }
+            }
+          }
+
+          try {
+            const res = await fetch('/api/dashboard/menu', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'item',
+                name,
+                categoryId: resolvedCatId,
+                price: parseFloat(price) || 0,
+                sku: sku || null,
+                barcode: barcode || null,
+                stockCount: parseInt(stock) || 0,
+                unit: unit || 'pcs',
+                variants: itemVariants,
+                addons: itemAddons,
+              }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              successCount++;
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        }
+
+        triggerAlert(`Successfully imported ${successCount} items from CSV.`);
+        await fetchMenuData();
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  // Bulk Image Folder Uploader
+  const handleUploadImageFolder = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // Filter image files
+    const imageFiles = Array.from(files).filter(file => {
+      const type = file.type.toLowerCase();
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      return type.startsWith('image/') || ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'].includes(ext);
+    });
+
+    if (imageFiles.length === 0) {
+      triggerAlert('No image files found in the selected folder.', true);
+      return;
+    }
+
+    setUploadingImages(true);
+    setImageUploadProgress({ current: 0, total: imageFiles.length });
+
+    let updatedCount = 0;
+
+    for (let i = 0; i < imageFiles.length; i++) {
+      const file = imageFiles[i];
+      setImageUploadProgress({ current: i + 1, total: imageFiles.length });
+
+      // Get filename without extension to use as matching key
+      const lastDotIndex = file.name.lastIndexOf('.');
+      const keyName = lastDotIndex !== -1 ? file.name.substring(0, lastDotIndex) : file.name;
+      const cleanKey = keyName.trim().toLowerCase();
+      const cleanKeyNoUnderscore = cleanKey.replace(/_/g, ' ');
+
+      // Find matching item in allItems by Name, SKU, or Barcode
+      const matchedItem = allItems.find(item => {
+        const itemNameClean = item.name?.trim().toLowerCase();
+        const nameMatch = itemNameClean === cleanKey || itemNameClean === cleanKeyNoUnderscore;
+        const skuMatch = item.sku?.trim().toLowerCase() === cleanKey;
+        const barcodeMatch = item.barcode?.trim().toLowerCase() === cleanKey;
+        return nameMatch || skuMatch || barcodeMatch;
+      });
+
+      if (!matchedItem) {
+        console.log(`No matching menu item found for image: ${file.name}`);
+        continue;
+      }
+
+      // Upload file to /api/dashboard/upload
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'menu');
+
+        const uploadRes = await fetch('/api/dashboard/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const uploadData = await uploadRes.json();
+        if (uploadData.success && uploadData.url) {
+          // Update matching menu item in the database
+          const updateRes = await fetch('/api/dashboard/menu', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'item',
+              id: matchedItem.id,
+              name: matchedItem.name,
+              price: matchedItem.price,
+              description: matchedItem.description || '',
+              imageUrl: uploadData.url, // update to uploaded relative URL
+              isAvailable: matchedItem.is_available,
+              sku: matchedItem.sku,
+              barcode: matchedItem.barcode,
+              stockCount: matchedItem.stock_count,
+              unit: matchedItem.unit,
+            }),
+          });
+          const updateData = await updateRes.json();
+          if (updateData.success) {
+            updatedCount++;
+          }
+        }
+      } catch (err) {
+        console.error(`Failed to upload/link image ${file.name}:`, err);
+      }
+    }
+
+    setUploadingImages(false);
+    triggerAlert(`Successfully linked & updated ${updatedCount} menu item images.`);
+    await fetchMenuData();
   };
 
   // Uncategorised quick category mapping
@@ -850,45 +1235,123 @@ export default function ManageItemPage() {
 
       {/* 3. IMPORT EXPORT VIEW */}
       {activeSubView === 'import-export' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-fade-in">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-in">
           
           {/* Export card */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
-            <Download className="h-10 w-10 text-emerald-400" />
-            <h3 className="text-base font-extrabold text-white">Export Inventory Catalog</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Export all active product registers, pricing points, SKU identifiers, barcodes, and current warehouse stock counts into a single comma-separated CSV format.
-            </p>
-            <button
-              onClick={handleExportCSV}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-500 transition"
-            >
-              <Download className="h-4 w-4" /> Download CSV Spreadsheet
-            </button>
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4 flex flex-col justify-between">
+            <div className="space-y-4">
+              <Download className="h-10 w-10 text-emerald-400" />
+              <h3 className="text-base font-extrabold text-white">Export Inventory Catalog</h3>
+              <p className="text-xs text-slate-400 leading-relaxed">
+                Export all active product registers, pricing points, SKU identifiers, barcodes, and current warehouse stock counts into a single comma-separated CSV format.
+              </p>
+            </div>
+            <div className="pt-2">
+              <button
+                onClick={handleExportCSV}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-emerald-500 transition w-full justify-center lg:w-auto"
+              >
+                <Download className="h-4 w-4" /> Download CSV Spreadsheet
+              </button>
+            </div>
           </div>
 
           {/* Import card */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4">
-            <Upload className="h-10 w-10 text-sky-400" />
-            <h3 className="text-base font-extrabold text-white">Bulk Import Spreadsheet</h3>
-            <p className="text-xs text-slate-400 leading-relaxed">
-              Quickly seed or update your menus in bulk. Upload a CSV file matching columns: 
-              <br />
-              <code className="text-sky-400 font-mono text-[10px]">Name, CategoryId, Price, SKU, Barcode, StockCount, Unit</code>
-            </p>
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4 flex flex-col justify-between">
+            <div className="space-y-4">
+              <Upload className="h-10 w-10 text-sky-400" />
+              <h3 className="text-base font-extrabold text-white">Bulk Import Spreadsheet</h3>
+              <p className="text-xs text-slate-400 leading-relaxed space-y-1">
+                <span>Quickly seed or update your menus in bulk. Upload a CSV, Excel (.xlsx, .xls), or JSON file.</span>
+                <br />
+                <span className="font-bold text-slate-350 block mt-1 text-[11px]">Spreadsheet headers (CSV / Excel):</span>
+                <code className="text-sky-400 font-mono text-[10px] bg-slate-950 px-2 py-0.5 rounded border border-slate-800/80 block mt-0.5 select-all">
+                  Name, CategoryId, Price, SKU, Barcode, StockCount, Unit, Variants, Addons
+                </code>
+                <span className="text-[10px] text-slate-400 block mt-1">
+                  * To import variants/options, use the format: <code className="text-amber-400">Mild;Medium;Hot</code> or <code className="text-amber-400">Mild:0;Medium:0;Hot:0</code> (separated by semicolons).
+                  <br />
+                  * To import add-ons (toppings), use the format: <code className="text-amber-400">Extra Cheese:1.50;Bacon:2.00;Egg:1.50</code> (separated by semicolons).
+                </span>
+                <span className="font-bold text-slate-350 block mt-2 text-[11px]">JSON array schema (with optional pricing options):</span>
+                <code className="text-sky-400 font-mono text-[9px] bg-slate-950 px-2 py-0.5 rounded border border-slate-800/80 block mt-0.5 overflow-x-auto whitespace-pre select-all">
+  {JSON.stringify([
+    {
+      name: "Smash Burger",
+      price: 14.99,
+      description: "Burgers with variant sizes",
+      categoryId: "uuid-category-1",
+      variants: [
+        { name: "Regular", additional_price: 0 },
+        { name: "Double Patty", additional_price: 3.50 }
+      ]
+    }
+  ], null, 2)}
+                </code>
+              </p>
+            </div>
             <div className="pt-2">
               <input
                 type="file"
-                accept=".csv"
+                accept=".csv,.xlsx,.xls,.json"
                 ref={fileInputRef}
-                onChange={handleImportCSV}
+                onChange={handleImportFile}
                 className="hidden"
               />
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-sky-500 transition"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-sky-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-sky-500 transition w-full justify-center lg:w-auto"
               >
-                <Upload className="h-4 w-4" /> Choose CSV File
+                <Upload className="h-4 w-4" /> Choose Menu File
+              </button>
+            </div>
+          </div>
+
+          {/* Image Folder Import card */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-4 flex flex-col justify-between">
+            <div className="space-y-4">
+              <ImageIcon className="h-10 w-10 text-orange-400" />
+              <h3 className="text-base font-extrabold text-white">Bulk Upload Images</h3>
+              <p className="text-xs text-slate-400 leading-relaxed space-y-1">
+                <span>Upload an entire folder containing product images to update dish pictures in bulk.</span>
+                <br />
+                <span className="font-bold text-slate-350 block mt-1 text-[11px]">Filename Matching Rules:</span>
+                <span className="text-[10px] text-slate-400 block mt-0.5">
+                  Images are automatically matched by their filename (without extension) to either the **Dish Name**, **SKU**, or **Barcode**.
+                </span>
+                <span className="text-[10px] text-slate-400 block mt-1">
+                  * Example: <code className="text-amber-400">Classic Margherita Pizza.jpg</code> matches a dish named "Classic Margherita Pizza".
+                  <br />
+                  * Example: <code className="text-amber-400">PIZZA-MARG-01.png</code> matches a dish with SKU "PIZZA-MARG-01".
+                </span>
+              </p>
+            </div>
+            
+            <div className="pt-2">
+              <input
+                type="file"
+                {...({
+                  webkitdirectory: "",
+                  directory: "",
+                  multiple: true
+                } as any)}
+                ref={imageFolderInputRef}
+                onChange={handleUploadImageFolder}
+                className="hidden"
+                accept="image/*"
+              />
+              <button
+                disabled={uploadingImages}
+                onClick={() => imageFolderInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-orange-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-orange-500 disabled:bg-orange-850/50 disabled:text-orange-400/50 transition w-full justify-center lg:w-auto"
+              >
+                {uploadingImages ? (
+                  <>Uploading ({imageUploadProgress.current}/{imageUploadProgress.total})...</>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" /> Upload Images Folder
+                  </>
+                )}
               </button>
             </div>
           </div>
