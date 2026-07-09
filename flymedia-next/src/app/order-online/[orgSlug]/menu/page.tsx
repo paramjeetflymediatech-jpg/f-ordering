@@ -2244,11 +2244,9 @@ export default function PublicOrderPage() {
                               }`}
                           >
                             <p>{v.name}</p>
-                            {parseFloat(v.additional_price) > 0 && (
-                              <p className={`text-[10px] mt-1 ${isSelected ? 'text-[#C39A3C]' : 'text-slate-400'}`}>
-                                +${parseFloat(v.additional_price).toFixed(2)}
-                              </p>
-                            )}
+                            <p className={`text-[10px] mt-1 ${isSelected ? 'text-[#C39A3C]' : 'text-slate-400'}`}>
+                              ${(parseFloat(selectedItem.price) + parseFloat(v.additional_price || 0)).toFixed(2)}
+                            </p>
                           </button>
                         );
                       })}

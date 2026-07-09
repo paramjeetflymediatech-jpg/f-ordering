@@ -44,6 +44,10 @@ export default function ManageMenuPage() {
   const [addons, setAddons] = useState<{ id?: string; name: string; price: number }[]>([]);
   const [bases, setBases] = useState<{ id?: string; name: string; extraPrice: number }[]>([]);
 
+  // Pricing mode state
+  const [pricingMode, setPricingMode] = useState<'single' | 'multiple'>('single');
+  const [multiplePrices, setMultiplePrices] = useState<{ id?: string; name: string; price: string }[]>([]);
+
   // Form states for new/edit items
   const [itemName, setItemName] = useState('');
   const [itemPrice, setItemPrice] = useState('');
@@ -240,7 +244,21 @@ export default function ManageMenuPage() {
   // Add Item
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!itemName || !itemPrice || !selectedCategoryId) return;
+    
+    let finalPrice = itemPrice;
+    let finalVariants = variants;
+
+    if (pricingMode === 'multiple') {
+      if (multiplePrices.length === 0) return;
+      finalPrice = multiplePrices[0].price;
+      const baseVal = parseFloat(finalPrice) || 0;
+      finalVariants = multiplePrices.map(p => ({
+        name: p.name,
+        additional_price: (parseFloat(p.price) || 0) - baseVal
+      }));
+    }
+
+    if (!itemName || !finalPrice || !selectedCategoryId) return;
 
     try {
       const res = await fetch('/api/dashboard/menu', {
@@ -249,7 +267,7 @@ export default function ManageMenuPage() {
         body: JSON.stringify({
           type: 'item',
           name: itemName,
-          price: itemPrice,
+          price: finalPrice,
           description: itemDesc,
           imageUrl: itemImage,
           categoryId: selectedCategoryId,
@@ -257,7 +275,7 @@ export default function ManageMenuPage() {
           sku: itemSku || null,
           stockCount: parseInt(itemStock) || 0,
           unit: itemUnit || 'pcs',
-          variants,
+          variants: finalVariants,
           addons,
           bases,
         }),
@@ -296,13 +314,44 @@ export default function ManageMenuPage() {
     setVariants(item.variants || []);
     setAddons(item.addons || []);
     setBases(item.bases || []);
+
+    if (item.variants && item.variants.length > 0) {
+      setPricingMode('multiple');
+      const baseVal = parseFloat(item.price) || 0;
+      setMultiplePrices(
+        item.variants.map((v: any) => ({
+          id: v.id,
+          name: v.name,
+          price: (baseVal + parseFloat(v.additional_price || 0)).toFixed(2)
+        }))
+      );
+    } else {
+      setPricingMode('single');
+      setMultiplePrices([]);
+    }
+
     setActiveModal('editItem');
   };
 
   // Save Edit Item
   const handleSaveEditItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!itemName || !itemPrice || !editingItem) return;
+    
+    let finalPrice = itemPrice;
+    let finalVariants = variants;
+
+    if (pricingMode === 'multiple') {
+      if (multiplePrices.length === 0) return;
+      finalPrice = multiplePrices[0].price;
+      const baseVal = parseFloat(finalPrice) || 0;
+      finalVariants = multiplePrices.map(p => ({
+        id: p.id,
+        name: p.name,
+        additional_price: (parseFloat(p.price) || 0) - baseVal
+      }));
+    }
+
+    if (!itemName || !finalPrice || !editingItem) return;
 
     try {
       const res = await fetch('/api/dashboard/menu', {
@@ -312,7 +361,7 @@ export default function ManageMenuPage() {
           type: 'item',
           id: editingItem.id,
           name: itemName,
-          price: itemPrice,
+          price: finalPrice,
           description: itemDesc,
           imageUrl: itemImage,
           isAvailable: itemAvailable,
@@ -320,7 +369,7 @@ export default function ManageMenuPage() {
           sku: itemSku || null,
           stockCount: parseInt(itemStock) || 0,
           unit: itemUnit || 'pcs',
-          variants,
+          variants: finalVariants,
           addons,
           bases,
         }),
@@ -330,10 +379,10 @@ export default function ManageMenuPage() {
         setActiveModal(null);
         clearItemForm();
         setEditingItem(null);
-        triggerAlert('Changes saved.');
+        triggerAlert('Dish updated successfully.');
         await fetchMenu();
       } else {
-        triggerAlert(data.error || 'Failed to save changes.', true);
+        triggerAlert(data.error || 'Failed to update item.', true);
       }
     } catch (err) {
       console.error(err);
@@ -454,6 +503,8 @@ export default function ManageMenuPage() {
     setVariants([]);
     setAddons([]);
     setBases([]);
+    setPricingMode('single');
+    setMultiplePrices([]);
   };
 
   // Helper to build hierarchy display string
@@ -781,7 +832,11 @@ export default function ManageMenuPage() {
                         <div>
                           <div className="flex justify-between items-start gap-2">
                             <h3 className="font-black text-base text-white group-hover:text-amber-400 transition-colors line-clamp-1">{item.name}</h3>
-                            <span className="text-sm sm:text-[15px] font-black text-amber-400 shrink-0">${parseFloat(item.price).toFixed(2)}</span>
+                            <span className="text-sm sm:text-[15px] font-black text-amber-400 shrink-0">
+                              {item.variants && item.variants.length > 0 
+                                ? `From $${parseFloat(item.price).toFixed(2)}` 
+                                : `$${parseFloat(item.price).toFixed(2)}`}
+                            </span>
                           </div>
                           
                           <p className="text-xs sm:text-[13px] text-slate-400 mt-1.5 line-clamp-2 leading-relaxed min-h-[2.5rem]">
@@ -1174,18 +1229,106 @@ export default function ManageMenuPage() {
                 </div>
 
                 <div>
-                  <label className="text-slate-400 font-bold uppercase tracking-wide">Price ($) *</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    required
-                    placeholder="e.g. 12.99"
-                    value={itemPrice}
-                    onChange={(e) => setItemPrice(e.target.value)}
-                    className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-orange-500 transition"
-                  />
+                  <label className="text-slate-400 font-bold uppercase tracking-wide">Pricing Type *</label>
+                  <div className="flex gap-4 mt-3">
+                    <label className="flex items-center gap-1.5 text-white font-semibold cursor-pointer select-none">
+                      <input
+                        type="radio"
+                        name="pricingMode"
+                        checked={pricingMode === 'single'}
+                        onChange={() => setPricingMode('single')}
+                        className="accent-orange-500"
+                      />
+                      Single Price
+                    </label>
+                    <label className="flex items-center gap-1.5 text-white font-semibold cursor-pointer select-none">
+                      <input
+                        type="radio"
+                        name="pricingMode"
+                        checked={pricingMode === 'multiple'}
+                        onChange={() => {
+                          setPricingMode('multiple');
+                          if (multiplePrices.length === 0) {
+                            setMultiplePrices([{ name: 'Regular', price: itemPrice || '' }]);
+                          }
+                        }}
+                        className="accent-orange-500"
+                      />
+                      Multiple Prices
+                    </label>
+                  </div>
                 </div>
               </div>
+
+              {pricingMode === 'multiple' ? (
+                <div className="border border-slate-800 bg-slate-950/30 rounded-xl p-3.5 space-y-3.5">
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-300 font-bold uppercase tracking-wide text-[10.5px]">Pricing Options (e.g. Sizes) *</span>
+                    <button
+                      type="button"
+                      onClick={() => setMultiplePrices([...multiplePrices, { name: '', price: '' }])}
+                      className="text-[9.5px] bg-slate-800 text-orange-400 hover:text-orange-300 px-2.5 py-1 rounded font-bold border border-slate-700/60 transition"
+                    >
+                      + Add Option
+                    </button>
+                  </div>
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    {multiplePrices.map((p, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Option Name (e.g. Small)"
+                          value={p.name}
+                          onChange={(e) => {
+                            const newPrices = [...multiplePrices];
+                            newPrices[index].name = e.target.value;
+                            setMultiplePrices(newPrices);
+                          }}
+                          className="flex-1 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                        />
+                        <input
+                          type="number"
+                          step="0.01"
+                          required
+                          placeholder="Price ($)"
+                          value={p.price}
+                          onChange={(e) => {
+                            const newPrices = [...multiplePrices];
+                            newPrices[index].price = e.target.value;
+                            setMultiplePrices(newPrices);
+                          }}
+                          className="w-28 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                        />
+                        {multiplePrices.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setMultiplePrices(multiplePrices.filter((_, i) => i !== index))}
+                            className="text-red-400 hover:text-red-300 p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1">
+                  <div>
+                    <label className="text-slate-400 font-bold uppercase tracking-wide">Price ($) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="e.g. 12.99"
+                      value={itemPrice}
+                      onChange={(e) => setItemPrice(e.target.value)}
+                      className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                    />
+                  </div>
+                </div>
+              )}
 
               {/* INVENTORY / SCALE CODES */}
               <div className="grid grid-cols-2 gap-4 border-t border-b border-slate-800/60 py-3">
@@ -1393,60 +1536,62 @@ export default function ManageMenuPage() {
               </div>
 
               {/* VARIANTS SECTION */}
-              <div className="border-t border-slate-800/60 pt-4 space-y-3">
-                <div className="flex justify-between items-center">
-                  <label className="text-slate-400 font-bold uppercase tracking-wide">Variants (e.g. Sizes)</label>
-                  <button
-                    type="button"
-                    onClick={() => setVariants([...variants, { name: '', additional_price: 0 }])}
-                    className="text-[10px] bg-slate-800 text-orange-400 hover:text-orange-300 px-2 py-1 rounded font-bold border border-slate-700/60 transition"
-                  >
-                    + Add Variant
-                  </button>
-                </div>
-                {variants.length === 0 ? (
-                  <p className="text-[11px] text-slate-500 italic">No variants defined (defaults to standard price).</p>
-                ) : (
-                  <div className="space-y-2">
-                    {variants.map((v, index) => (
-                      <div key={index} className="flex gap-2 items-center">
-                        <input
-                          type="text"
-                          required
-                          placeholder="Variant Name (e.g. Medium)"
-                          value={v.name}
-                          onChange={(e) => {
-                            const newVariants = [...variants];
-                            newVariants[index].name = e.target.value;
-                            setVariants(newVariants);
-                          }}
-                          className="flex-1 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
-                        />
-                        <input
-                          type="number"
-                          step="0.01"
-                          required
-                          placeholder="Price mod (+$)"
-                          value={v.additional_price}
-                          onChange={(e) => {
-                            const newVariants = [...variants];
-                            newVariants[index].additional_price = parseFloat(e.target.value) || 0;
-                            setVariants(newVariants);
-                          }}
-                          className="w-24 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setVariants(variants.filter((_, i) => i !== index))}
-                          className="text-red-400 hover:text-red-300 p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ))}
+              {pricingMode === 'single' && (
+                <div className="border-t border-slate-800/60 pt-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <label className="text-slate-400 font-bold uppercase tracking-wide">Variants (e.g. Sizes)</label>
+                    <button
+                      type="button"
+                      onClick={() => setVariants([...variants, { name: '', additional_price: 0 }])}
+                      className="text-[10px] bg-slate-800 text-orange-400 hover:text-orange-300 px-2 py-1 rounded font-bold border border-slate-700/60 transition"
+                    >
+                      + Add Variant
+                    </button>
                   </div>
-                )}
-              </div>
+                  {variants.length === 0 ? (
+                    <p className="text-[11px] text-slate-500 italic">No variants defined (defaults to standard price).</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {variants.map((v, index) => (
+                        <div key={index} className="flex gap-2 items-center">
+                          <input
+                            type="text"
+                            required
+                            placeholder="Variant Name (e.g. Medium)"
+                            value={v.name}
+                            onChange={(e) => {
+                              const newVariants = [...variants];
+                              newVariants[index].name = e.target.value;
+                              setVariants(newVariants);
+                            }}
+                            className="flex-1 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                          />
+                          <input
+                            type="number"
+                            step="0.01"
+                            required
+                            placeholder="Price mod (+$)"
+                            value={v.additional_price}
+                            onChange={(e) => {
+                              const newVariants = [...variants];
+                              newVariants[index].additional_price = parseFloat(e.target.value) || 0;
+                              setVariants(newVariants);
+                            }}
+                            className="w-24 rounded-lg border border-slate-800 bg-slate-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setVariants(variants.filter((_, i) => i !== index))}
+                            className="text-red-400 hover:text-red-300 p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800 transition"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ADDONS SECTION */}
               <div className="border-t border-slate-800/60 pt-4 space-y-3">

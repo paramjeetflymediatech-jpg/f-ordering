@@ -1,5 +1,6 @@
 import React from 'react';
-import { Bell, Sun, Moon } from 'lucide-react';
+import { Bell, Sun, Moon, LogOut } from 'lucide-react';
+import { signOut } from 'next-auth/react';
 
 interface POSHeaderProps {
   session: any;
@@ -67,6 +68,14 @@ export function POSHeader({ session, logoUrl, companyName, theme = 'dark', toggl
               {unreadCount}
             </span>
           )}
+        </button>
+
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="rounded-xl border border-slate-800 bg-slate-900 p-2 text-red-400 hover:text-red-300 hover:bg-slate-800 hover:border-slate-700 transition duration-200 md:hidden"
+          title="Sign Out"
+        >
+          <LogOut className="h-4 w-4" />
         </button>
       </div>
     </header>

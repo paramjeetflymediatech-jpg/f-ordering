@@ -44,7 +44,7 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab
   return (
     <aside className="hidden md:flex w-22 shrink-0 border-r border-slate-800/80 bg-slate-950/80 backdrop-blur-md flex-col justify-between items-center py-6 shadow-2xl">
       {/* Brand Logo */}
-      <div className="flex flex-col items-center gap-1 cursor-pointer group" onClick={() => router.push('/pos')}>
+      <div className="flex flex-col items-center gap-1 cursor-pointer group shrink-0" onClick={() => router.push('/pos')}>
         {logoUrl ? (
           <div className="relative flex h-14 w-14 items-center justify-center rounded-xl overflow-hidden border border-slate-800 bg-slate-950 shadow-lg group-hover:border-orange-500/40 transition-all duration-300">
             <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
@@ -59,7 +59,7 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab
       </div>
 
       {/* Navigation items */}
-      <nav className="flex flex-col gap-3.5 w-full px-2">
+      <nav className="flex flex-col gap-3.5 w-full px-2 overflow-y-auto scrollbar-none my-4 flex-1">
         <button
           onClick={() => router.push('/pos')}
           className={`group relative flex w-full flex-col items-center justify-center rounded-xl py-3.5 transition-all duration-300 ${
@@ -153,16 +153,14 @@ export function POSSidebar({ session, heldOrdersCount, setActiveModal, activeTab
       </nav>
 
       {/* Footer Logout & User Profile */}
-      <div className="flex flex-col items-center gap-4 w-full">
-        {!isMobile && (
-          <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="rounded-xl p-2.5 text-red-400/80 hover:bg-red-950/20 hover:text-red-400 border border-transparent hover:border-red-900/20 transition-all duration-300"
-            title="Sign Out"
-          >
-            <LogOut className="h-5 w-5" />
-          </button>
-        )}
+      <div className="flex flex-col items-center gap-4 w-full shrink-0">
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="rounded-xl p-2.5 text-red-400/80 hover:bg-red-950/20 hover:text-red-400 border border-transparent hover:border-red-900/20 transition-all duration-300"
+          title="Sign Out"
+        >
+          <LogOut className="h-5 w-5" />
+        </button>
 
         {/* Profile Avatar Card */}
         <div className="h-11 w-11 p-0.5 overflow-hidden rounded-full border border-slate-850 bg-slate-950 cursor-pointer hover:border-orange-500 transition-all duration-300 hover:scale-105">

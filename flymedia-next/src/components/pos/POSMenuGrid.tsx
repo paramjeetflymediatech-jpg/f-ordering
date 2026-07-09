@@ -1,5 +1,6 @@
 import React from 'react';
 import { Search, Plus, Minus, X, Check, Utensils } from 'lucide-react';
+import { createPortal } from 'react-dom';
 
 interface POSMenuGridProps {
   categories: any[];
@@ -36,6 +37,48 @@ export function POSMenuGrid({
   const [selectedAddons, setSelectedAddons] = React.useState<any[]>([]);
   const [customQuantity, setCustomQuantity] = React.useState<number>(1);
   const [specialNotes, setSpecialNotes] = React.useState<string>('');
+
+  const [mounted, setMounted] = React.useState(false);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  React.useEffect(() => {
+    if (customizingItem) {
+      // 1. Prevent scrolling on body and html
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+
+      // 2. Prevent scrolling on background scrollable containers
+      const scrollContainers = document.querySelectorAll('.overflow-y-auto');
+      scrollContainers.forEach((container) => {
+        // Do not disable scroll inside the customization modal itself
+        if (!container.closest('.fixed')) {
+          (container as HTMLElement).style.overflowY = 'hidden';
+        }
+      });
+    } else {
+      // Restore styles
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+
+      const scrollContainers = document.querySelectorAll('.overflow-y-auto');
+      scrollContainers.forEach((container) => {
+        if (!container.closest('.fixed')) {
+          (container as HTMLElement).style.overflowY = '';
+        }
+      });
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      const scrollContainers = document.querySelectorAll('.overflow-y-auto');
+      scrollContainers.forEach((container) => {
+        (container as HTMLElement).style.overflowY = '';
+      });
+    };
+  }, [customizingItem]);
 
   const hasCustomization = (item: any) => {
     return (item.variants && item.variants.length > 0) || (item.addons && item.addons.length > 0);
@@ -122,8 +165,8 @@ export function POSMenuGrid({
     finalUnitPrice += addonPrice;
 
     // Suffix variant name to the cart item name for display if variant exists
-    const cartName = selectedVariant 
-      ? `${customizingItem.name} (${selectedVariant.name})` 
+    const cartName = selectedVariant
+      ? `${customizingItem.name} (${selectedVariant.name})`
       : customizingItem.name;
 
     addToCart({
@@ -171,11 +214,10 @@ export function POSMenuGrid({
           <div className="flex overflow-x-auto scrollbar-none whitespace-nowrap gap-2 max-w-full pb-1.5">
             <button
               onClick={() => setSelectedCategoryId('all')}
-              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 shrink-0 ${
-                selectedCategoryId === 'all'
+              className={`px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 shrink-0 ${selectedCategoryId === 'all'
                   ? 'bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-lg shadow-orange-600/20 border border-orange-500/20'
                   : 'bg-slate-950/60 border border-slate-850 text-slate-400 hover:text-white hover:bg-slate-900/80'
-              }`}
+                }`}
             >
               All Items
             </button>
@@ -183,11 +225,10 @@ export function POSMenuGrid({
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategoryId(cat.id)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 shrink-0 ${
-                  selectedCategoryId === cat.id
+                className={`px-4 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-wider transition-all duration-300 shrink-0 ${selectedCategoryId === cat.id
                     ? 'bg-gradient-to-r from-orange-600 to-amber-500 text-white shadow-lg shadow-orange-600/20 border border-orange-500/20'
                     : 'bg-slate-950/60 border border-slate-850 text-slate-400 hover:text-white hover:bg-slate-900/80'
-                }`}
+                  }`}
               >
                 {cat.name}
               </button>
@@ -239,7 +280,7 @@ export function POSMenuGrid({
 
                   {/* Gradient Overlay on Image */}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 via-transparent to-transparent opacity-60 pointer-events-none" />
-                                    {/* Overlay badges (Category + Customization indicator) */}
+                  {/* Overlay badges (Category + Customization indicator) */}
                   <div className="absolute top-2.5 left-2.5 right-2.5 flex justify-between items-center gap-2 pointer-events-none select-none">
                     <div className="px-2.5 py-0.5 rounded-full bg-slate-950/80 backdrop-blur-md border border-slate-800/60 text-[9px] font-bold text-slate-400 uppercase tracking-wide truncate max-w-[60%] shadow-md">
                       {item.categoryName || 'Menu'}
@@ -328,12 +369,12 @@ export function POSMenuGrid({
       </div>
 
       {/* CUSTOMIZATION DIALOG MODAL */}
-      {customizingItem && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-slate-950/85 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-slate-800/80 bg-slate-900 shadow-2xl overflow-hidden flex flex-col ">
-            
+      {customizingItem && mounted && createPortal(
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-slate-800/80 bg-slate-900 shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-2rem)]">
+
             {/* Header */}
-            <div className="flex justify-between items-center border-b border-slate-800 p-4 bg-slate-950/40">
+            <div className="flex justify-between items-center border-b border-slate-800 p-4 bg-slate-950/40 shrink-0">
               <div>
                 <h3 className="text-sm font-black text-white uppercase tracking-wide">
                   Customize {customizingItem.name}
@@ -351,8 +392,8 @@ export function POSMenuGrid({
             </div>
 
             {/* Scrollable Content */}
-            <div className="p-4 sm:p-5 space-y-4 sm:space-y-5 overflow-y-auto pr-2">
-              
+            <div className="p-4 sm:p-5 space-y-4 sm:space-y-5 overflow-y-auto pr-2 flex-1 min-h-0">
+
               {/* Optional image display if any */}
               {customizingItem.image_url && (
                 <img
@@ -375,18 +416,17 @@ export function POSMenuGrid({
                         <button
                           key={v.id}
                           onClick={() => setSelectedVariant(v)}
-                          className={`p-3 rounded-xl border text-left text-xs font-bold transition-all duration-155 ${
-                            isSelected
-                              ? 'border-orange-500 bg-gradient-to-br from-orange-600/10 to-amber-500/10 shadow-lg shadow-orange-500/5'
+                          className={`p-3 rounded-xl border text-left text-xs font-bold transition-all duration-155 ${isSelected
+                              ? 'border-orange-500 bg-gradient-to-br from-orange-600/10 to-amber-500/10 text-slate-400 shadow-lg shadow-orange-500/5'
                               : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:bg-slate-900'
-                          }`}
+                            }`}
                         >
                           <div className="flex justify-between items-center gap-1.5">
                             <span className="truncate">{v.name}</span>
                             {isSelected && <Check className="h-3.5 w-3.5 text-orange-500 shrink-0" />}
                           </div>
                           <p className="text-[10px] text-slate-500 mt-0.5 font-semibold">
-                            +{parseFloat(v.additional_price) === 0 ? 'Free' : `$${parseFloat(v.additional_price).toFixed(2)}`}
+                            ${(parseFloat(customizingItem.price) + parseFloat(v.additional_price || 0)).toFixed(2)}
                           </p>
                         </button>
                       );
@@ -409,11 +449,10 @@ export function POSMenuGrid({
                         <button
                           key={addon.id}
                           onClick={() => handleToggleAddon(addon)}
-                          className={`flex items-center justify-between p-3 rounded-xl border text-left text-xs font-semibold transition-all duration-155 ${
-                            isSelected
-                              ? 'border-orange-500 bg-gradient-to-br from-orange-600/10 to-amber-500/10 shadow-sm'
+                          className={`flex items-center justify-between p-3 rounded-xl border text-left text-xs font-semibold transition-all duration-155 ${isSelected
+                              ? 'border-orange-500 bg-gradient-to-br from-orange-600/10 to-amber-500/10 text-slate-400 shadow-sm'
                               : 'border-slate-800 bg-slate-950/50 text-slate-400 hover:bg-slate-900'
-                          }`}
+                            }`}
                         >
                           <span className="truncate pr-1">{addon.name}</span>
                           <span className={`text-[10px] font-bold shrink-0 ${isSelected ? 'text-orange-400' : 'text-slate-500'}`}>
@@ -466,7 +505,7 @@ export function POSMenuGrid({
             </div>
 
             {/* Footer */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex gap-3">
+            <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex gap-3 shrink-0">
               <button
                 onClick={() => setCustomizingItem(null)}
                 className="w-1/3 rounded-xl bg-slate-950 border border-slate-800 py-3 text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-900 transition"
@@ -482,7 +521,8 @@ export function POSMenuGrid({
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );
