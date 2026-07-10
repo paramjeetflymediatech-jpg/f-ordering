@@ -556,7 +556,7 @@ export default function POSPage() {
       <div className="flex min-h-screen items-center justify-center bg-[#080b11]">
         <div className="text-center">
           <div className="h-10 w-10 animate-spin rounded-full border-t-2 border-[#f59e0b] mx-auto"></div>
-          <p className="mt-4 text-slate-400 font-semibold tracking-wider">Initializing TABLETASTE POS...</p>
+          <p className="mt-4 text-slate-400 font-semibold tracking-wider">Initializing Fly-POS...</p>
         </div>
       </div>
     );

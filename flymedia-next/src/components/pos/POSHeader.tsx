@@ -22,7 +22,7 @@ export function POSHeader({ session, logoUrl, companyName, theme = 'dark', toggl
               <img src={logoUrl} alt={companyName || 'Logo'} className="h-16 max-w-[240px] object-contain shrink-0" />
             ) : (
               <span className="text-sm font-black tracking-widest text-[#f59e0b] uppercase truncate max-w-[150px]">
-                {companyName || 'TableTaste'}
+                {companyName || 'Fly-POS'}
               </span>
             )}
           </h1>

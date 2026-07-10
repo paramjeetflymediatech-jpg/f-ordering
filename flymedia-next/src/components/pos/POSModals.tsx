@@ -648,7 +648,7 @@ export function POSModals({
             {/* Simulated thermal receipt paper slip */}
             <div className="mt-4 rounded-lg bg-white p-4 text-black font-mono text-[10.5px] shadow-inner border border-slate-200 leading-normal">
               <div className="text-center font-bold text-[13px] mb-0.5 uppercase tracking-wide">
-                {companyName || 'TABLETASTE FOODS'}
+                {companyName || 'Fly-POS'}
               </div>
               <div className="text-center mb-3 text-[10px]">
                 {companyAddress || '100 Silicon Valley Way, Suite A'}<br />
@@ -713,7 +713,7 @@ export function POSModals({
 
               <div className="text-center mt-5 pt-3.5 border-t border-dashed border-black text-[9.5px]">
                 THANK YOU FOR DINING WITH US!<br />
-                Powered by TableTaste POS SaaS
+                Powered by Fly-POS
               </div>
             </div>
 

@@ -584,7 +584,7 @@ export default function OrderHistoryPage() {
               )}
 
               <div className="text-center mt-5 pt-3.5 border-t border-dashed border-black text-[9px]">
-                Powered by TableTaste POS HQ
+                Powered by Fly-POS
               </div>
             </div>
 
