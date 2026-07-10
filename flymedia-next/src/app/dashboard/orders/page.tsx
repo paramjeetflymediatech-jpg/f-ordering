@@ -30,6 +30,9 @@ export default function OrderHistoryPage() {
   }, [status, router]);
 
   const [orders, setOrders] = useState<any[]>([]);
+  const [companyName, setCompanyName] = useState<string>('TABLETASTE FOODS');
+  const [companyAddress, setCompanyAddress] = useState<string>('100 Silicon Valley Way, Suite A');
+  const [companyPhone, setCompanyPhone] = useState<string>('+1 555-0199');
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [fromDate, setFromDate] = useState('');
@@ -117,6 +120,16 @@ export default function OrderHistoryPage() {
   useEffect(() => {
     if (status === 'authenticated') {
       fetchOrders();
+      fetch('/api/dashboard/profile')
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            if (data.organization?.name) setCompanyName(data.organization.name);
+            if (data.store?.address) setCompanyAddress(data.store.address);
+            if (data.store?.phone) setCompanyPhone(data.store.phone);
+          }
+        })
+        .catch((err) => console.error('Error fetching company info:', err));
     }
   }, [status]);
 
@@ -506,11 +519,11 @@ export default function OrderHistoryPage() {
             {/* Receipt layout */}
             <div className="rounded-lg bg-white p-4 text-black font-mono text-[10px] shadow-inner border border-slate-200 leading-normal">
               <div className="text-center font-bold text-[12px] uppercase tracking-wide">
-                TABLETASTE FOODS
+                {companyName}
               </div>
               <div className="text-center mb-3 text-[9px] text-slate-600">
-                100 Silicon Valley Way, Suite A<br />
-                Ph: +1 555-0199
+                {companyAddress}<br />
+                Ph: {companyPhone}
               </div>
 
               <div className="border-b border-dashed border-black pb-2 mb-2">

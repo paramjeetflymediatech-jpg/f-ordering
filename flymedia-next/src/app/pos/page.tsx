@@ -165,6 +165,8 @@ export default function POSPage() {
   const [deliveryCountry, setDeliveryCountry] = useState('Australia');
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [companyName, setCompanyName] = useState<string>('');
+  const [companyAddress, setCompanyAddress] = useState<string>('');
+  const [companyPhone, setCompanyPhone] = useState<string>('');
   
   // Track active cart state for each table dynamically
   const [tableCarts, setTableCarts] = useState<Record<string, any[]>>({});
@@ -506,16 +508,14 @@ export default function POSPage() {
         fetchTables();
       }, 30000);
 
-      return () => {
-        clearInterval(tablePollingInterval);
-      };
-
       fetch('/api/dashboard/profile')
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
             setLogoUrl(data.organization?.logo || '');
             setCompanyName(data.organization?.name || '');
+            setCompanyAddress(data.store?.address || '');
+            setCompanyPhone(data.store?.phone || '');
           }
         })
         .catch((err) => console.error('Error fetching POS profile logo:', err));
@@ -533,6 +533,10 @@ export default function POSPage() {
           }
         })
         .catch(() => {}); // Stripe not configured — silently skip
+
+      return () => {
+        clearInterval(tablePollingInterval);
+      };
     }
   }, [status]);
 
@@ -1124,6 +1128,9 @@ export default function POSPage() {
         setPosCardError={setPosCardError}
         posStripeSubmitting={posStripeSubmitting}
         setPosStripeSubmitting={setPosStripeSubmitting}
+        companyName={companyName}
+        companyAddress={companyAddress}
+        companyPhone={companyPhone}
       />
 
       {/* Mobile Bottom Navigation Bar (hidden on md and larger) */}

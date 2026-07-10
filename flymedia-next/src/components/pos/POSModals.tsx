@@ -137,6 +137,9 @@ interface POSModalsProps {
   setPosCardError?: (msg: string | null) => void;
   posStripeSubmitting?: boolean;
   setPosStripeSubmitting?: (v: boolean) => void;
+  companyName?: string;
+  companyAddress?: string;
+  companyPhone?: string;
 }
 
 export function POSModals({
@@ -179,6 +182,9 @@ export function POSModals({
   setPosCardError,
   posStripeSubmitting,
   setPosStripeSubmitting,
+  companyName,
+  companyAddress,
+  companyPhone,
 }: POSModalsProps) {
   const getDummyTableBill = (table: any) => {
     if (table.status !== 'occupied' && table.status !== 'reserved') return null;
@@ -642,11 +648,11 @@ export function POSModals({
             {/* Simulated thermal receipt paper slip */}
             <div className="mt-4 rounded-lg bg-white p-4 text-black font-mono text-[10.5px] shadow-inner border border-slate-200 leading-normal">
               <div className="text-center font-bold text-[13px] mb-0.5 uppercase tracking-wide">
-                TABLETASTE FOODS
+                {companyName || 'TABLETASTE FOODS'}
               </div>
               <div className="text-center mb-3 text-[10px]">
-                100 Silicon Valley Way, Suite A<br />
-                Ph: +1 555-0199
+                {companyAddress || '100 Silicon Valley Way, Suite A'}<br />
+                Ph: {companyPhone || '+1 555-0199'}
               </div>
 
               <div className="border-b border-dashed border-black pb-2 mb-2">

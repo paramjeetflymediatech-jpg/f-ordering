@@ -822,7 +822,7 @@ export default function TableManagerPage() {
                       onClick={() => setHistoryActiveTab('reservations')}
                       className={`pb-2.5 px-2 font-extrabold border-b-2 transition ${
                         historyActiveTab === 'reservations'
-                          ? 'border-orange-500 text-white'
+                          ? 'border-orange-500 text-black'
                           : 'border-transparent text-slate-500 hover:text-slate-300'
                       }`}
                     >
@@ -832,7 +832,7 @@ export default function TableManagerPage() {
                       onClick={() => setHistoryActiveTab('orders')}
                       className={`pb-2.5 px-2 font-extrabold border-b-2 transition ${
                         historyActiveTab === 'orders'
-                          ? 'border-orange-500 text-white'
+                          ? 'border-orange-500 text-black'
                           : 'border-transparent text-slate-500 hover:text-slate-300'
                       }`}
                     >
