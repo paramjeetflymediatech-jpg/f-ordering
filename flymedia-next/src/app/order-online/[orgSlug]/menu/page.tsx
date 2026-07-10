@@ -722,8 +722,24 @@ export default function PublicOrderPage() {
         throw new Error(storeData.error || 'Failed to load store information.');
       }
       setStore(storeData.store);
-      console.log('DEBUG: store business_hours', storeData.store.business_hours);
-      setTables(storeData.tables || []);
+      const tablesList = storeData.tables || [];
+      setTables(tablesList);
+
+      // Auto-detect and select the table from query parameters (?table=token)
+      const searchParams = new URLSearchParams(window.location.search);
+      const tableToken = searchParams.get('table');
+      if (tableToken && tablesList.length > 0) {
+        const matchedTable = tablesList.find((t: any) => t.qr_code_token === tableToken);
+        if (matchedTable) {
+          setOrderType('dine_in');
+          setSelectedTableId(matchedTable.id);
+          if (!(window as any).__qrToastShown) {
+            (window as any).__qrToastShown = true;
+            showToast(`Dining at ${matchedTable.table_number}. Your order will be served here!`, 'success');
+          }
+        }
+      }
+
       setStripeStoreId(storeData.store?.id || null);
 
       // Check if Stripe/UPI is configured for this store (lightweight — no PaymentIntent created)
@@ -2484,7 +2500,7 @@ export default function PublicOrderPage() {
                   >
                     <option value="">-- Choose Table --</option>
                     {tables.map((t) => (
-                      <option key={t.id} value={t.id} disabled={t.status !== 'available'}>
+                      <option key={t.id} value={t.id} disabled={t.status !== 'available' && t.id !== selectedTableId}>
                         {t.table_number} ({t.seating_capacity} seats){t.status !== 'available' ? ` • ${t.status.charAt(0).toUpperCase() + t.status.slice(1)}` : ''}
                       </option>
                     ))}

@@ -39,6 +39,7 @@ export default function TableManagerPage() {
   const { data: session } = useSession();
 
   const [tables, setTables] = useState<RestaurantTableType[]>([]);
+  const [organizationSlug, setOrganizationSlug] = useState('f-ordering-foods');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -73,6 +74,9 @@ export default function TableManagerPage() {
       const data = await res.json();
       if (data.success) {
         setTables(data.tables || []);
+        if (data.organizationSlug) {
+          setOrganizationSlug(data.organizationSlug);
+        }
       } else {
         setError(data.message || 'Failed to retrieve tables.');
       }
@@ -268,7 +272,7 @@ export default function TableManagerPage() {
   const getQRUrl = (token: string | null) => {
     if (!token) return '';
     if (typeof window === 'undefined') return '';
-    return `${window.location.origin}/order-online/f-ordering-foods/menu?table=${token}`;
+    return `${window.location.origin}/order-online/${organizationSlug}/menu?table=${token}`;
   };
 
   return (

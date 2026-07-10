@@ -100,7 +100,8 @@ export async function POST(request: Request) {
         }, { status: 409 });
       }
 
-      // 2. Check occupancy
+      // 2. Check occupancy (Commented out to allow multi-round ordering / additional items at occupied tables)
+      /*
       const table = await RestaurantTable.findByPk(tableId, { transaction });
       if (table && table.status === 'occupied') {
         await transaction.rollback();
@@ -108,6 +109,7 @@ export async function POST(request: Request) {
           error: 'This table is currently occupied. Please scan a different table or check with our staff.',
         }, { status: 409 });
       }
+      */
     }
 
     // 2. Find or Create Customer Profile (Support Logged In Sessions)

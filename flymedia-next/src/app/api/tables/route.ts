@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth';
-import { RestaurantTable, Reservation, Order, sequelize } from '../../../models';
+import { RestaurantTable, Reservation, Order, Organization, sequelize } from '../../../models';
 
 export async function GET() {
   try {
@@ -61,7 +61,12 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({ success: true, tables: tablesWithCounts });
+    const org = await Organization.findByPk(organization_id, {
+      attributes: ['slug'],
+    });
+    const organizationSlug = org?.slug || 'f-ordering-foods';
+
+    return NextResponse.json({ success: true, tables: tablesWithCounts, organizationSlug });
   } catch (error: any) {
     console.error('Fetch Tables Error:', error);
     return NextResponse.json(
