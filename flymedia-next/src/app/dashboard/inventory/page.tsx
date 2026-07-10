@@ -1626,26 +1626,66 @@ export default function ManageItemPage() {
 
             {/* Visualizer output */}
             <div className="lg:col-span-2 border border-slate-800 rounded-2xl bg-slate-950/60 p-8 flex flex-col items-center justify-center min-h-[300px]">
-              {barcodeItem ? (
-                <div className="bg-white text-black p-6 rounded-xl shadow-2xl flex flex-col items-center border border-slate-200">
-                  <p className="text-[10px] font-black tracking-widest uppercase font-sans text-slate-800">{barcodeItem.categoryName}</p>
-                  <p className="text-xs font-bold text-black mt-1 font-sans">{barcodeItem.name}</p>
-                  
-                  {/* Visual mocked barcode stripes */}
-                  <div className="mt-4 flex gap-[1.5px] items-center h-14 w-44 bg-white border-t border-b border-slate-100 py-1">
-                    {[1,2,1,4,2,1,3,1,2,4,1,2,1,3,1,2,2,4,1,1,2,3,1,2,1,4,2,1,3,1,2].map((w, idx) => (
-                      <div key={idx} className={`h-full ${idx % 2 === 0 ? 'bg-black' : 'bg-white'}`} style={{ width: `${w}px` }}></div>
-                    ))}
-                  </div>
-                  
-                  <p className="text-[9px] font-mono tracking-widest font-black mt-2 text-slate-800">
-                    {barcodeItem.barcode || `*${barcodeItem.sku || 'F-ORD-ITEM'}*`}
-                  </p>
-                  <p className="text-xs font-black text-black mt-1">${parseFloat(barcodeItem.price).toFixed(2)}</p>
-                </div>
-              ) : (
-                <p className="text-slate-600 font-bold">Select an item to construct scan barcodes.</p>
-              )}
+              {(() => {
+                if (!barcodeItem) {
+                  return <p className="text-slate-600 font-bold">Select an item to construct scan barcodes.</p>;
+                }
+                const itemIndex = allItems.findIndex((i) => i.id === barcodeItem.id);
+                const pluCode = itemIndex !== -1 ? 1000 + itemIndex : 1000;
+                return (
+                  <>
+                    <style dangerouslySetInnerHTML={{ __html: `
+                      @media print {
+                        body * {
+                          visibility: hidden !important;
+                        }
+                        #printable-barcode-area, #printable-barcode-area * {
+                          visibility: visible !important;
+                        }
+                        #printable-barcode-area {
+                          position: absolute !important;
+                          left: 0 !important;
+                          top: 0 !important;
+                          width: 100vw !important;
+                          height: 100vh !important;
+                          display: flex !important;
+                          flex-direction: column !important;
+                          align-items: center !important;
+                          justify-content: center !important;
+                          background: white !important;
+                          color: black !important;
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          box-shadow: none !important;
+                          border: none !important;
+                          transform: ${barcodeSize === 'small' ? 'scale(1.5)' : barcodeSize === 'medium' ? 'scale(2.5)' : 'scale(4.0)'} !important;
+                          transform-origin: center center !important;
+                        }
+                        @page {
+                          margin: 0 !important;
+                          size: auto !important;
+                        }
+                      }
+                    ` }} />
+                    <div id="printable-barcode-area" className="bg-white text-black p-6 rounded-xl shadow-2xl flex flex-col items-center border border-slate-200">
+                      <p className="text-[10px] font-black tracking-widest uppercase font-sans text-slate-800">{barcodeItem.categoryName}</p>
+                      <p className="text-xs font-bold text-black mt-1 font-sans">{barcodeItem.name}</p>
+                      
+                      {/* Visual mocked barcode stripes */}
+                      <div className="mt-4 flex gap-[1.5px] items-center h-14 w-44 bg-white border-t border-b border-slate-100 py-1">
+                        {[1,2,1,4,2,1,3,1,2,4,1,2,1,3,1,2,2,4,1,1,2,3,1,2,1,4,2,1,3,1,2].map((w, idx) => (
+                          <div key={idx} className={`h-full ${idx % 2 === 0 ? 'bg-black' : 'bg-white'}`} style={{ width: `${w}px` }}></div>
+                        ))}
+                      </div>
+                      
+                      <p className="text-[10px] font-mono tracking-widest font-black mt-2 text-slate-800">
+                        *PLU-${pluCode}*
+                      </p>
+                      <p className="text-xs font-black text-black mt-1">${parseFloat(barcodeItem.price).toFixed(2)}</p>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         </div>

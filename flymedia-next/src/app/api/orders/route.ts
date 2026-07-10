@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     }
 
     // Validate table is not reserved for dine-in orders
-    if (orderType === 'dine_in' && tableId) {
+    if ((orderType === 'dine_in' || orderType === 'qr_order') && tableId) {
       const activeRes = await Reservation.findOne({
         where: {
           table_id: tableId,
@@ -243,7 +243,7 @@ export async function POST(request: Request) {
         { transaction }
       );
 
-      if (orderType === 'dine_in' && tableId) {
+      if ((orderType === 'dine_in' || orderType === 'qr_order') && tableId) {
         const activeRes = await Reservation.findOne({
           where: {
             table_id: tableId,
@@ -260,7 +260,7 @@ export async function POST(request: Request) {
       }
     } else {
       // If dine_in table is selected and order is on_hold, ensure table remains occupied or reserved
-      if (orderType === 'dine_in' && tableId) {
+      if ((orderType === 'dine_in' || orderType === 'qr_order') && tableId) {
         const tableObj = await RestaurantTable.findByPk(tableId);
         if (tableObj && tableObj.status === 'available') {
           await RestaurantTable.update(
