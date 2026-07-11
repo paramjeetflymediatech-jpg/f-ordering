@@ -645,8 +645,36 @@ export function POSModals({
               Receipt Printed Successfully
             </h3>
 
+            {/* Print Styling optimized for 80mm thermal receipt paper roll */}
+            <style dangerouslySetInnerHTML={{ __html: `
+              @media print {
+                body * {
+                  visibility: hidden !important;
+                }
+                #printable-receipt-area, #printable-receipt-area * {
+                  visibility: visible !important;
+                }
+                #printable-receipt-area {
+                  position: absolute !important;
+                  left: 0 !important;
+                  top: 0 !important;
+                  width: 80mm !important;
+                  padding: 10px !important;
+                  margin: 0 !important;
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: white !important;
+                  color: black !important;
+                }
+                @page {
+                  margin: 0 !important;
+                  size: auto !important;
+                }
+              }
+            ` }} />
+
             {/* Simulated thermal receipt paper slip */}
-            <div className="mt-4 rounded-lg bg-white p-4 text-black font-mono text-[10.5px] shadow-inner border border-slate-200 leading-normal">
+            <div id="printable-receipt-area" className="mt-4 rounded-lg bg-white p-4 text-black font-mono text-[10.5px] shadow-inner border border-slate-200 leading-normal">
               <div className="text-center font-bold text-[13px] mb-0.5 uppercase tracking-wide">
                 {companyName || 'Fly-POS'}
               </div>
@@ -717,7 +745,7 @@ export function POSModals({
               </div>
             </div>
 
-            <div className="mt-5 flex justify-center">
+            <div className="mt-5 flex gap-3">
               <button
                 onClick={() => {
                   setActiveModal(null);
@@ -726,9 +754,15 @@ export function POSModals({
                     fetchTables();
                   }
                 }}
-                className="w-full rounded-xl bg-emerald-500 py-3 text-xs font-bold text-slate-950 hover:bg-emerald-400 transition"
+                className="w-1/2 rounded-xl bg-emerald-500 py-3 text-xs font-bold text-slate-950 hover:bg-emerald-400 transition"
               >
-                Clear Screen & Next Order
+                Next Order
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="w-1/2 rounded-xl bg-orange-600 py-3 text-xs font-bold text-white hover:bg-orange-500 transition"
+              >
+                Print Receipt
               </button>
             </div>
           </div>

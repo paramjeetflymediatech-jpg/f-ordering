@@ -557,3 +557,87 @@ SIMULATED DISPATCH DETAIL:
 ========================================================================
 
 
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/10/2026, 2:13:32 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00003
+Order Type: TAKEAWAY
+Timestamp: 7/10/2026, 2:13:32 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221103
+Email: param@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Jal Jeera @ $3.99 each = $3.99
+
+Subtotal: $3.99
+Tax: $0.33
+Total Amount: $4.32
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $4.32
+Transaction Reference: ONL-TX-1783673012500
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: param@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/10/2026, 2:26:14 PM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00004
+Order Type: TAKEAWAY
+Timestamp: 7/10/2026, 2:26:14 PM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221103
+Email: param@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Jal Jeera @ $3.99 each = $3.99
+
+Subtotal: $3.99
+Tax: $0.33
+Total Amount: $4.32
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $4.32
+Transaction Reference: ONL-TX-1783673774094
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: param@yopmail.com
+- Sent to Restaurant Admin Email: owner@fordering.com
+
+========================================================================
+
+
+
+[STATUS UPDATE] ORD-ONL-00001: pending -> preparing at 7/10/2026, 2:26:18 PM
+  Customer: Paramjit Singh (param@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+
+
+[STATUS UPDATE] ORD-ONL-00001: preparing -> ready at 7/10/2026, 2:26:20 PM
+  Customer: Paramjit Singh (param@yopmail.com)
+  Admin notified: owner@fordering.com
+  
+

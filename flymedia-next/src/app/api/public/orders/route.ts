@@ -357,6 +357,31 @@ export async function POST(request: Request) {
       console.error('Failed to dispatch simulated email receipt:', emailErr);
     }
 
+    // Emit new_order socket event & dispatch print queue
+    try {
+      const io = (global as any).__socketIo;
+      if (io) {
+        io.to(storeId).emit('new_order', { storeId, order });
+      }
+    } catch (_) {}
+
+    try {
+      const { Queue } = require('bullmq');
+      const printQueue = new Queue('print-jobs', {
+        connection: {
+          host: process.env.REDIS_HOST || '127.0.0.1',
+          port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        }
+      });
+      await printQueue.add('print-ticket', {
+        orderId: order.id,
+        storeId,
+      });
+      console.log(`[Public API] Print Job dispatched to BullMQ for online order: ${order.order_number}`);
+    } catch (err) {
+      console.error('[Public API] Failed to enqueue print job:', err);
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Online order placed successfully!',

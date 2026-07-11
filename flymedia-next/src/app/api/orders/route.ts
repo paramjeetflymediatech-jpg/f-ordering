@@ -275,10 +275,32 @@ export async function POST(request: Request) {
 
     try {
       const io = (request as any).io || (global as any).__socketIo;
-      if (io && tableId) {
-        io.to(store_id).emit('table_status_update', { tableId });
+      if (io) {
+        if (tableId) {
+          io.to(store_id).emit('table_status_update', { tableId });
+        }
+        // Emit new_order event
+        io.to(store_id).emit('new_order', { storeId: store_id, order });
       }
     } catch (_) {}
+
+    // Dispatch print job
+    try {
+      const { Queue } = require('bullmq');
+      const printQueue = new Queue('print-jobs', {
+        connection: {
+          host: process.env.REDIS_HOST || '127.0.0.1',
+          port: parseInt(process.env.REDIS_PORT || '6379', 10),
+        }
+      });
+      await printQueue.add('print-ticket', {
+        orderId: order.id,
+        storeId: store_id,
+      });
+      console.log(`[POS API] Print Job dispatched to BullMQ for order: ${order.order_number}`);
+    } catch (err) {
+      console.error('[POS API] Failed to enqueue print job:', err);
+    }
 
     return NextResponse.json({
       success: true,

@@ -516,8 +516,36 @@ export default function OrderHistoryPage() {
               </button>
             </div>
 
+            {/* Print Styling optimized for 80mm thermal receipt paper roll */}
+            <style dangerouslySetInnerHTML={{ __html: `
+              @media print {
+                body * {
+                  visibility: hidden !important;
+                }
+                #printable-receipt-area, #printable-receipt-area * {
+                  visibility: visible !important;
+                }
+                #printable-receipt-area {
+                  position: absolute !important;
+                  left: 0 !important;
+                  top: 0 !important;
+                  width: 80mm !important;
+                  padding: 10px !important;
+                  margin: 0 !important;
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: white !important;
+                  color: black !important;
+                }
+                @page {
+                  margin: 0 !important;
+                  size: auto !important;
+                }
+              }
+            ` }} />
+
             {/* Receipt layout */}
-            <div className="rounded-lg bg-white p-4 text-black font-mono text-[10px] shadow-inner border border-slate-200 leading-normal">
+            <div id="printable-receipt-area" className="rounded-lg bg-white p-4 text-black font-mono text-[10px] shadow-inner border border-slate-200 leading-normal">
               <div className="text-center font-bold text-[12px] uppercase tracking-wide">
                 {companyName}
               </div>
@@ -618,12 +646,20 @@ export default function OrderHistoryPage() {
               </div>
             </div>
 
-            <button
-              onClick={() => setSelectedOrder(null)}
-              className="w-full mt-5 rounded-xl bg-slate-900 border border-[#1e293b] hover:bg-slate-800 py-2.5 text-xs font-bold text-slate-300 transition"
-            >
-              Close Receipt
-            </button>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setSelectedOrder(null)}
+                className="w-1/2 rounded-xl bg-slate-900 border border-[#1e293b] hover:bg-slate-800 py-2.5 text-xs font-bold text-slate-300 transition"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => window.print()}
+                className="w-1/2 rounded-xl bg-orange-600 hover:bg-orange-500 py-2.5 text-xs font-bold text-white transition flex items-center justify-center gap-1.5"
+              >
+                <Receipt className="h-4 w-4" /> Print Thermal
+              </button>
+            </div>
           </div>
         </div>
       )}

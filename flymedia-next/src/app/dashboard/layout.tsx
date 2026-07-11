@@ -32,6 +32,7 @@ import {
   Palette,
   ChevronDown,
   ChevronRight,
+  Printer,
 } from 'lucide-react';
 
 function NavigationItems({
@@ -74,6 +75,7 @@ function NavigationItems({
       { name: 'Manage Item', href: '/dashboard/inventory', icon: Layers },
       { name: 'Suppliers & POs', href: '/dashboard/suppliers', icon: Truck },
       { name: 'Table Manager', href: '/dashboard/tables', icon: Table },
+      { name: 'Printer Manager', href: '/dashboard/printers', icon: Printer },
       { name: 'Reservations', href: '/dashboard/reservations', icon: Calendar },
       { name: 'Offers & Coupons', href: '/dashboard/offers', icon: Tag },
       { name: 'Customer Database', href: '/dashboard/customers', icon: Users },

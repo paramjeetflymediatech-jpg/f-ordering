@@ -33,6 +33,8 @@ import { Coupon }          from '../models/Coupon';
 import { MenuBase }        from '../models/MenuBase';
 import { DeliveryZone }    from '../models/DeliveryZone';
 import { DeliveryRule }    from '../models/DeliveryRule';
+import { Printer }         from '../models/Printer';
+import { PrintJob }        from '../models/PrintJob';
 
 // ─── Connection-level config ─────────────────────────────────────────────────
 const DB_HOST = process.env.DB_HOST || '127.0.0.1';
@@ -135,6 +137,8 @@ function makeTenantModels(seq: Sequelize) {
   const TBase        = rebind(MenuBase,        'MenuBase',        'menu_bases');
   const TDeliveryZone = rebind(DeliveryZone,   'DeliveryZone',    'delivery_zones');
   const TDeliveryRule = rebind(DeliveryRule,   'DeliveryRule',    'delivery_rules');
+  const TPrinter      = rebind(Printer,        'Printer',         'printers');
+  const TPrintJob     = rebind(PrintJob,       'PrintJob',        'print_jobs');
 
   // ── Associations ──────────────────────────────────────────────────────────
 
@@ -194,6 +198,14 @@ function makeTenantModels(seq: Sequelize) {
   (TDeliveryZone as any).hasMany(TDeliveryRule, { foreignKey: 'delivery_zone_id', as: 'rules', onDelete: 'CASCADE' });
   (TDeliveryRule as any).belongsTo(TDeliveryZone, { foreignKey: 'delivery_zone_id' });
 
+  // Printer & PrintJobs
+  (TStore as any).hasMany(TPrinter, { foreignKey: 'store_id', onDelete: 'CASCADE' });
+  (TPrinter as any).belongsTo(TStore, { foreignKey: 'store_id' });
+  (TPrinter as any).hasMany(TPrintJob, { foreignKey: 'printer_id', onDelete: 'CASCADE' });
+  (TPrintJob as any).belongsTo(TPrinter, { foreignKey: 'printer_id' });
+  (TOrder as any).hasMany(TPrintJob, { foreignKey: 'order_id', onDelete: 'CASCADE' });
+  (TPrintJob as any).belongsTo(TOrder, { foreignKey: 'order_id' });
+
   return {
     sequelize: seq,
     User: TUser,
@@ -214,6 +226,8 @@ function makeTenantModels(seq: Sequelize) {
     MenuBase: TBase,
     DeliveryZone: TDeliveryZone,
     DeliveryRule: TDeliveryRule,
+    Printer: TPrinter,
+    PrintJob: TPrintJob,
   };
 }
 
@@ -239,6 +253,8 @@ export interface TenantModels {
   MenuBase: any;
   DeliveryZone: any;
   DeliveryRule: any;
+  Printer: any;
+  PrintJob: any;
 }
 
 /**

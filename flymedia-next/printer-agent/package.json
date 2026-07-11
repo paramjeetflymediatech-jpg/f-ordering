@@ -1,0 +1,43 @@
+{
+  "name": "flypos-printer-agent",
+  "version": "1.0.0",
+  "description": "Cloud Printer Agent for Fly-POS automatic thermal printing",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "keywords": [
+    "flypos",
+    "escpos",
+    "electron",
+    "printer"
+  ],
+  "author": "Fly-POS Team",
+  "license": "ISC",
+  "dependencies": {
+    "electron-store": "^8.1.0",
+    "socket.io-client": "^4.7.2"
+  },
+  "devDependencies": {
+    "electron": "^25.3.0",
+    "electron-builder": "^24.6.3"
+  },
+  "build": {
+    "appId": "com.flypos.printeragent",
+    "productName": "FlyPOSPrinterAgent",
+    "mac": {
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    }
+  }
+}

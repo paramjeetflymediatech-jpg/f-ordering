@@ -22,6 +22,8 @@ import { DeliveryZone as DeliveryZoneClass } from './DeliveryZone';
 import { DeliveryRule as DeliveryRuleClass } from './DeliveryRule';
 import { StorePaymentConfig as StorePaymentConfigClass } from './StorePaymentConfig';
 import { UserDevice as UserDeviceClass } from './UserDevice';
+import { Printer as PrinterClass } from './Printer';
+import { PrintJob as PrintJobClass } from './PrintJob';
 
 const Organization = (sequelize.models.Organization as any) || OrgClass;
 const Store = (sequelize.models.Store as any) || StoreClass;
@@ -46,6 +48,8 @@ const DeliveryZone = (sequelize.models.DeliveryZone as any) || DeliveryZoneClass
 const DeliveryRule = (sequelize.models.DeliveryRule as any) || DeliveryRuleClass;
 const StorePaymentConfig = (sequelize.models.StorePaymentConfig as any) || StorePaymentConfigClass;
 const UserDevice = (sequelize.models.UserDevice as any) || UserDeviceClass;
+const Printer = (sequelize.models.Printer as any) || PrinterClass;
+const PrintJob = (sequelize.models.PrintJob as any) || PrintJobClass;
 
 // Define Associations
 
@@ -54,7 +58,7 @@ const modelsList = [
   Organization, Store, User, Role, Permission, MenuCategory, MenuItem,
   MenuVariant, MenuAddon, MenuBase, RestaurantTable, Order, OrderItem,
   Payment, Customer, Reservation, Coupon, Service, Package,
-  DeliveryZone, DeliveryRule, StorePaymentConfig, UserDevice
+  DeliveryZone, DeliveryRule, StorePaymentConfig, UserDevice, Printer, PrintJob
 ];
 for (const m of modelsList) {
   if (m) (m as any).associations = {};
@@ -234,6 +238,19 @@ for (const m of modelsList) {
     StorePaymentConfig.belongsTo(Organization, { foreignKey: 'organization_id' });
   });
 
+  // Printers & PrintJobs associations
+  associate('Printers & Stores', () => {
+    Store.hasMany(Printer, { foreignKey: 'store_id', onDelete: 'CASCADE' });
+    Printer.belongsTo(Store, { foreignKey: 'store_id' });
+  });
+
+  associate('Printers & PrintJobs', () => {
+    Printer.hasMany(PrintJob, { foreignKey: 'printer_id', onDelete: 'CASCADE' });
+    PrintJob.belongsTo(Printer, { foreignKey: 'printer_id' });
+    Order.hasMany(PrintJob, { foreignKey: 'order_id', onDelete: 'CASCADE' });
+    PrintJob.belongsTo(Order, { foreignKey: 'order_id' });
+  });
+
 export type Organization = OrgClass;
 export type Store = StoreClass;
 export type User = UserClass;
@@ -257,6 +274,8 @@ export type DeliveryZone = DeliveryZoneClass;
 export type DeliveryRule = DeliveryRuleClass;
 export type StorePaymentConfig = StorePaymentConfigClass;
 export type UserDevice = UserDeviceClass;
+export type Printer = PrinterClass;
+export type PrintJob = PrintJobClass;
 
 export {
   sequelize,
@@ -283,4 +302,6 @@ export {
   DeliveryRule,
   StorePaymentConfig,
   UserDevice,
+  Printer,
+  PrintJob,
 };
