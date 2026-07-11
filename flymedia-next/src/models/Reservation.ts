@@ -12,7 +12,7 @@ export class Reservation extends Model {
   declare applied_offer: string | null;
   declare guest_count: number;
   declare notes: string | null;
-  declare status: 'pending' | 'confirmed' | 'cancelled' | 'seated';
+  declare status: 'pending' | 'confirmed' | 'cancelled' | 'seated' | 'completed';
   declare deposit_credited: boolean;
 }
 
@@ -62,7 +62,7 @@ Reservation.init(
       allowNull: true,
     },
     status: {
-      type: DataTypes.ENUM('pending', 'confirmed', 'cancelled', 'seated'),
+      type: DataTypes.ENUM('pending', 'confirmed', 'cancelled', 'seated', 'completed'),
       defaultValue: 'pending',
       allowNull: false,
     },

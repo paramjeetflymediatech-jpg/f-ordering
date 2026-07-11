@@ -157,6 +157,19 @@ export async function PUT(
         );
       }
       table.status = status;
+
+      // If table is manually freed or cleaned, mark active seated reservations as completed
+      if (status === 'available' || status === 'cleaning') {
+        await Reservation.update(
+          { status: 'completed' },
+          {
+            where: {
+              table_id: table.id,
+              status: 'seated'
+            }
+          }
+        );
+      }
     }
 
     if (booking_slots !== undefined) {

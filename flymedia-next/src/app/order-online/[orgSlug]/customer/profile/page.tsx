@@ -1909,6 +1909,9 @@ export default function CustomerProfilePage() {
                   } else if (res.status === 'seated') {
                     statusBg = 'bg-blue-950/20 border-blue-900/30 text-blue-400';
                     statusText = 'Seated';
+                  } else if (res.status === 'completed') {
+                    statusBg = 'bg-emerald-950/20 border-emerald-900/30 text-emerald-400';
+                    statusText = 'Completed';
                   } else if (res.status === 'cancelled') {
                     statusBg = 'bg-red-950/15 border-red-900/20 text-red-500';
                     statusText = 'Cancelled';
@@ -2670,6 +2673,8 @@ export default function CustomerProfilePage() {
                       ? 'bg-emerald-950/20 border-emerald-900/30 text-emerald-400'
                       : selectedBookingDetails.status === 'seated'
                       ? 'bg-blue-950/20 border-blue-900/30 text-blue-400'
+                      : selectedBookingDetails.status === 'completed'
+                      ? 'bg-emerald-950/20 border-emerald-900/30 text-emerald-400'
                       : 'bg-red-950/15 border-red-900/20 text-red-500'
                   }`}>
                     {selectedBookingDetails.status === 'pending' ? 'Awaiting Approval' : selectedBookingDetails.status}

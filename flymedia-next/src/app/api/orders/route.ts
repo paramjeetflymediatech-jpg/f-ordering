@@ -274,6 +274,18 @@ export async function POST(request: Request) {
       );
 
       if ((orderType === 'dine_in' || orderType === 'qr_order') && tableId) {
+        // Mark any active seated reservations for this table as completed
+        await Reservation.update(
+          { status: 'completed' },
+          { 
+            where: { 
+              table_id: tableId, 
+              status: 'seated' 
+            }, 
+            transaction 
+          }
+        );
+
         const activeRes = await Reservation.findOne({
           where: {
             table_id: tableId,
