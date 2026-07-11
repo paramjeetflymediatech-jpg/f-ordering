@@ -1,5 +1,43 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
+import jwt from 'jsonwebtoken';
 import { sequelize, Store, Customer, Reservation } from '../../../../models';
+import { Op } from 'sequelize';
+
+const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'supersecretposplatformkeychangeinprod';
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const storeId = searchParams.get('storeId');
+    const date = searchParams.get('date'); // YYYY-MM-DD
+
+    if (!storeId || !date) {
+      return NextResponse.json({ error: 'Store ID and Date are required' }, { status: 400 });
+    }
+
+    const startOfDay = new Date(`${date}T00:00:00`);
+    const endOfDay = new Date(`${date}T23:59:59`);
+
+    const reservations = await Reservation.findAll({
+      where: {
+        store_id: storeId,
+        reservation_time: {
+          [Op.between]: [startOfDay, endOfDay]
+        },
+        status: {
+          [Op.in]: ['pending', 'confirmed', 'seated']
+        }
+      },
+      attributes: ['id', 'table_id', 'booking_slot', 'status', 'booking_charge_paid', 'applied_offer']
+    });
+
+    return NextResponse.json({ success: true, reservations });
+  } catch (error: any) {
+    console.error('Fetch reservations public error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   const transaction = await sequelize.transaction();
@@ -12,6 +50,10 @@ export async function POST(request: Request) {
       customerPhone,
       customerEmail,
       reservationTime,
+      bookingSlot,
+      tableId,
+      bookingChargePaid = 0,
+      appliedOffer = null,
       guestCount = 2,
       notes,
     } = body;
@@ -94,6 +136,33 @@ export async function POST(request: Request) {
       }
     }
 
+    // Check for double booking
+    if (tableId && bookingSlot) {
+      const reservationDate = reservationTime.split('T')[0];
+      const startOfDay = new Date(`${reservationDate}T00:00:00`);
+      const endOfDay = new Date(`${reservationDate}T23:59:59`);
+
+      const duplicate = await Reservation.findOne({
+        where: {
+          store_id: storeId,
+          table_id: tableId,
+          booking_slot: bookingSlot,
+          status: {
+            [Op.in]: ['pending', 'confirmed', 'seated']
+          },
+          reservation_time: {
+            [Op.between]: [startOfDay, endOfDay]
+          }
+        },
+        transaction
+      });
+
+      if (duplicate) {
+        await transaction.rollback();
+        return NextResponse.json({ success: false, error: 'This table is already reserved for the selected date and time slot.' }, { status: 400 });
+      }
+    }
+
     // 2. Find or Create Customer Profile scoped by organization
     const [customer] = await Customer.findOrCreate({
       where: { 
@@ -113,7 +182,11 @@ export async function POST(request: Request) {
       {
         store_id: storeId,
         customer_id: customer.id,
+        table_id: tableId || null,
         reservation_time: new Date(reservationTime),
+        booking_slot: bookingSlot || null,
+        booking_charge_paid: bookingChargePaid ? parseFloat(bookingChargePaid) : 0.00,
+        applied_offer: appliedOffer || null,
         guest_count: parseInt(guestCount as any) || 2,
         notes: notes || null,
         status: 'pending', // Awaiting manager approval
@@ -140,5 +213,76 @@ export async function POST(request: Request) {
       { success: false, message: 'Failed to process table booking.', error: error.message },
       { status: 500 }
     );
+  }
+}
+
+export async function PUT(request: Request) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('customer_token')?.value;
+
+    if (!token) {
+      return NextResponse.json({ success: false, error: 'Unauthorized.' }, { status: 401 });
+    }
+
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (err) {
+      return NextResponse.json({ success: false, error: 'Invalid session.' }, { status: 401 });
+    }
+
+    const { id, action } = await request.json();
+
+    if (!id || action !== 'cancel') {
+      return NextResponse.json({ success: false, error: 'Invalid request parameters.' }, { status: 400 });
+    }
+
+    const matchingCustomerIds = await Customer.findAll({
+      where: { phone: decoded.phone },
+      attributes: ['id']
+    }).then((list: any[]) => list.map((c: any) => c.id));
+
+    const reservation = await Reservation.findOne({
+      where: {
+        id,
+        customer_id: { [Op.in]: matchingCustomerIds }
+      }
+    });
+
+    if (!reservation) {
+      return NextResponse.json({ success: false, error: 'Reservation not found.' }, { status: 404 });
+    }
+
+    if (reservation.status === 'cancelled') {
+      return NextResponse.json({ success: false, error: 'Reservation is already cancelled.' }, { status: 400 });
+    }
+    
+    if (reservation.status === 'seated') {
+      return NextResponse.json({ success: false, error: 'Seated reservations cannot be cancelled.' }, { status: 400 });
+    }
+
+    reservation.status = 'cancelled';
+    await reservation.save();
+
+    if (reservation.table_id) {
+      const { RestaurantTable } = require('../../../../models');
+      await RestaurantTable.update(
+        { status: 'available' },
+        { where: { id: reservation.table_id } }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Reservation cancelled successfully.',
+      reservation: {
+        id: reservation.id,
+        status: reservation.status
+      }
+    });
+  } catch (error: any) {
+    console.error('Cancel booking error:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

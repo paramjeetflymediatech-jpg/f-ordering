@@ -11,6 +11,7 @@ export class StorePaymentConfig extends Model {
   declare is_upi_enabled: boolean;
   declare upi_vpa: string | null;
   declare upi_qr_image: string | null;
+  declare booking_charge: number;
 }
 
 StorePaymentConfig.init(
@@ -54,6 +55,11 @@ StorePaymentConfig.init(
     upi_qr_image: {
       type: DataTypes.STRING(500),
       allowNull: true,
+    },
+    booking_charge: {
+      type: DataTypes.DECIMAL(10, 2),
+      defaultValue: 0.00,
+      allowNull: false,
     },
   },
   {

@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { Customer, Order, OrderItem, Payment, MenuItem, MenuVariant } from '../../../../../models';
+import { Op } from 'sequelize';
+import { Customer, Order, OrderItem, Payment, MenuItem, MenuVariant, Reservation, RestaurantTable } from '../../../../../models';
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'supersecretposplatformkeychangeinprod';
 
@@ -56,6 +57,27 @@ export async function GET() {
       ],
     });
 
+    const matchingCustomerIds = await Customer.findAll({
+      where: { phone: customer.phone },
+      attributes: ['id']
+    }).then((list: any[]) => list.map((c: any) => c.id));
+
+    console.log('[DEBUG /me] Customer phone:', customer.phone);
+    console.log('[DEBUG /me] Matching customer IDs:', matchingCustomerIds);
+
+    const reservations = await Reservation.findAll({
+      where: {
+        customer_id: { [Op.in]: matchingCustomerIds }
+      },
+      order: [['reservation_time', 'DESC']],
+      include: [
+        {
+          model: RestaurantTable,
+          attributes: ['table_number', 'seating_capacity'],
+        }
+      ]
+    });
+
     let addressesList: string[] = [];
     if (customer.address) {
       try {
@@ -80,6 +102,18 @@ export async function GET() {
         loyaltyPoints: customer.loyalty_points,
         addresses: addressesList,
       },
+      reservations: reservations.map((res: any) => ({
+        id: res.id,
+        tableNumber: res.RestaurantTable?.table_number || 'N/A',
+        capacity: res.RestaurantTable?.seating_capacity || 0,
+        reservationTime: res.reservation_time,
+        bookingSlot: res.booking_slot,
+        bookingChargePaid: parseFloat(res.booking_charge_paid as any),
+        appliedOffer: res.applied_offer,
+        guestCount: res.guest_count,
+        notes: res.notes || '',
+        status: res.status,
+      })),
       orders: orders.map((order: any) => ({
         id: order.id,
         storeId: order.store_id,

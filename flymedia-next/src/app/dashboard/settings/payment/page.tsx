@@ -25,6 +25,8 @@ export default function PaymentSettingsPage() {
   const [upiQrImage, setUpiQrImage] = useState('');
   const [uploadingQr, setUploadingQr] = useState(false);
 
+  const [bookingCharge, setBookingCharge] = useState('0.00');
+
   useEffect(() => {
     fetch('/api/dashboard/payment-config')
       .then((r) => r.json())
@@ -37,6 +39,7 @@ export default function PaymentSettingsPage() {
           setIsUpiEnabled(data.config.is_upi_enabled ?? false);
           setUpiVpa(data.config.upi_vpa || '');
           setUpiQrImage(data.config.upi_qr_image || '');
+          setBookingCharge(data.config.booking_charge?.toString() || '0.00');
         }
       })
       .catch(console.error)
@@ -86,6 +89,7 @@ export default function PaymentSettingsPage() {
       is_upi_enabled: isUpiEnabled,
       upi_vpa: upiVpa,
       upi_qr_image: upiQrImage,
+      booking_charge: bookingCharge,
     };
     if (secretKey) body.stripe_secret_key = secretKey;
     if (webhookSecret) body.stripe_webhook_secret = webhookSecret;
@@ -361,6 +365,34 @@ export default function PaymentSettingsPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Table Booking Charges configuration Section */}
+        <div className="rounded-xl border border-[#1e293b]/60 bg-[#0c101b] p-5 space-y-4">
+          <div>
+            <p className="text-sm font-bold text-white">Table Booking Security Deposit</p>
+            <p className="text-xs text-slate-400 mt-0.5">Define a card charge that customers must pay to book a table. Leave as 0.00 for free bookings.</p>
+          </div>
+
+          <div className="pt-2 animate-in fade-in duration-200 space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                Booking Charge / Security Deposit ($)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={bookingCharge}
+                onChange={(e) => setBookingCharge(e.target.value)}
+                placeholder="0.00"
+                className="w-full rounded-lg border border-[#1e293b] bg-[#060b14] px-3 py-2.5 text-sm text-white placeholder-slate-650 outline-none focus:border-amber-500 transition font-mono"
+              />
+              <p className="text-[10px] text-slate-500 mt-1.5">
+                Note: Charge payments will be processed via Stripe. Stripe Payments must be configured and enabled.
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Messages */}

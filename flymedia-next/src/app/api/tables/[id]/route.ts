@@ -107,7 +107,7 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { table_number, seating_capacity, status } = body;
+    const { table_number, seating_capacity, status, booking_slots, apply_to_all } = body;
 
     // If table number is changing, verify it is unique in the store
     if (table_number !== undefined) {
@@ -157,6 +157,30 @@ export async function PUT(
         );
       }
       table.status = status;
+    }
+
+    if (booking_slots !== undefined) {
+      if (booking_slots !== null && !Array.isArray(booking_slots)) {
+        return NextResponse.json(
+          { success: false, message: 'Booking slots must be an array of slot times.' },
+          { status: 400 }
+        );
+      }
+
+      if (apply_to_all) {
+        await RestaurantTable.update(
+          { booking_slots },
+          {
+            where: {
+              store_id,
+              organization_id,
+            },
+          }
+        );
+        table.booking_slots = booking_slots;
+      } else {
+        table.booking_slots = booking_slots;
+      }
     }
 
     await table.save();

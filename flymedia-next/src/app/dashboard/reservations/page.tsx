@@ -687,6 +687,20 @@ export default function ReservationsPage() {
                       <td className="p-4">
                         <div className="font-bold text-white text-xs">{r.guest_name}</div>
                         <div className="text-[10px] text-slate-500 block mt-0.5">{r.guest_phone} {r.guest_email && `| ${r.guest_email}`}</div>
+                        {(r.booking_charge_paid > 0 || r.applied_offer) && (
+                          <div className="flex gap-1.5 mt-1 flex-wrap">
+                            {r.booking_charge_paid > 0 && (
+                              <span className="inline-flex items-center gap-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1 py-0.5 text-[9px] font-bold">
+                                Deposit: ${parseFloat(r.booking_charge_paid).toFixed(2)}
+                              </span>
+                            )}
+                            {r.applied_offer && (
+                              <span className="inline-flex items-center gap-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1 py-0.5 text-[9px] font-bold">
+                                Offer: {r.applied_offer}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="p-4 font-mono font-bold text-slate-400 flex items-center gap-1.5">
                         <Clock className="h-3.5 w-3.5 text-orange-500" />
@@ -1024,6 +1038,20 @@ export default function ReservationsPage() {
                       <td className="p-4">
                         <div className="text-[10px] text-slate-400">{r.guest_phone}</div>
                         {r.guest_email && <div className="text-[10px] text-slate-500">{r.guest_email}</div>}
+                        {(r.booking_charge_paid > 0 || r.applied_offer) && (
+                          <div className="flex gap-1.5 mt-1 flex-wrap">
+                            {r.booking_charge_paid > 0 && (
+                              <span className="inline-flex items-center gap-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-1 py-0.5 text-[9px] font-bold">
+                                Deposit: ${parseFloat(r.booking_charge_paid).toFixed(2)}
+                              </span>
+                            )}
+                            {r.applied_offer && (
+                              <span className="inline-flex items-center gap-0.5 rounded bg-orange-500/10 text-orange-400 border border-orange-500/20 px-1 py-0.5 text-[9px] font-bold">
+                                Offer: {r.applied_offer}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="p-4 font-mono text-[10px] text-slate-500">
                         {r.createdAt
@@ -1293,6 +1321,22 @@ export default function ReservationsPage() {
                 <div className="text-[10px] text-slate-500 leading-none">
                   {editPhone} {editEmail && `| ${editEmail}`}
                 </div>
+                {(selectedReservation.booking_charge_paid > 0 || selectedReservation.applied_offer) && (
+                  <div className="pt-2 mt-2 border-t border-slate-900 flex flex-col gap-1 text-[10px]">
+                    {selectedReservation.booking_charge_paid > 0 && (
+                      <div className="flex justify-between items-center text-slate-450">
+                        <span>Security Deposit Paid:</span>
+                        <span className="font-mono text-emerald-400 font-bold">${parseFloat(selectedReservation.booking_charge_paid as any).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {selectedReservation.applied_offer && (
+                      <div className="flex justify-between items-center text-slate-455">
+                        <span>Applied Offer:</span>
+                        <span className="text-orange-450 font-bold">{selectedReservation.applied_offer}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

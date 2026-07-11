@@ -217,7 +217,29 @@ export async function POST(request: Request) {
     const taxRate = parseFloat(store.tax_rate as any) || 8.25;
     const discountedSubtotal = subtotal - discountAmount;
     const tax = (discountedSubtotal * taxRate) / 100;
-    const total = discountedSubtotal + tax;
+    
+    // Check for security deposit credit to deduct
+    let depositDeducted = 0;
+    let reservationToUpdate: any = null;
+
+    if (orderType === 'qr_order' && tableId) {
+      reservationToUpdate = await Reservation.findOne({
+        where: {
+          table_id: tableId,
+          status: 'seated',
+          booking_charge_paid: { [Op.gt]: 0 },
+          deposit_credited: false,
+        },
+        transaction,
+      });
+
+      if (reservationToUpdate) {
+        depositDeducted = parseFloat(reservationToUpdate.booking_charge_paid as any) || 0;
+      }
+    }
+
+    const totalBeforeDeposit = discountedSubtotal + tax;
+    const finalTotal = Math.max(0, totalBeforeDeposit - depositDeducted);
 
     // 4. Generate Order Number
     const orderCount = await Order.count({ where: { store_id: storeId } });
@@ -237,11 +259,17 @@ export async function POST(request: Request) {
         subtotal,
         tax_amount: tax,
         discount_amount: discountAmount,
-        total_amount: total,
+        total_amount: finalTotal,
+        deposit_deducted: depositDeducted,
         coupon_code: coupon ? coupon.code : null,
       },
       { transaction }
     );
+
+    // Update reservation as credited if applicable
+    if (reservationToUpdate && depositDeducted > 0) {
+      await reservationToUpdate.update({ deposit_credited: true }, { transaction });
+    }
 
     // 6. Create Order Items
     let finalNotes = notes || '';
@@ -268,7 +296,7 @@ export async function POST(request: Request) {
       {
         order_id: order.id,
         payment_method: paymentMethod,
-        amount: total,
+        amount: finalTotal,
         transaction_status: stripePaymentIntentId
           ? 'success'
           : (paymentMethod === 'cash' || paymentMethod === 'upi')
@@ -341,13 +369,13 @@ export async function POST(request: Request) {
           orderType: order.order_type,
           subtotal,
           taxAmount: tax,
-          totalAmount: total,
+          totalAmount: finalTotal,
           items: receiptItems,
           deliveryAddress: orderType === 'delivery' ? deliveryAddress : undefined,
         },
         payment: {
           method: paymentMethod,
-          amount: total,
+          amount: finalTotal,
           status: payment.transaction_status,
           reference: payment.transaction_reference || `ONL-TX-${Date.now()}`,
         },

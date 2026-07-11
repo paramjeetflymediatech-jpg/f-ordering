@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { 
   ArrowLeft, 
   User, 
+  Users,
   Phone, 
   Mail, 
   Award, 
@@ -36,7 +37,10 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Download
+  Download,
+  Sun,
+  Moon,
+  Palette
 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
@@ -201,10 +205,30 @@ export default function CustomerProfilePage() {
 
   const [customer, setCustomer] = useState<any>(null);
   const [orders, setOrders] = useState<any[]>([]);
+  const [reservations, setReservations] = useState<any[]>([]);
   const [store, setStore] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'orders' | 'payments' | 'profile' | 'addresses' | 'change-password'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'bookings' | 'payments' | 'profile' | 'addresses' | 'change-password'>('orders');
+  const [themeMode, setThemeMode] = useState<'store' | 'light' | 'dark'>('store');
+
+  useEffect(() => {
+    const saved = localStorage.getItem('diner-theme-mode');
+    if (saved === 'light' || saved === 'dark' || saved === 'store') {
+      setThemeMode(saved);
+    }
+  }, []);
+
+  const handleToggleTheme = () => {
+    let next: 'store' | 'light' | 'dark' = 'store';
+    if (themeMode === 'store') next = 'light';
+    else if (themeMode === 'light') next = 'dark';
+    else next = 'store';
+    
+    setThemeMode(next);
+    localStorage.setItem('diner-theme-mode', next);
+  };
+
   const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number }>({ lat: 40.7128, lng: -74.0060 });
   const [leafletLoaded, setLeafletLoaded] = useState(false);
   const [validatingZone, setValidatingZone] = useState(false);
@@ -255,6 +279,34 @@ export default function CustomerProfilePage() {
   // Order History Pagination States
   const [currentOrderPage, setCurrentOrderPage] = useState(1);
   const [ordersPerPage, setOrdersPerPage] = useState(5);
+
+  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
+  const [selectedBookingDetails, setSelectedBookingDetails] = useState<any | null>(null);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!window.confirm("Are you sure you want to cancel this table reservation? Note: Security deposits are strictly non-refundable.")) {
+      return;
+    }
+    try {
+      setCancellingBookingId(bookingId);
+      const res = await fetch(`/api/public/bookings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: bookingId, action: 'cancel' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Reservation successfully cancelled.");
+        fetchProfile();
+      } else {
+        alert(data.error || "Failed to cancel reservation.");
+      }
+    } catch (err) {
+      alert("Network error occurred.");
+    } finally {
+      setCancellingBookingId(null);
+    }
+  };
 
   const handleDownloadReceipt = (order: any) => {
     const printWindow = window.open('', '_blank');
@@ -420,6 +472,7 @@ export default function CustomerProfilePage() {
         setEditEmail(data.customer.email || '');
         setAddresses(data.customer.addresses || []);
         setOrders(data.orders || []);
+        setReservations(data.reservations || []);
       } else {
         setError(data.error || 'Failed to fetch customer profile.');
       }
@@ -948,11 +1001,16 @@ export default function CustomerProfilePage() {
     );
   }
 
-  const primaryColor = store?.theme_primary_color || '#0f172a';
-  const accentColor = store?.theme_accent_color || '#3b82f6';
+  const rawPrimaryColor = store?.theme_primary_color || '#0f172a';
+  const rawAccentColor = store?.theme_accent_color || '#3b82f6';
+  const rawBgColor = store?.bg_color_menu || store?.theme_bg_color || '#030712';
+  const rawBgImage = store?.bg_menu || null;
+
+  const primaryColor = themeMode === 'light' ? '#ffffff' : themeMode === 'dark' ? '#0f172a' : rawPrimaryColor;
+  const accentColor = themeMode === 'light' ? '#2563eb' : themeMode === 'dark' ? '#3b82f6' : rawAccentColor;
+  const bgColor = themeMode === 'light' ? '#f8fafc' : themeMode === 'dark' ? '#030712' : rawBgColor;
+  const bgImage = themeMode === 'store' ? rawBgImage : null;
   const appLogo = store?.Organization?.logo || null;
-  const bgColor = store?.bg_color_menu || store?.theme_bg_color || '#030712';
-  const bgImage = store?.bg_menu || null;
 
   const getOrderStatusPill = (status: string) => {
     switch (status) {
@@ -986,6 +1044,8 @@ export default function CustomerProfilePage() {
     }
   };
 
+
+
   const paymentsList = orders.flatMap(order => 
     (order.payments || []).map((pay: any) => ({
       ...pay,
@@ -1009,7 +1069,7 @@ export default function CustomerProfilePage() {
 
   return (
     <div 
-      className="min-h-screen font-sans text-slate-100 relative overflow-hidden pb-12 transition-all duration-350"
+      className={`min-h-screen font-sans relative overflow-hidden pb-12 transition-all duration-350 ${themeMode === 'light' ? 'theme-light text-slate-800' : 'text-slate-100'}`}
       style={{
         backgroundColor: bgColor,
         backgroundImage: bgImage ? `url(${bgImage})` : undefined,
@@ -1018,6 +1078,86 @@ export default function CustomerProfilePage() {
         backgroundAttachment: bgImage ? 'fixed' : undefined,
       }}
     >
+      {themeMode === 'light' && (
+        <style dangerouslySetInnerHTML={{ __html: `
+          .theme-light {
+            background-color: #f8fafc !important;
+            color: #1e293b !important;
+          }
+          .theme-light .bg-\\[\\#0c1220\\],
+          .theme-light .bg-\\[\\#0c1220\\]\\/90, 
+          .theme-light .bg-slate-900,
+          .theme-light .bg-slate-950\\/40,
+          .theme-light .bg-slate-950 {
+            background-color: #ffffff !important;
+          }
+          .theme-light .bg-slate-950\\/10,
+          .theme-light .bg-slate-950\\/20,
+          .theme-light .bg-slate-950\\/30,
+          .theme-light .bg-slate-950\\/50 {
+            background-color: #f1f5f9 !important;
+          }
+          .theme-light .border-slate-800\\/60,
+          .theme-light .border-slate-800\\/80,
+          .theme-light .border-slate-800,
+          .theme-light .border-slate-850 {
+            border-color: #cbd5e1 !important;
+          }
+          .theme-light .text-slate-100,
+          .theme-light .text-slate-200,
+          .theme-light .text-slate-300,
+          .theme-light .text-slate-350,
+          .theme-light .text-white,
+          .theme-light h1,
+          .theme-light h2,
+          .theme-light h3,
+          .theme-light h4,
+          .theme-light h5,
+          .theme-light h6 {
+            color: #0f172a !important;
+          }
+          .theme-light .text-slate-400,
+          .theme-light .text-slate-450,
+          .theme-light .text-slate-500 {
+            color: #475569 !important;
+          }
+          .theme-light .text-slate-550,
+          .theme-light .text-slate-600 {
+            color: #64748b !important;
+          }
+          .theme-light label {
+            color: #334155 !important;
+          }
+          .theme-light input,
+          .theme-light select,
+          .theme-light textarea {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+          }
+          .theme-light input:focus,
+          .theme-light select:focus,
+          .theme-light textarea:focus {
+            border-color: #64748b !important;
+          }
+          .theme-light .border-transparent {
+            border-color: transparent !important;
+          }
+          .theme-light button.text-slate-400:hover,
+          .theme-light a.text-slate-400:hover {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+          }
+          .theme-light .bg-slate-850 {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+          }
+          .theme-light .bg-slate-850:hover {
+            background-color: #e2e8f0 !important;
+          }
+        `}} />
+      )}
       {/* Dynamic Ambient Background Blur */}
       <div 
         className="absolute top-0 left-1/4 h-[35rem] w-[35rem] rounded-full blur-[120px] opacity-10 pointer-events-none"
@@ -1057,11 +1197,35 @@ export default function CustomerProfilePage() {
             )}
           </div>
 
-          <div className="flex items-center gap-4 shrink-0">
+          <div className="flex items-center gap-3 shrink-0">
             <h1 className="hidden sm:block text-sm font-extrabold text-slate-300">Diner Account Portal</h1>
+            
+            <button
+              onClick={handleToggleTheme}
+              className="flex items-center justify-center gap-1.5 rounded-xl border border-slate-800 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-slate-350 hover:text-white transition shrink-0"
+              title="Switch Color Theme"
+            >
+              {themeMode === 'store' ? (
+                <>
+                  <Palette className="h-4 w-4 text-purple-450" />
+                  <span className="hidden md:inline text-[11px]">Store Theme</span>
+                </>
+              ) : themeMode === 'light' ? (
+                <>
+                  <Sun className="h-4 w-4 text-amber-500 animate-pulse" />
+                  <span className="hidden md:inline text-[11px]">Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="h-4 w-4 text-indigo-400" />
+                  <span className="hidden md:inline text-[11px]">Dark Mode</span>
+                </>
+              )}
+            </button>
+
             <button
               onClick={handleLogout}
-              className="flex items-center gap-1.5 rounded-xl border border-slate-800 hover:border-red-500/30 bg-slate-950 px-4 py-2.5 text-xs font-bold text-slate-350 hover:text-red-400 transition"
+              className="flex items-center gap-1.5 rounded-xl border border-slate-800 hover:border-red-500/30 bg-slate-950 px-4 py-2.5 text-xs font-bold text-slate-350 hover:text-red-400 transition shrink-0"
             >
               <LogOut className="h-4 w-4" /> Logout
             </button>
@@ -1086,6 +1250,7 @@ export default function CustomerProfilePage() {
               <div className="min-w-0">
                 <p className="text-[9px] uppercase font-extrabold text-slate-450 tracking-wider">Welcome back</p>
                 <h4 className="text-sm font-extrabold truncate" style={{ color: accentColor }}>{customer.name}</h4>
+                <p className="text-[10px] text-slate-400 truncate mt-0.5" title={customer.email || customer.phone}>{customer.email || customer.phone}</p>
               </div>
             </div>
           </div>
@@ -1095,6 +1260,7 @@ export default function CustomerProfilePage() {
             {[
               { key: 'home' as const, label: 'Home', icon: Home, isLink: true, href: `/order-online/${orgSlug}/menu` },
               { key: 'orders' as const, label: 'Order Logs', icon: ShoppingBag },
+              { key: 'bookings' as const, label: 'My Bookings', icon: Calendar },
               { key: 'profile' as const, label: 'Profile Details', icon: User },
               { key: 'change-password' as const, label: 'Change Password', icon: Lock },
               { key: 'payments' as const, label: 'Payment History', icon: CreditCard },
@@ -1687,6 +1853,139 @@ export default function CustomerProfilePage() {
                   </div>
                 )}
               </>
+            )}
+          </div>
+        )}
+
+        {/* BOOKINGS HISTORY VIEW */}
+        {activeTab === 'bookings' && (
+          <div className="border rounded-3xl overflow-hidden shadow-xl backdrop-blur-md animate-in fade-in duration-300 flex flex-col justify-between min-h-[400px] bg-[#0c1220]/90 border-slate-800/60 p-6 space-y-6">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+              <div>
+                <h3 className="text-lg font-black text-white flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-orange-500" />
+                  My Table Reservations
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">Manage and track your table bookings and deposit credits.</p>
+              </div>
+              <span className="text-xs bg-slate-900 border border-slate-800 px-3 py-1.5 rounded-xl font-bold text-slate-350">
+                Total: {reservations.length} Bookings
+              </span>
+            </div>
+
+            {reservations.length === 0 ? (
+              <div className="text-center py-16 text-slate-550 font-semibold flex-1 flex flex-col items-center justify-center">
+                <div className="h-16 w-16 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-center mb-4">
+                  <Calendar className="h-8 w-8 text-slate-600" />
+                </div>
+                <p className="text-sm font-bold text-slate-400">No table reservations found</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-xs leading-relaxed">Book a table online to view and track details here.</p>
+                <Link
+                  href={`/order-online/${orgSlug}/book`}
+                  className="mt-6 px-5 py-2.5 bg-orange-600 hover:bg-orange-500 transition font-black rounded-xl text-xs text-white shadow-lg"
+                >
+                  Book a Table Now
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4 overflow-y-auto max-h-[500px] pr-2">
+                {reservations.map((res) => {
+                  const resDate = new Date(res.reservationTime).toLocaleDateString('en-US', {
+                    weekday: 'short',
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric'
+                  });
+
+                  // Resolve statuses
+                  let statusBg = 'bg-slate-900 border-slate-850 text-slate-400';
+                  let statusText = res.status;
+                  if (res.status === 'pending') {
+                    statusBg = 'bg-amber-950/20 border-amber-900/30 text-amber-500';
+                    statusText = 'Awaiting Approval';
+                  } else if (res.status === 'confirmed') {
+                    statusBg = 'bg-emerald-950/20 border-emerald-900/30 text-emerald-400';
+                    statusText = 'Confirmed';
+                  } else if (res.status === 'seated') {
+                    statusBg = 'bg-blue-950/20 border-blue-900/30 text-blue-400';
+                    statusText = 'Seated';
+                  } else if (res.status === 'cancelled') {
+                    statusBg = 'bg-red-950/15 border-red-900/20 text-red-500';
+                    statusText = 'Cancelled';
+                  }
+
+                  const canCancel = res.status === 'pending' || res.status === 'confirmed';
+
+                  return (
+                    <div 
+                      key={res.id} 
+                      className="p-5 rounded-2xl border bg-slate-950/40 border-slate-850 hover:border-slate-800 transition duration-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded border ${statusBg}`}>
+                            {statusText}
+                          </span>
+                          {res.bookingChargePaid > 0 && (
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border bg-emerald-950/10 border-emerald-500/25 text-emerald-400 font-mono">
+                              💰 Deposit Paid: ${res.bookingChargePaid.toFixed(2)}
+                            </span>
+                          )}
+                          {res.appliedOffer && (
+                            <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded border bg-orange-950/10 border-orange-500/25 text-orange-400">
+                              🎁 Offer Applied: {res.appliedOffer}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="text-xs space-y-1 text-slate-350">
+                          <div className="flex items-center gap-1.5 font-bold text-white">
+                            <Clock className="h-4 w-4 text-slate-500 shrink-0" />
+                            <span>{resDate} ({res.bookingSlot})</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <Users className="h-4 w-4 text-slate-500 shrink-0" />
+                            <span>
+                              {res.tableNumber !== 'N/A' 
+                                ? `Table ${res.tableNumber} • ${res.guestCount} Guests (Capacity: ${res.capacity} seats)` 
+                                : `Awaiting Table Assignment • ${res.guestCount} Guests`
+                              }
+                            </span>
+                          </div>
+                          {res.notes && (
+                            <p className="text-[11px] text-slate-500 italic leading-relaxed pt-1">
+                              <strong>Notes:</strong> "{res.notes}"
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedBookingDetails(res)}
+                          className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800/40 hover:text-white transition font-black text-xs shrink-0 flex items-center justify-center gap-1.5"
+                        >
+                          <Eye className="h-4 w-4" />
+                          View Details
+                        </button>
+
+                        {canCancel && (
+                          <button
+                            type="button"
+                            disabled={cancellingBookingId === res.id}
+                            onClick={() => handleCancelBooking(res.id)}
+                            className="w-full sm:w-auto px-4 py-2 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-550/10 transition font-black text-xs shrink-0 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          >
+                            <XCircle className="h-4 w-4" />
+                            {cancellingBookingId === res.id ? 'Cancelling...' : 'Cancel'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
@@ -2322,13 +2621,154 @@ export default function CustomerProfilePage() {
         </div>
       )}
 
+      {/* BOOKING DETAILS MODAL */}
+      {selectedBookingDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div 
+            className="w-full max-w-lg rounded-3xl border border-slate-800 bg-[#0c1220] p-6 text-slate-100 shadow-2xl relative animate-in zoom-in-95 duration-250"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-start border-b border-slate-800 pb-4">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Reservation Details</span>
+                <h3 className="text-base font-black text-white flex items-center gap-2 mt-1">
+                  <Calendar className="h-5 w-5 text-orange-500" />
+                  Booking ID: #{selectedBookingDetails.id.split('-')[0].toUpperCase()}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedBookingDetails(null)}
+                className="p-1.5 rounded-lg border border-slate-800 hover:bg-slate-800/60 hover:text-white transition text-slate-400"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="py-4 space-y-4 text-xs">
+              {/* Date, Time, Status */}
+              <div className="grid grid-cols-2 gap-4 bg-slate-950/40 p-3 rounded-2xl border border-slate-850">
+                <div>
+                  <span className="text-slate-500 font-bold block mb-1">DATE & TIME</span>
+                  <p className="font-bold text-white">
+                    {new Date(selectedBookingDetails.reservationTime).toLocaleDateString('en-US', {
+                      weekday: 'short',
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </p>
+                  <p className="text-[11px] text-slate-450 mt-0.5">{selectedBookingDetails.bookingSlot}</p>
+                </div>
+                <div>
+                  <span className="text-slate-500 font-bold block mb-1">RESERVATION STATUS</span>
+                  <span className={`inline-flex px-2 py-0.5 font-bold uppercase rounded border text-[10px] ${
+                    selectedBookingDetails.status === 'pending'
+                      ? 'bg-amber-950/20 border-amber-900/30 text-amber-500'
+                      : selectedBookingDetails.status === 'confirmed'
+                      ? 'bg-emerald-950/20 border-emerald-900/30 text-emerald-400'
+                      : selectedBookingDetails.status === 'seated'
+                      ? 'bg-blue-950/20 border-blue-900/30 text-blue-400'
+                      : 'bg-red-950/15 border-red-900/20 text-red-500'
+                  }`}>
+                    {selectedBookingDetails.status === 'pending' ? 'Awaiting Approval' : selectedBookingDetails.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* Seating Layout Details */}
+              <div className="space-y-2">
+                <h4 className="font-extrabold text-[10px] uppercase tracking-wider text-slate-450">Seating & Party Size</h4>
+                {selectedBookingDetails.tableNumber !== 'N/A' ? (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-slate-950/20 p-2.5 rounded-xl border border-slate-850">
+                      <span className="text-[10px] text-slate-500 block">TABLE</span>
+                      <span className="font-bold text-white">Table {selectedBookingDetails.tableNumber}</span>
+                    </div>
+                    <div className="bg-slate-950/20 p-2.5 rounded-xl border border-slate-850">
+                      <span className="text-[10px] text-slate-500 block">GUESTS</span>
+                      <span className="font-bold text-white">{selectedBookingDetails.guestCount} Diner(s)</span>
+                    </div>
+                    <div className="bg-slate-950/20 p-2.5 rounded-xl border border-slate-850">
+                      <span className="text-[10px] text-slate-500 block">CAPACITY</span>
+                      <span className="font-bold text-white">{selectedBookingDetails.capacity} Seats</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-slate-950/20 p-2.5 rounded-xl border border-slate-850">
+                      <span className="text-[10px] text-slate-500 block">TABLE ASSIGNMENT</span>
+                      <span className="font-bold text-amber-500">Awaiting Assignment</span>
+                    </div>
+                    <div className="bg-slate-950/20 p-2.5 rounded-xl border border-slate-850">
+                      <span className="text-[10px] text-slate-500 block">GUESTS</span>
+                      <span className="font-bold text-white">{selectedBookingDetails.guestCount} Diner(s)</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Deposit Billing Charges */}
+              <div className="bg-slate-950/30 p-3 rounded-2xl border border-slate-850 space-y-2">
+                <div className="flex justify-between items-center text-slate-350">
+                  <span className="font-medium">Paid Security Deposit Fee:</span>
+                  <span className="font-bold text-white font-mono">${selectedBookingDetails.bookingChargePaid.toFixed(2)}</span>
+                </div>
+                {selectedBookingDetails.appliedOffer && (
+                  <div className="flex justify-between items-center text-slate-350">
+                    <span className="font-medium">Applied Promotional Coupon:</span>
+                    <span className="font-bold text-orange-400">{selectedBookingDetails.appliedOffer}</span>
+                  </div>
+                )}
+                <div className="text-[10px] text-slate-500 leading-relaxed pt-1.5 border-t border-slate-850/60">
+                  💡 <strong>Arrival Note:</strong> For security reasons, this non-refundable deposit will be automatically credited to your final dine-in bill total when you arrive and are checked in.
+                </div>
+              </div>
+
+              {/* Customer details */}
+              <div className="space-y-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-450">Contact Information</span>
+                <p className="text-slate-300"><strong>Name:</strong> {customer.name}</p>
+                <p className="text-slate-300"><strong>Phone:</strong> {customer.phone}</p>
+                {customer.email && <p className="text-slate-300"><strong>Email:</strong> {customer.email}</p>}
+              </div>
+
+              {/* Notes */}
+              {selectedBookingDetails.notes && (
+                <div className="space-y-1">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-450">Special Requests / Notes</span>
+                  <p className="p-3 bg-slate-950/50 rounded-xl text-slate-300 italic border border-slate-850">
+                    "{selectedBookingDetails.notes}"
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer buttons */}
+            <div className="flex justify-end pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setSelectedBookingDetails(null)}
+                className="px-5 py-2.5 bg-slate-850 hover:bg-slate-800 transition font-black rounded-xl text-xs text-white"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* --- MOBILE SIDEBAR DRAWER OVERLAY --- */}
       {mobileSidebarOpen && (
         <div className="fixed inset-0 z-50 md:hidden bg-slate-950/80 backdrop-blur-sm flex justify-start animate-in fade-in duration-200">
           <div className="w-72 h-full p-6 bg-slate-900 border-r border-slate-800 text-slate-100 shadow-2xl flex flex-col justify-between animate-in slide-in-from-left duration-250">
             <div className="space-y-6">
               <div className="flex justify-between items-center pb-4 border-b border-slate-800">
-                <span className="font-extrabold text-sm uppercase tracking-wider text-slate-300">Diner Dashboard</span>
+                <div>
+                  <span className="font-extrabold text-sm uppercase tracking-wider text-slate-300">Diner Dashboard</span>
+                  <p className="text-[10px] text-slate-400 truncate mt-0.5" title={customer?.email || customer?.phone}>{customer?.email || customer?.phone}</p>
+                </div>
                 <button 
                   type="button"
                   onClick={() => setMobileSidebarOpen(false)} 
@@ -2343,6 +2783,7 @@ export default function CustomerProfilePage() {
                 {[
                   { key: 'home' as const, label: 'Home', icon: Home, isLink: true, href: `/order-online/${orgSlug}/menu` },
                   { key: 'orders' as const, label: 'Order Logs', icon: ShoppingBag },
+                  { key: 'bookings' as const, label: 'My Bookings', icon: Calendar },
                   { key: 'profile' as const, label: 'Profile Details', icon: User },
                   { key: 'change-password' as const, label: 'Change Password', icon: Lock },
                   { key: 'payments' as const, label: 'Payment History', icon: CreditCard },

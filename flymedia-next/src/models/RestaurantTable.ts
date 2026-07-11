@@ -9,6 +9,7 @@ export class RestaurantTable extends Model {
   declare seating_capacity: number;
   declare status: 'available' | 'occupied' | 'reserved' | 'cleaning';
   declare qr_code_token: string | null;
+  declare booking_slots: Array<string | { time: string; offer: string | null }> | null;
 }
 
 RestaurantTable.init(
@@ -44,6 +45,10 @@ RestaurantTable.init(
       type: DataTypes.STRING,
       allowNull: true,
       unique: true,
+    },
+    booking_slots: {
+      type: DataTypes.JSON,
+      allowNull: true,
     },
   },
   {

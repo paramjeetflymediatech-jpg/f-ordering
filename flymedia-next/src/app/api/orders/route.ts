@@ -150,7 +150,29 @@ export async function POST(request: Request) {
     
     // Add delivery surcharge if applicable
     const deliverySurcharge = orderType === 'delivery' ? 5.00 : 0.00;
-    const total = taxableAmount + tax + deliverySurcharge;
+    
+    // Check for security deposit credit to deduct
+    let depositDeducted = 0;
+    let reservationToUpdate: any = null;
+
+    if ((orderType === 'dine_in' || orderType === 'qr_order') && tableId) {
+      reservationToUpdate = await Reservation.findOne({
+        where: {
+          table_id: tableId,
+          status: 'seated',
+          booking_charge_paid: { [Op.gt]: 0 },
+          deposit_credited: false,
+        },
+        transaction,
+      });
+
+      if (reservationToUpdate) {
+        depositDeducted = parseFloat(reservationToUpdate.booking_charge_paid as any) || 0;
+      }
+    }
+
+    const totalBeforeDeposit = taxableAmount + tax + deliverySurcharge;
+    const finalTotal = Math.max(0, totalBeforeDeposit - depositDeducted);
 
     let order;
 
@@ -158,6 +180,7 @@ export async function POST(request: Request) {
       // Complete an existing held order
       order = await Order.findOne({ where: { id: heldOrderId, store_id } });
       if (!order) {
+        await transaction.rollback();
         return NextResponse.json({ error: 'Held order not found' }, { status: 404 });
       }
 
@@ -172,7 +195,8 @@ export async function POST(request: Request) {
           subtotal,
           tax_amount: tax,
           discount_amount: totalDiscount,
-          total_amount: total,
+          total_amount: finalTotal,
+          deposit_deducted: depositDeducted,
         },
         { transaction }
       );
@@ -198,10 +222,16 @@ export async function POST(request: Request) {
           subtotal,
           tax_amount: tax,
           discount_amount: totalDiscount,
-          total_amount: total,
+          total_amount: finalTotal,
+          deposit_deducted: depositDeducted,
         },
         { transaction }
       );
+    }
+
+    // Update reservation as credited if applicable
+    if (reservationToUpdate && depositDeducted > 0) {
+      await reservationToUpdate.update({ deposit_credited: true }, { transaction });
     }
 
     // Consolidate delivery details, cart refs, and ready by times into notes
@@ -236,7 +266,7 @@ export async function POST(request: Request) {
         {
           order_id: order.id,
           payment_method: paymentMethod,
-          amount: total,
+          amount: finalTotal,
           transaction_status: 'success',
           transaction_reference: stripePaymentIntentId || `POS-TX-${Date.now()}`,
         },

@@ -27,6 +27,7 @@ export async function GET() {
           is_upi_enabled: false,
           upi_vpa: null,
           upi_qr_image: null,
+          booking_charge: 0.00,
         },
       });
     }
@@ -51,6 +52,7 @@ export async function GET() {
         is_upi_enabled: config.is_upi_enabled,
         upi_vpa: config.upi_vpa,
         upi_qr_image: config.upi_qr_image,
+        booking_charge: config.booking_charge ?? 0.00,
       },
     });
   } catch (error: any) {
@@ -69,7 +71,7 @@ export async function PUT(request: Request) {
     const { organization_id } = session.user as any;
     const body = await request.json();
 
-    const { stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, is_stripe_enabled, is_upi_enabled, upi_vpa, upi_qr_image } =
+    const { stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, is_stripe_enabled, is_upi_enabled, upi_vpa, upi_qr_image, booking_charge } =
       body;
 
     // Verify the organization actually exists in the DB (guards against stale JWT sessions)
@@ -100,6 +102,7 @@ export async function PUT(request: Request) {
     if (is_upi_enabled !== undefined) updates.is_upi_enabled = is_upi_enabled;
     if (upi_vpa !== undefined) updates.upi_vpa = upi_vpa || null;
     if (upi_qr_image !== undefined) updates.upi_qr_image = upi_qr_image || null;
+    if (booking_charge !== undefined) updates.booking_charge = booking_charge ? parseFloat(booking_charge) : 0.00;
 
     if (config) {
       await config.update(updates);
@@ -113,6 +116,7 @@ export async function PUT(request: Request) {
         is_upi_enabled: is_upi_enabled ?? false,
         upi_vpa: upi_vpa || null,
         upi_qr_image: upi_qr_image || null,
+        booking_charge: booking_charge ? parseFloat(booking_charge) : 0.00,
       });
     }
 

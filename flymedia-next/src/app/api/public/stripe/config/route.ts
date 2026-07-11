@@ -39,6 +39,7 @@ export async function GET(request: Request) {
       upiEnabled,
       upiVpa: upiEnabled ? config.upi_vpa : null,
       upiQrImage: upiEnabled ? config.upi_qr_image : null,
+      bookingCharge: config.booking_charge ?? 0.00,
     });
   } catch (error: any) {
     console.error('Payment Config Check Error:', error);

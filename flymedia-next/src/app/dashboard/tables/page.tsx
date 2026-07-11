@@ -33,6 +33,7 @@ interface RestaurantTableType {
   qr_code_token: string | null;
   reservation_count?: number;
   order_count?: number;
+  booking_slots?: string[] | null;
 }
 
 export default function TableManagerPage() {
@@ -48,7 +49,7 @@ export default function TableManagerPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Modals & Selected items
-  const [activeModal, setActiveModal] = useState<'add' | 'edit' | 'delete' | 'qr' | 'history' | null>(null);
+  const [activeModal, setActiveModal] = useState<'add' | 'edit' | 'delete' | 'qr' | 'history' | 'slots' | null>(null);
   const [selectedTable, setSelectedTable] = useState<RestaurantTableType | null>(null);
 
   // History State
@@ -62,6 +63,9 @@ export default function TableManagerPage() {
   const [formTableNumber, setFormTableNumber] = useState('');
   const [formCapacity, setFormCapacity] = useState('4');
   const [formStatus, setFormStatus] = useState<'available' | 'occupied' | 'reserved' | 'cleaning'>('available');
+  const [formSlots, setFormSlots] = useState<string[]>([]);
+  const [newSlotInput, setNewSlotInput] = useState('');
+  const [applySlotsToAll, setApplySlotsToAll] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -141,6 +145,62 @@ export default function TableManagerPage() {
       setHistoryError('Network error occurred.');
     } finally {
       setHistoryLoading(false);
+    }
+  };
+
+  const openSlotsModal = (table: RestaurantTableType) => {
+    setSelectedTable(table);
+    const rawSlots = table.booking_slots || [
+      '10:00 AM - 12:00 PM',
+      '12:00 PM - 02:00 PM',
+      '02:00 PM - 04:00 PM',
+      '04:00 PM - 06:00 PM',
+      '06:00 PM - 08:00 PM',
+      '08:00 PM - 10:00 PM',
+      '10:00 PM - 12:00 AM'
+    ];
+    const normalized = rawSlots.map((s: any) => {
+      if (typeof s === 'string') {
+        return { time: s, offer: '' };
+      }
+      return { time: s.time, offer: s.offer || '' };
+    });
+    setFormSlots(normalized as any);
+    setNewSlotInput('');
+    setApplySlotsToAll(false);
+    setActionError(null);
+    setActiveModal('slots');
+  };
+
+  const handleSaveSlotsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTable) return;
+
+    try {
+      setActionLoading(true);
+      setActionError(null);
+
+      const res = await fetch(`/api/tables/${selectedTable.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          booking_slots: formSlots,
+          apply_to_all: applySlotsToAll,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setActiveModal(null);
+        showTemporarySuccess(`Slot times successfully updated.`);
+        await fetchTables();
+      } else {
+        setActionError(data.message || 'Failed to update slots.');
+      }
+    } catch (err) {
+      setActionError('Network error occurred.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -502,6 +562,13 @@ export default function TableManagerPage() {
                   title="Booking & Dine-In History"
                 >
                   <History className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => openSlotsModal(table)}
+                  className="rounded-xl border border-slate-800 bg-slate-950/50 p-2.5 text-slate-400 hover:text-white transition"
+                  title="Configure Booking Slots"
+                >
+                  <Clock className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => openEditModal(table)}
@@ -978,6 +1045,121 @@ export default function TableManagerPage() {
                       className="w-full py-3 bg-slate-950 border border-slate-800 text-white rounded-xl text-xs font-bold hover:bg-slate-900 transition"
                     >
                       Close History Window
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* MODAL - CONFIGURE SLOTS */}
+              {activeModal === 'slots' && selectedTable && (
+                <div className="mt-4 space-y-4 text-xs">
+                  <p className="text-slate-400 leading-relaxed">
+                    Define the booking time slots for <span className="font-bold text-white">"{selectedTable.table_number}"</span>.
+                    Customers can reserve this table only during these designated slot times.
+                  </p>
+
+                  {/* Slot Pills Editor */}
+                  <div className="space-y-2">
+                    <label className="text-slate-400 font-bold uppercase tracking-wide">Active Slot Times & Offers</label>
+                    <div className="space-y-2 max-h-52 overflow-y-auto p-3 bg-slate-950 rounded-xl border border-slate-800">
+                      {formSlots.length === 0 ? (
+                        <div className="text-slate-500 italic text-[11px] py-4 text-center">No slot times defined. Customer booking will use defaults.</div>
+                      ) : (
+                        (formSlots as any[]).map((slotObj, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center gap-3 p-2 rounded-lg bg-slate-900 border border-slate-850"
+                          >
+                            <span className="text-slate-300 font-bold text-[11px] min-w-[140px]">{slotObj.time}</span>
+                            <div className="flex-1 flex items-center gap-1.5">
+                              <span className="text-slate-500 text-[10px]">Offer:</span>
+                              <input
+                                type="text"
+                                placeholder="e.g. 10% Off"
+                                value={slotObj.offer || ''}
+                                onChange={(e) => {
+                                  const updated = [...formSlots];
+                                  (updated[index] as any).offer = e.target.value;
+                                  setFormSlots(updated);
+                                }}
+                                className="flex-1 bg-slate-950 border border-slate-800 rounded px-2.5 py-1 text-[10.5px] text-white placeholder-slate-750 focus:border-orange-500 outline-none transition"
+                              />
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => setFormSlots(formSlots.filter((_, idx) => idx !== index))}
+                              className="p-1 text-slate-500 hover:text-red-400 font-bold transition shrink-0"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Add New Slot Input */}
+                  <div className="flex gap-2 items-end">
+                    <div className="flex-1">
+                      <label className="text-slate-400 font-bold uppercase tracking-wide">Add Time Slot</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. 05:00 PM - 07:00 PM"
+                        value={newSlotInput}
+                        onChange={(e) => setNewSlotInput(e.target.value)}
+                        className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-3 py-2.5 text-xs text-white outline-none focus:border-orange-500 transition"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const trimmed = newSlotInput.trim();
+                        if (trimmed) {
+                          const exists = (formSlots as any[]).some(s => s.time === trimmed);
+                          if (exists) {
+                            alert('This slot time already exists.');
+                            return;
+                          }
+                          setFormSlots([...formSlots, { time: trimmed, offer: '' } as any]);
+                          setNewSlotInput('');
+                        }
+                      }}
+                      className="rounded-xl bg-slate-800 hover:bg-slate-700 px-4 py-2.5 font-bold text-white border border-slate-700 transition h-[38px] flex items-center justify-center"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  {/* Apply to all check */}
+                  <div className="flex items-center gap-2.5 py-2">
+                    <input
+                      type="checkbox"
+                      id="applySlotsToAll"
+                      checked={applySlotsToAll}
+                      onChange={(e) => setApplySlotsToAll(e.target.checked)}
+                      className="h-4 w-4 rounded border-slate-800 bg-slate-950 text-orange-600 focus:ring-orange-500"
+                    />
+                    <label htmlFor="applySlotsToAll" className="text-slate-300 font-semibold select-none cursor-pointer">
+                      Apply these slot times to all tables in this store
+                    </label>
+                  </div>
+
+                  <div className="flex gap-3 mt-6 pt-4 border-t border-slate-800/60">
+                    <button
+                      type="button"
+                      onClick={() => setActiveModal(null)}
+                      className="flex-1 py-3 border border-slate-800 rounded-xl text-xs font-bold text-slate-400 hover:text-white transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveSlotsSubmit}
+                      disabled={actionLoading}
+                      className="flex-1 py-3 bg-orange-600 text-white rounded-xl text-xs font-bold hover:bg-orange-500 transition flex items-center justify-center gap-1.5"
+                    >
+                      {actionLoading && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
+                      Save Slots
                     </button>
                   </div>
                 </div>

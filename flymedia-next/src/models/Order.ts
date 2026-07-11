@@ -15,6 +15,7 @@ export class Order extends Model {
   declare tax_amount: number;
   declare discount_amount: number;
   declare total_amount: number;
+  declare deposit_deducted: number;
   declare coupon_code: string | null;
   declare rating: number | null;
   declare rating_comment: string | null;
@@ -77,6 +78,11 @@ Order.init(
       defaultValue: 0.00,
     },
     total_amount: {
+      type: DataTypes.DECIMAL(10, 2),
+      allowNull: false,
+      defaultValue: 0.00,
+    },
+    deposit_deducted: {
       type: DataTypes.DECIMAL(10, 2),
       allowNull: false,
       defaultValue: 0.00,

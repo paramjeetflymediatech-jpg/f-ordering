@@ -75,6 +75,8 @@ export async function GET() {
         table_id: r.table_id || '',
         table_number: r.RestaurantTable?.table_number || 'Not Assigned',
         notes: r.notes || '',
+        booking_charge_paid: r.booking_charge_paid ?? 0.00,
+        applied_offer: r.applied_offer || null,
         createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : null,
       };
     });
