@@ -2474,8 +2474,11 @@ export default function PublicOrderPage() {
               {/* Order Type */}
               <div>
                 <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order Mode *</label>
-                <div className="grid grid-cols-3 gap-2 mt-1.5">
-                  {(['dine_in', 'takeaway', 'delivery'] as const).map((mode) => (
+                <div className={`grid ${orderType === 'dine_in' ? 'grid-cols-3' : 'grid-cols-2'} gap-2 mt-1.5`}>
+                  {(orderType === 'dine_in'
+                    ? (['dine_in', 'takeaway', 'delivery'] as const)
+                    : (['takeaway', 'delivery'] as const)
+                  ).map((mode) => (
                     <button
                       key={mode} type="button"
                       onClick={() => setOrderType(mode)}
