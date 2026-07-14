@@ -25,6 +25,16 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
   const [store, setStore] = useState<StoreInfo | null>(null);
   const [customer, setCustomer] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor !== undefined;
+    const isMobileUA = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(isCapacitor || isMobileUA || (typeof window !== 'undefined' && window.innerWidth < 768));
+  }, []);
+
+  const isLoginPageOrRegisterPage = activePage === 'login' || activePage === 'register';
+  const isMobileHomeRedirect = isMobile && isLoginPageOrRegisterPage;
 
   useEffect(() => {
     if (!orgSlug) return;
@@ -94,7 +104,11 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
 
         {/* Right — Desktop Navigation Links */}
         <div className="hidden md:flex items-center gap-6 text-sm font-semibold">
-          {store?.website ? (
+          {isMobileHomeRedirect ? (
+            <Link href={`/order-online/${orgSlug}/menu`} className="text-white hover:text-white/80 transition">
+              Home
+            </Link>
+          ) : store?.website ? (
             <a href={store.website} className="text-white hover:text-white/80 transition">
               Home
             </a>
@@ -196,7 +210,11 @@ export default function RestaurantNavbar({ orgSlug, activePage }: RestaurantNavb
               </div>
 
               <nav className="flex flex-col gap-4 text-sm font-semibold">
-                {store?.website ? (
+                {isMobileHomeRedirect ? (
+                  <Link href={`/order-online/${orgSlug}/menu`} onClick={() => setMobileMenuOpen(false)} className="hover:opacity-80 py-1 transition text-slate-600">
+                    Home
+                  </Link>
+                ) : store?.website ? (
                   <a href={store.website} className="hover:opacity-80 py-1 transition text-slate-600">
                     Home
                   </a>

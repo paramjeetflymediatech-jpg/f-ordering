@@ -17,9 +17,15 @@ export default function LoginPage() {
 
   // State for the full store object (to get banner & theme colors)
   const [store, setStore] = useState<any>(null);
+  const [subdomain, setSubdomain] = useState('');
+  const [isMobile, setIsMobile] = useState(false);
 
   // Load store details (including banner) on mount
   useEffect(() => {
+    const isCapacitor = typeof window !== 'undefined' && (window as any).Capacitor !== undefined;
+    const isMobileUA = typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    setIsMobile(isCapacitor || isMobileUA || (typeof window !== 'undefined' && window.innerWidth < 768));
+
     const fetchStore = async () => {
       try {
         const hostname = typeof window !== 'undefined' ? window.location.hostname : '';
@@ -27,6 +33,7 @@ export default function LoginPage() {
         let slug = '';
         if (parts.length > 1 && parts[0] !== 'www') slug = parts[0];
         if (!slug) return;
+        setSubdomain(slug);
         const res = await fetch(`/api/public/store?orgSlug=${slug}`);
         const data = await res.json();
         if (data.success && data.store) setStore(data.store);
@@ -82,7 +89,7 @@ export default function LoginPage() {
       }}
     >
       <Link
-        href="/"
+        href={isMobile && subdomain ? `/order-online/${subdomain}/menu` : "/"}
         className="absolute top-6 left-6 flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-2.5 text-xs font-bold text-white hover:text-white hover:bg-slate-800 transition backdrop-blur z-20"
       >
         ← Back to Home
