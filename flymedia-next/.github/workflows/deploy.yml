@@ -1,0 +1,73 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # Continuous Integration (CI): Build and verify the application
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Run Linter
+        run: npm run lint --if-present
+
+      - name: Build Application
+        run: npm run build
+        env:
+          # Dummy values for build phase if Next.js checks them
+          NODE_ENV: production
+          NEXTAUTH_SECRET: temporary-secret-used-only-for-ci-build-step
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+  # Continuous Deployment (CD): Deploy to Hostinger VPS
+  deploy:
+    name: Deploy to VPS
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            # Navigate to the project directory on your VPS
+            cd /var/www/demo/f-ordering/flymedia-next/
+            
+            # Fetch the latest code changes from the repository
+            git pull origin main
+            
+            # Install any new dependencies
+            npm install
+            
+            # Rebuild the application
+            npm run build
+            
+            # Reload the PM2 process gracefully to apply updates with zero downtime
+            pm2 restart 29
+            
+            # Save the PM2 list configuration
+            pm2 save
