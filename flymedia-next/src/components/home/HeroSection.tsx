@@ -84,7 +84,7 @@ export default function HeroSection() {
           <h1 className="text-4xl font-extrabold sm:text-6xl tracking-tight text-white leading-tight">
             Powering Outlets, Simplifying Bills,
             <span className="block mt-2 bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-500 bg-clip-text text-transparent font-black glow-text-orange">
-              Growing Restaurant Profits.
+              Growing Restaurant Profits. PARAM
             </span>
           </h1>
           
