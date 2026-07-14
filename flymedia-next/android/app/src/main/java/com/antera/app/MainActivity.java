@@ -1,4 +1,4 @@
-package com.harrybistro;
+package com.antera.app;
 
 import com.getcapacitor.BridgeActivity;
 

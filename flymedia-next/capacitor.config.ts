@@ -1,11 +1,11 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.harrybistro',
-  appName: 'Harry Bistro',
+  appId: 'com.antera.app',
+  appName: 'Antera',
   webDir: 'public',
   server: {
-    url: 'https://harry-bistro.fly-pos.com/order-online/harry-bistro/menu',
+    url: 'https://antera.fly-pos.com/order-online/antera/menu',
     cleartext: true
   }
 };
