@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Antera',
   webDir: 'public',
   server: {
-    url: 'https://antera.fly-pos.com/menu',
+    url: 'https://antera.fly-pos.com/order-online/antera/menu',
     cleartext: true
   }
 };
