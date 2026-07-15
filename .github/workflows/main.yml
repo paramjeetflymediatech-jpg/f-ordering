@@ -11,7 +11,7 @@ on:
 jobs:
   # Continuous Integration (CI): Build and verify the application
   build:
-    name: Build
+    name: npm i 
     runs-on: ubuntu-latest
 
     steps:
