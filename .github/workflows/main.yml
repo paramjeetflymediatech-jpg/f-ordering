@@ -11,7 +11,7 @@ on:
 jobs:
   # Continuous Integration (CI): Build and verify the application
   build:
-    name: Build & Test
+    name: Build
     runs-on: ubuntu-latest
 
     steps:
