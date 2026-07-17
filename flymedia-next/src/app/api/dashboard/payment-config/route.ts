@@ -20,6 +20,7 @@ export async function GET() {
       return NextResponse.json({
         success: true,
         config: {
+          is_cash_enabled: true,
           is_stripe_enabled: false,
           stripe_publishable_key: null,
           stripe_secret_key: null,
@@ -41,6 +42,7 @@ export async function GET() {
       success: true,
       config: {
         id: config.id,
+        is_cash_enabled: config.is_cash_enabled,
         is_stripe_enabled: config.is_stripe_enabled,
         stripe_publishable_key: config.stripe_publishable_key,
         stripe_secret_key: maskedSecret,
@@ -71,7 +73,7 @@ export async function PUT(request: Request) {
     const { organization_id } = session.user as any;
     const body = await request.json();
 
-    const { stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, is_stripe_enabled, is_upi_enabled, upi_vpa, upi_qr_image, booking_charge } =
+    const { is_cash_enabled, stripe_publishable_key, stripe_secret_key, stripe_webhook_secret, is_stripe_enabled, is_upi_enabled, upi_vpa, upi_qr_image, booking_charge } =
       body;
 
     // Verify the organization actually exists in the DB (guards against stale JWT sessions)
@@ -90,6 +92,7 @@ export async function PUT(request: Request) {
     let config = await StorePaymentConfig.findOne({ where: { organization_id } });
 
     const updates: any = {};
+    if (is_cash_enabled !== undefined) updates.is_cash_enabled = is_cash_enabled;
     if (is_stripe_enabled !== undefined) updates.is_stripe_enabled = is_stripe_enabled;
     if (stripe_publishable_key !== undefined) updates.stripe_publishable_key = stripe_publishable_key;
     // Only update secret key if a full new value is sent (not masked)
@@ -109,6 +112,7 @@ export async function PUT(request: Request) {
     } else {
       config = await StorePaymentConfig.create({
         organization_id,
+        is_cash_enabled: is_cash_enabled ?? true,
         is_stripe_enabled: is_stripe_enabled ?? false,
         stripe_publishable_key: stripe_publishable_key || null,
         stripe_secret_key: stripe_secret_key || null,

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
-import { Order, OrderItem, MenuItem, RestaurantTable, Payment, User } from '../../../../models';
+import { Order, OrderItem, MenuItem, RestaurantTable, Payment, User, Customer } from '../../../../models';
 
 export async function GET() {
   try {
@@ -40,6 +40,10 @@ export async function GET() {
           model: User,
           as: 'cashier',
           attributes: ['name'],
+        },
+        {
+          model: Customer,
+          as: 'customer',
         }
       ],
       order: [['createdAt', 'DESC']],

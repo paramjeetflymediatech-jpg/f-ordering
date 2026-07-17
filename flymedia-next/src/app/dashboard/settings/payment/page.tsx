@@ -9,6 +9,7 @@ export default function PaymentSettingsPage() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
+  const [isCashEnabled, setIsCashEnabled] = useState(true);
   const [isStripeEnabled, setIsStripeEnabled] = useState(false);
   const [publishableKey, setPublishableKey] = useState('');
   const [secretKey, setSecretKey] = useState('');
@@ -32,6 +33,7 @@ export default function PaymentSettingsPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.success && data.config) {
+          setIsCashEnabled(data.config.is_cash_enabled ?? true);
           setIsStripeEnabled(data.config.is_stripe_enabled ?? false);
           setPublishableKey(data.config.stripe_publishable_key || '');
           setHasSecretKey(data.config.has_secret_key ?? false);
@@ -84,6 +86,7 @@ export default function PaymentSettingsPage() {
     setErrorMsg('');
 
     const body: any = {
+      is_cash_enabled: isCashEnabled,
       is_stripe_enabled: isStripeEnabled,
       stripe_publishable_key: publishableKey,
       is_upi_enabled: isUpiEnabled,
@@ -138,49 +141,94 @@ export default function PaymentSettingsPage() {
         </div>
         <div>
           <h1 className="text-lg font-extrabold text-white">Payment Settings</h1>
-          <p className="text-xs text-slate-400">Configure Stripe for online card payments</p>
-        </div>
-      </div>
-
-      {/* Info Banner */}
-      <div className="flex gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4">
-        <Info className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
-        <div className="space-y-1 text-xs text-slate-400">
-          <p className="text-blue-300 font-semibold">Direct Charge Model</p>
-          <p>Payments go directly into your Stripe account. Customers can pay by card at online checkout. Get your keys at{' '}
-            <a
-              href="https://dashboard.stripe.com/apikeys"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 underline hover:text-blue-300 inline-flex items-center gap-1"
-            >
-              dashboard.stripe.com <ExternalLink className="h-3 w-3" />
-            </a>
-          </p>
+          <p className="text-xs text-slate-400">Configure online and offline payment methods for your store</p>
         </div>
       </div>
 
       <form onSubmit={handleSave} className="space-y-5">
-        {/* Enable Stripe Toggle */}
-        <div className="flex items-center justify-between rounded-xl border border-[#1e293b]/60 bg-[#0c101b] p-4">
-          <div>
-            <p className="text-sm font-bold text-white">Enable Stripe Payments</p>
-            <p className="text-xs text-slate-400 mt-0.5">Allow customers to pay by card at checkout</p>
+        {/* Core Payment Toggles Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Cash Payments Card */}
+          <div className="rounded-xl border border-[#1e293b]/60 bg-[#0c101b] p-5 flex flex-col justify-between hover:border-slate-800 transition duration-305">
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-450 shrink-0">
+                <span className="text-xl">💵</span>
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-white">Cash Payments</h3>
+                <p className="text-xs text-slate-400">Accept pay at the counter or cash on delivery from customers</p>
+              </div>
+            </div>
+            <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-900/60">
+              <span className="text-xs font-semibold text-slate-400">
+                Status: {isCashEnabled ? <span className="text-emerald-400 font-bold">Enabled</span> : <span className="text-slate-500">Disabled</span>}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsCashEnabled((v) => !v)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  isCashEnabled ? 'bg-emerald-500' : 'bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                    isCashEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsStripeEnabled((v) => !v)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-              isStripeEnabled ? 'bg-[#635BFF]' : 'bg-slate-700'
-            }`}
-          >
-            <span
-              className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                isStripeEnabled ? 'translate-x-6' : 'translate-x-1'
-              }`}
-            />
-          </button>
+
+          {/* Card Payments Card */}
+          <div className="rounded-xl border border-[#1e293b]/60 bg-[#0c101b] p-5 flex flex-col justify-between hover:border-slate-800 transition duration-305">
+            <div className="flex items-start gap-4">
+              <div className="h-10 w-10 rounded-lg bg-[#635BFF]/10 flex items-center justify-center text-[#635BFF] shrink-0">
+                <CreditCard className="h-5 w-5 text-[#635BFF]" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-sm font-bold text-white">Card Payments (Stripe)</h3>
+                <p className="text-xs text-slate-400">Process credit/debit card transactions online using Stripe secure gateway</p>
+              </div>
+            </div>
+            <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-900/60">
+              <span className="text-xs font-semibold text-slate-400">
+                Status: {isStripeEnabled ? <span className="text-blue-400 font-bold">Enabled</span> : <span className="text-slate-500">Disabled</span>}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsStripeEnabled((v) => !v)}
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  isStripeEnabled ? 'bg-[#635BFF]' : 'bg-slate-700'
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                    isStripeEnabled ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
         </div>
+
+        {isStripeEnabled && (
+          <div className="flex gap-3 rounded-xl border border-blue-500/20 bg-blue-500/5 p-4 animate-in fade-in duration-300">
+            <Info className="h-4 w-4 text-blue-400 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs text-slate-400">
+              <p className="text-blue-300 font-semibold">Direct Charge Model</p>
+              <p>Payments go directly into your Stripe account. Customers can pay by card at online checkout. Get your keys at{' '}
+                <a
+                  href="https://dashboard.stripe.com/apikeys"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 underline hover:text-blue-300 inline-flex items-center gap-1"
+                >
+                  dashboard.stripe.com <ExternalLink className="h-3 w-3" />
+                </a>
+              </p>
+            </div>
+          </div>
+        )}
 
         {isStripeEnabled && (
           <>

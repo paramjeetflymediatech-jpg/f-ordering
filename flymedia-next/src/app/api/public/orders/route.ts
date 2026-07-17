@@ -58,12 +58,33 @@ export async function POST(request: Request) {
       }
     }
 
+    // Resolve logged in customer early
+    const cookieStore = await cookies();
+    const token = cookieStore.get('customer_token')?.value;
+    let loggedInCustomer: any = null;
+
+    if (token) {
+      try {
+        const decoded: any = jwt.verify(token, JWT_SECRET);
+        loggedInCustomer = await Customer.findByPk(decoded.id);
+      } catch (err) {
+        // Ignore invalid session token
+      }
+    }
+
     // 1. Validations
     if (!storeId) {
       return NextResponse.json({ error: 'Store ID is required' }, { status: 400 });
     }
-    if (!customerName || !customerPhone) {
-      return NextResponse.json({ error: 'Customer name and phone number are required' }, { status: 400 });
+
+    if (!loggedInCustomer) {
+      if (!customerName || !customerEmail) {
+        return NextResponse.json({ error: 'Name and Email are required for guest checkout' }, { status: 400 });
+      }
+    } else {
+      if (!customerName) {
+        return NextResponse.json({ error: 'Name is required' }, { status: 400 });
+      }
     }
 
     transaction = await sequelize.transaction();
@@ -112,39 +133,47 @@ export async function POST(request: Request) {
       */
     }
 
-    // 2. Find or Create Customer Profile (Support Logged In Sessions)
-    const cookieStore = await cookies();
-    const token = cookieStore.get('customer_token')?.value;
-    let loggedInCustomer: any = null;
-
-    if (token) {
-      try {
-        const decoded: any = jwt.verify(token, JWT_SECRET);
-        loggedInCustomer = await Customer.findByPk(decoded.id, { transaction });
-      } catch (err) {
-        // Ignore invalid session token and default to guest
-      }
-    }
-
     let customer = loggedInCustomer;
     let guestTempPassword: string | null = null;
 
     if (!customer) {
-      const [guestCustomer, wasCreated] = await Customer.findOrCreate({
-        where: { phone: customerPhone },
-        defaults: {
-          name: customerName,
-          email: customerEmail || null,
-          organization_id: store.organization_id,
-        },
+      // Find or create customer by email (primary)
+      let guestCustomer = await Customer.findOne({
+        where: { email: customerEmail.trim() },
         transaction,
       });
-      customer = guestCustomer;
 
-      // Update email if missing
-      if (customerEmail && !customer.email) {
-        customer.email = customerEmail;
+      if (!guestCustomer && customerPhone && customerPhone.trim()) {
+        guestCustomer = await Customer.findOne({
+          where: { phone: customerPhone.trim() },
+          transaction,
+        });
       }
+
+      if (!guestCustomer) {
+        guestCustomer = await Customer.create({
+          name: customerName,
+          email: customerEmail.trim(),
+          phone: customerPhone || null,
+          organization_id: store.organization_id,
+        }, { transaction });
+      } else {
+        // Update phone or name if provided
+        let changed = false;
+        if (customerPhone && !guestCustomer.phone) {
+          guestCustomer.phone = customerPhone;
+          changed = true;
+        }
+        if (customerName && guestCustomer.name !== customerName) {
+          guestCustomer.name = customerName;
+          changed = true;
+        }
+        if (changed) {
+          await guestCustomer.save({ transaction });
+        }
+      }
+
+      customer = guestCustomer;
 
       // Auto-create account: if newly created OR existing guest with no password, set a temp password
       if (!customer.password) {
@@ -177,25 +206,33 @@ export async function POST(request: Request) {
       });
 
       if (coupon) {
-        // Double-check if this coupon has already been used by this customer phone number
-        if (customerPhone && customerPhone.trim()) {
-          const checkCustomer = await Customer.findOne({
+        // Check coupon usage by email or phone
+        let checkCustomer = null;
+        if (customerEmail && customerEmail.trim()) {
+          checkCustomer = await Customer.findOne({
+            where: { email: customerEmail.trim() },
+            transaction,
+          });
+        }
+        if (!checkCustomer && customerPhone && customerPhone.trim()) {
+          checkCustomer = await Customer.findOne({
             where: { phone: customerPhone.trim() },
             transaction,
           });
-          if (checkCustomer) {
-            const orderUsed = await Order.findOne({
-              where: {
-                customer_id: checkCustomer.id,
-                coupon_code: coupon.code,
-                status: { [Op.ne]: 'cancelled' },
-              },
-              transaction,
-            });
-            if (orderUsed) {
-              await transaction.rollback();
-              return NextResponse.json({ error: 'This coupon code has already been used with this mobile number.' }, { status: 400 });
-            }
+        }
+
+        if (checkCustomer) {
+          const orderUsed = await Order.findOne({
+            where: {
+              customer_id: checkCustomer.id,
+              coupon_code: coupon.code,
+              status: { [Op.ne]: 'cancelled' },
+            },
+            transaction,
+          });
+          if (orderUsed) {
+            await transaction.rollback();
+            return NextResponse.json({ error: 'This coupon code has already been used with this email/mobile number.' }, { status: 400 });
           }
         }
 

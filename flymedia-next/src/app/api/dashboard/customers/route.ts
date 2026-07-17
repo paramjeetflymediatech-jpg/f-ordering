@@ -49,20 +49,30 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { name, phone, email, first_name, last_name, company_name, date_of_birth, address, city, state, country, zip_code, loyalty_points, shipping_address, shipping_city, shipping_state, shipping_country, shipping_zip_code } = body;
 
-    if (!name || !phone) {
-      return NextResponse.json({ error: 'Name and Phone number are required' }, { status: 400 });
+    if (!name) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    // Check if phone number is already registered for this organization
-    const existing = await Customer.findOne({ where: { organization_id, phone } });
-    if (existing) {
-      return NextResponse.json({ error: 'Customer phone number already exists' }, { status: 400 });
+    // Check if phone number is already registered for this organization (if provided)
+    if (phone) {
+      const existing = await Customer.findOne({ where: { organization_id, phone } });
+      if (existing) {
+        return NextResponse.json({ error: 'Customer phone number already exists' }, { status: 400 });
+      }
+    }
+
+    // Check if email already exists for this organization (if provided)
+    if (email) {
+      const existingEmail = await Customer.findOne({ where: { organization_id, email } });
+      if (existingEmail) {
+        return NextResponse.json({ error: 'Customer email already exists' }, { status: 400 });
+      }
     }
 
     const customer = await Customer.create({
       organization_id,
       name,
-      phone,
+      phone: phone || null,
       email: email || null,
       first_name: first_name || name,
       last_name: last_name || '-',

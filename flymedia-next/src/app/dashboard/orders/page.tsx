@@ -395,6 +395,7 @@ export default function OrderHistoryPage() {
                     />
                   </th>
                   <th className="py-3.5 px-6">Order Number</th>
+                  <th className="py-3.5 px-4">Customer</th>
                   <th className="py-3.5 px-4">Date & Time</th>
                   <th className="py-3.5 px-4">Type</th>
                   <th className="py-3.5 px-4">Table</th>
@@ -428,6 +429,17 @@ export default function OrderHistoryPage() {
                         />
                       </td>
                       <td className="py-4 px-6 font-extrabold text-white">{order.order_number}</td>
+                      <td className="py-4 px-4 text-xs font-semibold">
+                        {order.customer ? (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-white font-bold">{order.customer.name}</span>
+                            {order.customer.phone && <span className="text-slate-400 text-[10px] font-mono">{order.customer.phone}</span>}
+                            {order.customer.email && <span className="text-slate-500 text-[10px] truncate max-w-[120px] font-mono">{order.customer.email}</span>}
+                          </div>
+                        ) : (
+                          <span className="text-slate-500 font-medium italic">Walk-in / Guest</span>
+                        )}
+                      </td>
                       <td className="py-4 px-4 text-slate-400">
                         {new Date(order.createdAt).toLocaleDateString()} at{' '}
                         {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -516,6 +528,25 @@ export default function OrderHistoryPage() {
               </button>
             </div>
 
+            {/* Customer Details Dashboard Section */}
+            <div className="mb-4 rounded-xl border border-[#1e293b] bg-slate-900/60 p-3.5 space-y-1.5 text-xs text-slate-300">
+              <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                Customer Information
+              </div>
+              <div>
+                <span className="text-slate-500 font-medium">Name: </span>
+                <span className="text-white font-bold">{selectedOrder.customer?.name || 'Walk-in / Guest'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 font-medium">Phone: </span>
+                <span className="text-white font-mono">{selectedOrder.customer?.phone || 'N/A'}</span>
+              </div>
+              <div>
+                <span className="text-slate-500 font-medium">Email: </span>
+                <span className="text-white font-mono">{selectedOrder.customer?.email || 'N/A'}</span>
+              </div>
+            </div>
+
             {/* Print Styling optimized for 80mm thermal receipt paper roll */}
             <style dangerouslySetInnerHTML={{ __html: `
               @media print {
@@ -560,7 +591,14 @@ export default function OrderHistoryPage() {
                 Staff Agent: {selectedOrder.cashier?.name || 'Self-Ordering'}<br />
                 Order Type: {selectedOrder.order_type.toUpperCase()}<br />
                 {selectedOrder.RestaurantTable && <>Table: {selectedOrder.RestaurantTable.table_number}<br /></>}
-                Status: {selectedOrder.status.toUpperCase()}
+                Status: {selectedOrder.status.toUpperCase()}<br />
+                {selectedOrder.customer && (
+                  <>
+                    Customer: {selectedOrder.customer.name}<br />
+                    Phone: {selectedOrder.customer.phone || 'N/A'}<br />
+                    Email: {selectedOrder.customer.email || 'N/A'}<br />
+                  </>
+                )}
               </div>
 
               <table className="w-full mb-3 border-b border-dashed border-black pb-2">

@@ -620,6 +620,7 @@ export default function PublicOrderPage() {
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'card' | 'upi'>('cash');
   const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
   const [stripeEnabled, setStripeEnabled] = useState(false);
+  const [cashEnabled, setCashEnabled] = useState(true);
   const [cardError, setCardError] = useState<string | null>(null);
   const [stripeStoreId, setStripeStoreId] = useState<string | null>(null);
 
@@ -747,14 +748,32 @@ export default function PublicOrderPage() {
         try {
           const cfgRes = await fetch(`/api/public/stripe/config?storeId=${storeData.store.id}`, { cache: 'no-store' });
           const cfgData = await cfgRes.json();
+          
+          let isStripe = false;
           if (cfgData.stripeEnabled && cfgData.publishableKey) {
             setStripeEnabled(true);
             setStripePromise(loadStripe(cfgData.publishableKey));
+            isStripe = true;
           }
+          
+          let isUpi = false;
           if (cfgData.upiEnabled && (cfgData.upiVpa || cfgData.upiQrImage)) {
             setUpiEnabled(true);
             setUpiVpa(cfgData.upiVpa || null);
             setUpiQrImage(cfgData.upiQrImage || null);
+            isUpi = true;
+          }
+
+          let isCash = true;
+          if (cfgData.cashEnabled !== undefined) {
+            setCashEnabled(cfgData.cashEnabled);
+            isCash = cfgData.cashEnabled;
+          }
+
+          // Select the default payment method dynamically based on availability
+          if (!isCash) {
+            if (isStripe) setPaymentMethod('card');
+            else if (isUpi) setPaymentMethod('upi');
           }
         } catch {
           // Config error — cash only
@@ -1148,6 +1167,17 @@ export default function PublicOrderPage() {
     if (cart.length === 0 || submitting) return;
     setSubmitting(true);
     setCardError(null);
+
+    if (!customerName || !customerName.trim()) {
+      showToast('Please enter your name.', 'error');
+      setSubmitting(false);
+      return;
+    }
+    if (!customer && (!customerEmail || !customerEmail.trim() || !customerEmail.includes('@'))) {
+      showToast('Please enter a valid email address.', 'error');
+      setSubmitting(false);
+      return;
+    }
 
     if (orderType === 'delivery') {
       if (!deliveryAddress || !deliveryAddress.trim()) {
@@ -2374,7 +2404,7 @@ export default function PublicOrderPage() {
                     <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase">Loyalty ✓</span>
                   </div>
                   <button type="button" onClick={handleLogout} className="text-[10px] text-red-500 hover:text-red-400 font-bold shrink-0">
-                    Guest Order
+                    Sign Out
                   </button>
                 </div>
               ) : (
@@ -2398,9 +2428,9 @@ export default function PublicOrderPage() {
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone *</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone (optional)</label>
                   <input
-                    type="tel" required placeholder="+1 555-0100"
+                    type="tel" placeholder="+1 555-0100"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     onBlur={() => {

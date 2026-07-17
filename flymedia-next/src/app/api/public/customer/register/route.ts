@@ -7,8 +7,8 @@ export async function POST(request: Request) {
     const body = await request.json();
     const { name, email, phone, password, orgSlug } = body;
 
-    if (!name || !phone || !password || !orgSlug) {
-      return NextResponse.json({ error: 'Name, phone, password, and orgSlug are required.' }, { status: 400 });
+    if (!name || !email || !password || !orgSlug) {
+      return NextResponse.json({ error: 'Name, email, password, and orgSlug are required.' }, { status: 400 });
     }
 
     // Find Organization
@@ -20,15 +20,21 @@ export async function POST(request: Request) {
     // Hash Password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Check if phone already exists
-    const existingCustomer = await Customer.findOne({ where: { phone } });
+    // Look for existing customer by email (primary) or phone (secondary)
+    let existingCustomer = null;
+    if (email) {
+      existingCustomer = await Customer.findOne({ where: { email } });
+    }
+    if (!existingCustomer && phone) {
+      existingCustomer = await Customer.findOne({ where: { phone } });
+    }
 
     if (existingCustomer) {
       // If customer exists but has NO password (guest user conversion)
       if (!existingCustomer.password) {
         existingCustomer.password = hashedPassword;
         existingCustomer.name = name;
-        if (email) existingCustomer.email = email;
+        if (phone) existingCustomer.phone = phone;
         existingCustomer.organization_id = org.id;
         await existingCustomer.save();
 
@@ -43,7 +49,7 @@ export async function POST(request: Request) {
           }
         });
       } else {
-        return NextResponse.json({ error: 'A customer account with this phone number already exists.' }, { status: 400 });
+        return NextResponse.json({ error: 'A customer account with this email/phone already exists.' }, { status: 400 });
       }
     }
 
@@ -51,8 +57,8 @@ export async function POST(request: Request) {
     const newCustomer = await Customer.create({
       organization_id: org.id,
       name,
-      email: email || null,
-      phone,
+      email,
+      phone: phone || null,
       password: hashedPassword,
     });
 

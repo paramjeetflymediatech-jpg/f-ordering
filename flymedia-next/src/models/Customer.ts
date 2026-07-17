@@ -6,7 +6,7 @@ export class Customer extends Model {
   declare organization_id: string | null;
   declare name: string;
   declare email: string | null;
-  declare phone: string;
+  declare phone: string | null;
   declare password: string | null;
   declare loyalty_points: number;
   declare first_name: string | null;
@@ -50,7 +50,7 @@ Customer.init(
     },
     phone: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     password: {
       type: DataTypes.STRING,

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { User, Phone, Mail, Lock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, Phone, Mail, Lock, CheckCircle2, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import RestaurantNavbar from '../../../../../components/order-online/RestaurantNavbar';
 
 export default function CustomerRegisterPage() {
@@ -16,6 +16,8 @@ export default function CustomerRegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -148,20 +150,20 @@ export default function CustomerRegisterPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Phone *</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Phone (optional)</label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <input type="tel" required placeholder="+1 555-0100" value={phone}
+                      <input type="tel" placeholder="+1 555-0100" value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition" />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Email (optional)</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Email *</label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <input type="email" placeholder="john@example.com" value={email}
+                      <input type="email" required placeholder="john@example.com" value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition" />
                     </div>
@@ -173,9 +175,16 @@ export default function CustomerRegisterPage() {
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Password *</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <input type="password" required placeholder="••••••••" value={password}
+                      <input type={showPassword ? 'text' : 'password'} required placeholder="••••••••" value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition" />
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-10 text-sm text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition" />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-450 hover:text-slate-600 focus:outline-none"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
                   </div>
 
@@ -183,9 +192,16 @@ export default function CustomerRegisterPage() {
                     <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Confirm Password *</label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                      <input type="password" required placeholder="••••••••" value={confirmPassword}
+                      <input type={showConfirmPassword ? 'text' : 'password'} required placeholder="••••••••" value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-3 text-sm text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition" />
+                        className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-10 text-sm text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition" />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-450 hover:text-slate-600 focus:outline-none"
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
                   </div>
                 </div>
