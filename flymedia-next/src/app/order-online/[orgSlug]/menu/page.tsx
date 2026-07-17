@@ -2484,8 +2484,8 @@ export default function PublicOrderPage() {
                       type="button"
                       onClick={() => handleApplyCoupon()}
                       disabled={couponLoading || !couponCode.trim()}
-                      className="rounded-lg text-white px-3 py-1.5 text-xs font-bold transition disabled:opacity-50"
-                      style={{ backgroundColor: accentColor }}
+                      className="rounded-lg px-3 py-1.5 text-xs font-bold transition disabled:bg-slate-200 disabled:text-slate-400 text-white"
+                      style={!(couponLoading || !couponCode.trim()) ? { backgroundColor: accentColor } : {}}
                     >
                       {couponLoading ? '...' : 'Apply'}
                     </button>
