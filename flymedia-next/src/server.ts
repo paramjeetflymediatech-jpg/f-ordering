@@ -10,7 +10,9 @@ import IORedis from 'ioredis';
 import net from 'net';
 
 const dev = process.env.NODE_ENV !== 'production';
-const hostname = process.env.NEXT_PUBLIC_APP_URL || 'localhost';
+const hostname = process.env.NEXT_PUBLIC_APP_URL
+  ? process.env.NEXT_PUBLIC_APP_URL.replace(/^https?:\/\//i, '').split('/')[0].split(':')[0]
+  : 'localhost';
 const port = parseInt(process.env.PORT || '3000', 10);
 
 const app = next({ dev, hostname, port });
