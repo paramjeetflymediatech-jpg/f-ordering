@@ -112,6 +112,7 @@ export default function BusinessProfilePage() {
     themeBgColor: '#F9F6F0',
     themeLayout: 'classic',
     themeFont: 'serif',
+    isDeliveryEnabled: true,
   });
   // Business Hours State
   const [businessHours, setBusinessHours] = useState<any>({});
@@ -227,6 +228,7 @@ export default function BusinessProfilePage() {
           themeBgColor: data.store.theme_bg_color || '#F9F6F0',
           themeLayout: data.store.theme_layout || 'classic',
           themeFont: data.store.theme_font || 'serif',
+          isDeliveryEnabled: data.store.is_delivery_enabled !== false,
         });
         setBusinessHours(data.store.business_hours || null);
       } else {
@@ -475,6 +477,7 @@ export default function BusinessProfilePage() {
         themeBgColor: store.theme_bg_color || '#F9F6F0',
         themeLayout: store.theme_layout || 'classic',
         themeFont: store.theme_font || 'serif',
+        isDeliveryEnabled: store.is_delivery_enabled !== false,
       });
     }
     setEditMode(false);
@@ -718,6 +721,26 @@ export default function BusinessProfilePage() {
                             disabled
                             className="w-full bg-[#080b11]/70 border border-[#1e293b]/80 text-slate-500 rounded-xl px-4 py-2.5 text-xs font-mono outline-none cursor-not-allowed"
                           />
+                        </div>
+                      </div>
+
+                      {/* Enable Delivery Option Toggle */}
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-2">
+                          Delivery Service Mode
+                        </label>
+                        <div className="flex items-center gap-3 bg-[#080b11] border border-[#1e293b] rounded-xl px-4 py-2.5 text-xs">
+                          <input
+                            type="checkbox"
+                            name="isDeliveryEnabled"
+                            checked={formData.isDeliveryEnabled}
+                            onChange={(e) => setFormData((prev) => ({ ...prev, isDeliveryEnabled: e.target.checked }))}
+                            disabled={!editMode}
+                            className="h-4 w-4 accent-orange-500 rounded cursor-pointer"
+                          />
+                          <span className={`font-semibold text-xs ${formData.isDeliveryEnabled ? 'text-white' : 'text-slate-500'}`}>
+                            {formData.isDeliveryEnabled ? 'Delivery Enabled' : 'Delivery Hidden on Menu'}
+                          </span>
                         </div>
                       </div>
 

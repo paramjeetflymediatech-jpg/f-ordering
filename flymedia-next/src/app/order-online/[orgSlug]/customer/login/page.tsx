@@ -196,7 +196,7 @@ export default function CustomerLoginPage() {
 
                     <div>
                       <label className="block text-[10px] font-bold text-white uppercase tracking-wider mb-1">
-                        Phone or Email *
+                        Phone or Email <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -245,7 +245,7 @@ export default function CustomerLoginPage() {
 
                 <div>
                   <label className="block text-[10px] font-bold  uppercase tracking-wider mb-1" style={{ color: accentColor }}>
-                    Phone or Email *
+                    Phone or Email <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -263,7 +263,7 @@ export default function CustomerLoginPage() {
                 <div>
                   <div className="flex justify-between items-center mb-1">
                     <label className="block text-[10px] font-bold  uppercase tracking-wider" style={{color:accentColor}}>
-                      Password *
+                      Password <span className="text-red-500">*</span>
                     </label>
                     <button
                       type="button"

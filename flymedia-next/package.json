@@ -21,6 +21,7 @@
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.78.0",
     "express": "^5.2.1",
+    "force": "^0.0.3",
     "framer-motion": "^12.38.0",
     "ioredis": "^5.11.1",
     "jsonwebtoken": "^9.0.3",

@@ -22,6 +22,15 @@ export default function OffersPage() {
   const [getItemId, setGetItemId] = useState('');
   const [getQty, setGetQty] = useState('2');
 
+  // Dynamic day & order-type discount states
+  const ALL_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [enableOrderTypeDiscounts, setEnableOrderTypeDiscounts] = useState(false);
+  const [takeawayRate, setTakeawayRate] = useState('20');
+  const [dineInRate, setDineInRate] = useState('10');
+  const [deliveryRate, setDeliveryRate] = useState('0');
+  const [isAutoApply, setIsAutoApply] = useState(false);
+
   // Banner image states
   const [bannerUrl, setBannerUrl] = useState('');
   const [uploading, setUploading] = useState(false);
@@ -90,12 +99,18 @@ export default function OffersPage() {
     }
   };
 
+  const toggleDay = (day: string) => {
+    setSelectedDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
+
   const handleAddCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code) return;
 
-    if (type === 'discount' && !discountValue) {
-      alert('Please fill out discount value.');
+    if (type === 'discount' && !enableOrderTypeDiscounts && !discountValue) {
+      alert('Please fill out discount value or configure order-type specific discounts.');
       return;
     }
 
@@ -109,13 +124,20 @@ export default function OffersPage() {
         code,
         type,
         discountType,
-        discountValue: type === 'buy_x_get_y' ? '0' : discountValue,
+        discountValue: type === 'buy_x_get_y' ? '0' : (discountValue || '0'),
         minOrderAmount: minOrder || 0,
         banner_url: bannerUrl || null,
         buy_item_id: type === 'buy_x_get_y' ? buyItemId : null,
         buy_qty: type === 'buy_x_get_y' ? parseInt(buyQty, 10) : 0,
         get_item_id: type === 'buy_x_get_y' ? getItemId : null,
         get_qty: type === 'buy_x_get_y' ? parseInt(getQty, 10) : 0,
+        valid_days: selectedDays.length > 0 ? selectedDays : null,
+        order_type_discounts: type === 'discount' && enableOrderTypeDiscounts ? {
+          takeaway: parseFloat(takeawayRate) || 0,
+          dine_in: parseFloat(dineInRate) || 0,
+          delivery: parseFloat(deliveryRate) || 0,
+        } : null,
+        is_auto_apply: isAutoApply,
       };
 
       const res = await fetch('/api/dashboard/coupons', {
@@ -132,6 +154,9 @@ export default function OffersPage() {
         setBuyItemId('');
         setGetItemId('');
         setBannerUrl('');
+        setSelectedDays([]);
+        setEnableOrderTypeDiscounts(false);
+        setIsAutoApply(false);
         await fetchCoupons();
       } else {
         alert(data.error || 'Failed to create coupon.');
@@ -234,53 +259,147 @@ export default function OffersPage() {
                 />
               </div>
 
-              {/* standard discount fields */}
-              {type === 'discount' && (
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-slate-400 font-bold uppercase tracking-wide">Discount Method</label>
-                    <div className="flex gap-2 mt-2">
+              {/* Active Days Selector */}
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label className="text-slate-400 font-bold uppercase tracking-wide text-[10px]">Active Days (Dynamic)</label>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDays(selectedDays.length === ALL_DAYS.length ? [] : [...ALL_DAYS])}
+                    className="text-[9px] text-orange-400 hover:underline font-bold"
+                  >
+                    {selectedDays.length === ALL_DAYS.length ? 'Clear Days' : 'Select All Days'}
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-1.5 bg-slate-950 p-2.5 rounded-xl border border-slate-850">
+                  {ALL_DAYS.map(day => {
+                    const active = selectedDays.includes(day);
+                    return (
                       <button
+                        key={day}
                         type="button"
-                        onClick={() => setDiscountType('percentage')}
-                        className={`flex-1 py-2.5 rounded-xl border text-[10px] uppercase font-bold transition flex justify-center items-center gap-1.5 ${
-                          discountType === 'percentage'
-                            ? 'border-orange-500 bg-orange-950/20 text-orange-400'
-                            : 'border-slate-800 bg-slate-950 text-slate-500'
+                        onClick={() => toggleDay(day)}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition border ${
+                          active
+                            ? 'bg-orange-600/30 border-orange-500 text-orange-300'
+                            : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
                         }`}
                       >
-                        <Percent className="h-3.5 w-3.5" />
-                        Percentage
+                        {day.slice(0, 3)}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setDiscountType('fixed')}
-                        className={`flex-1 py-2.5 rounded-xl border text-[10px] uppercase font-bold transition flex justify-center items-center gap-1.5 ${
-                          discountType === 'fixed'
-                            ? 'border-orange-500 bg-orange-950/20 text-orange-400'
-                            : 'border-slate-800 bg-slate-950 text-slate-500'
-                        }`}
-                      >
-                        <DollarSign className="h-3.5 w-3.5" />
-                        Fixed Value
-                      </button>
-                    </div>
-                  </div>
+                    );
+                  })}
+                </div>
+                <p className="text-[9px] text-slate-500">
+                  {selectedDays.length === 0 ? 'Offer will be valid EVERY day of the week.' : `Valid ONLY on: ${selectedDays.join(', ')}.`}
+                </p>
+              </div>
 
-                  <div>
-                    <label className="text-slate-400 font-bold uppercase tracking-wide">
-                      {discountType === 'percentage' ? 'Rate (%) *' : 'Amount ($) *'}
-                    </label>
+              {/* Order-Type Specific Discounts Toggle */}
+              {type === 'discount' && (
+                <div className="space-y-3 bg-slate-950/40 p-3.5 border border-slate-850 rounded-xl">
+                  <div className="flex justify-between items-center">
+                    <label className="text-[10px] font-bold text-white uppercase tracking-wide">Order-Type Specific Discounts</label>
                     <input
-                      type="number"
-                      placeholder={discountType === 'percentage' ? '15' : '5.00'}
-                      value={discountValue}
-                      onChange={(e) => setDiscountValue(e.target.value)}
-                      className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-xs text-white outline-none focus:border-orange-500 transition"
+                      type="checkbox"
+                      checked={enableOrderTypeDiscounts}
+                      onChange={(e) => setEnableOrderTypeDiscounts(e.target.checked)}
+                      className="h-4 w-4 accent-orange-500 cursor-pointer rounded"
                     />
                   </div>
+
+                  {enableOrderTypeDiscounts ? (
+                    <div className="grid grid-cols-3 gap-2 pt-1">
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-bold uppercase">Takeaway (%)</label>
+                        <input
+                          type="number"
+                          value={takeawayRate}
+                          onChange={(e) => setTakeawayRate(e.target.value)}
+                          className="w-full mt-1 rounded-lg border border-slate-800 bg-slate-950 px-2 py-1.5 text-[10px] text-white outline-none focus:border-orange-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-bold uppercase">Dine-In (%)</label>
+                        <input
+                          type="number"
+                          value={dineInRate}
+                          onChange={(e) => setDineInRate(e.target.value)}
+                          className="w-full mt-1 rounded-lg border border-slate-800 bg-slate-950 px-2 py-1.5 text-[10px] text-white outline-none focus:border-orange-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[9px] text-slate-400 font-bold uppercase">Delivery (%)</label>
+                        <input
+                          type="number"
+                          value={deliveryRate}
+                          onChange={(e) => setDeliveryRate(e.target.value)}
+                          className="w-full mt-1 rounded-lg border border-slate-800 bg-slate-950 px-2 py-1.5 text-[10px] text-white outline-none focus:border-orange-500"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="text-slate-400 font-bold uppercase tracking-wide">Discount Method</label>
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={() => setDiscountType('percentage')}
+                            className={`flex-1 py-2.5 rounded-xl border text-[10px] uppercase font-bold transition flex justify-center items-center gap-1.5 ${
+                              discountType === 'percentage'
+                                ? 'border-orange-500 bg-orange-950/20 text-orange-400'
+                                : 'border-slate-800 bg-slate-950 text-slate-500'
+                            }`}
+                          >
+                            <Percent className="h-3.5 w-3.5" />
+                            Percentage
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setDiscountType('fixed')}
+                            className={`flex-1 py-2.5 rounded-xl border text-[10px] uppercase font-bold transition flex justify-center items-center gap-1.5 ${
+                              discountType === 'fixed'
+                                ? 'border-orange-500 bg-orange-950/20 text-orange-400'
+                                : 'border-slate-800 bg-slate-950 text-slate-500'
+                            }`}
+                          >
+                            <DollarSign className="h-3.5 w-3.5" />
+                            Fixed Value
+                          </button>
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-slate-400 font-bold uppercase tracking-wide">
+                          {discountType === 'percentage' ? 'Rate (%) *' : 'Amount ($) *'}
+                        </label>
+                        <input
+                          type="number"
+                          placeholder={discountType === 'percentage' ? '15' : '5.00'}
+                          value={discountValue}
+                          onChange={(e) => setDiscountValue(e.target.value)}
+                          className="w-full mt-2 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-xs text-white outline-none focus:border-orange-500 transition"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
+
+              {/* Auto-apply Switch */}
+              <div className="flex justify-between items-center bg-slate-950/40 p-3 border border-slate-850 rounded-xl">
+                <div>
+                  <span className="text-[10px] font-bold text-white uppercase tracking-wide block">Auto-Apply at Checkout</span>
+                  <span className="text-[9px] text-slate-500 block">Applies automatically when conditions & spend met</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={isAutoApply}
+                  onChange={(e) => setIsAutoApply(e.target.checked)}
+                  className="h-4 w-4 accent-orange-500 cursor-pointer rounded"
+                />
+              </div>
 
               {/* BOGO Buy-X-Get-Y fields */}
               {type === 'buy_x_get_y' && (
@@ -426,25 +545,47 @@ export default function OffersPage() {
                     )}
 
                     <div className="p-4 space-y-3">
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center flex-wrap gap-1">
                         <span className="font-mono text-sm font-extrabold text-orange-400 tracking-wider">
                           {coupon.code}
                         </span>
-                        <span className={`rounded px-2 py-0.5 text-[9px] font-black border ${
-                          coupon.type === 'buy_x_get_y'
-                            ? 'bg-purple-950/20 text-purple-400 border-purple-500/20'
-                            : 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20'
-                        }`}>
-                          {coupon.type === 'buy_x_get_y' ? 'BOGO' : 'DISCOUNT'}
-                        </span>
+                        <div className="flex items-center gap-1">
+                          {coupon.is_auto_apply && (
+                            <span className="rounded px-1.5 py-0.5 text-[8px] font-black bg-blue-950/40 text-blue-400 border border-blue-500/30">
+                              AUTO
+                            </span>
+                          )}
+                          <span className={`rounded px-2 py-0.5 text-[9px] font-black border ${
+                            coupon.type === 'buy_x_get_y'
+                              ? 'bg-purple-950/20 text-purple-400 border-purple-500/20'
+                              : 'bg-emerald-950/20 text-emerald-400 border-emerald-500/20'
+                          }`}>
+                            {coupon.type === 'buy_x_get_y' ? 'BOGO' : 'DISCOUNT'}
+                          </span>
+                        </div>
                       </div>
 
-                      <div className="space-y-1 text-xs text-slate-400 leading-relaxed font-medium">
+                      <div className="space-y-1.5 text-xs text-slate-400 leading-relaxed font-medium">
                         {coupon.type === 'buy_x_get_y' ? (
                           <p className="text-white font-bold flex items-center gap-1">
                             <ShoppingBag className="h-3.5 w-3.5 text-orange-500" />
                             Buy {coupon.buy_qty} {getItemName(coupon.buy_item_id)} get {coupon.get_qty} {getItemName(coupon.get_item_id)} Free
                           </p>
+                        ) : coupon.order_type_discounts ? (
+                          <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-800 space-y-0.5">
+                            <span className="text-[10px] text-slate-400 font-bold uppercase block">Order Type Rates:</span>
+                            <div className="flex gap-2 text-[10px]">
+                              {coupon.order_type_discounts.takeaway !== undefined && (
+                                <span className="text-emerald-400 font-bold">Takeaway: {coupon.order_type_discounts.takeaway}%</span>
+                              )}
+                              {coupon.order_type_discounts.dine_in !== undefined && (
+                                <span className="text-orange-400 font-bold">Dine-In: {coupon.order_type_discounts.dine_in}%</span>
+                              )}
+                              {coupon.order_type_discounts.delivery !== undefined && (
+                                <span className="text-sky-400 font-bold">Delivery: {coupon.order_type_discounts.delivery}%</span>
+                              )}
+                            </div>
+                          </div>
                         ) : (
                           <p>
                             Discount:{' '}
@@ -459,6 +600,16 @@ export default function OffersPage() {
                           Minimum Spend:{' '}
                           <span className="text-white font-bold">
                             ${parseFloat(coupon.min_order_amount).toFixed(2)}
+                          </span>
+                        </p>
+
+                        {/* Active Days display */}
+                        <p className="text-[10px]">
+                          Valid Days:{' '}
+                          <span className="text-orange-300 font-bold">
+                            {coupon.valid_days && Array.isArray(coupon.valid_days) && coupon.valid_days.length > 0
+                              ? coupon.valid_days.join(', ')
+                              : 'All Days'}
                           </span>
                         </p>
                       </div>

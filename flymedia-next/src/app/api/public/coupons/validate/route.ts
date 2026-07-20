@@ -5,7 +5,7 @@ import { Coupon, Customer, Order } from '../../../../../models';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { storeId, code, subtotal, customerPhone } = body;
+    const { storeId, code, subtotal, customerPhone, orderType = 'takeaway', dayName } = body;
 
     if (!storeId || !code) {
       return NextResponse.json({ error: 'Store ID and Coupon Code are required.' }, { status: 400 });
@@ -25,6 +25,21 @@ export async function POST(request: Request) {
 
     if (!coupon) {
       return NextResponse.json({ success: false, error: 'Invalid or inactive coupon code.' }, { status: 404 });
+    }
+
+    // Check Day of Week restriction
+    const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const currentDay = dayName || DAYS[new Date().getDay()];
+    const validDays: string[] | null = coupon.valid_days as any;
+
+    if (validDays && Array.isArray(validDays) && validDays.length > 0) {
+      const match = validDays.some(d => d.toLowerCase() === currentDay.toLowerCase());
+      if (!match) {
+        return NextResponse.json({
+          success: false,
+          error: `This offer is only valid on ${validDays.join(', ')}. Today is ${currentDay}.`,
+        }, { status: 400 });
+      }
     }
 
     // If customer phone is provided, check if they have already used this coupon in any non-cancelled order
@@ -61,13 +76,34 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    // Determine effective discount type and rate for orderType
+    let discountType = coupon.discount_type;
+    let discountValue = parseFloat(coupon.discount_value as any) || 0;
+
+    const orderTypeDiscounts: Record<string, number> | null = coupon.order_type_discounts as any;
+    if (orderTypeDiscounts && typeof orderTypeDiscounts === 'object') {
+      const normalizedOrderType = (orderType || 'takeaway').toLowerCase().replace('-', '_');
+      // match keys like takeaway, dine_in (or dine-in), delivery
+      let matchedRate: number | undefined = undefined;
+      for (const [key, val] of Object.entries(orderTypeDiscounts)) {
+        if (key.toLowerCase().replace('-', '_') === normalizedOrderType) {
+          matchedRate = Number(val);
+          break;
+        }
+      }
+      if (matchedRate !== undefined) {
+        discountType = 'percentage';
+        discountValue = matchedRate;
+      }
+    }
+
     return NextResponse.json({
       success: true,
       coupon: {
         id: coupon.id,
         code: coupon.code,
-        discount_type: coupon.discount_type,
-        discount_value: parseFloat(coupon.discount_value as any),
+        discount_type: discountType,
+        discount_value: discountValue,
         min_order_amount: minAmount,
         is_global: !coupon.store_id,
         type: coupon.type,
@@ -76,6 +112,9 @@ export async function POST(request: Request) {
         get_item_id: coupon.get_item_id,
         get_qty: coupon.get_qty,
         banner_url: coupon.banner_url,
+        valid_days: coupon.valid_days,
+        order_type_discounts: coupon.order_type_discounts,
+        is_auto_apply: coupon.is_auto_apply,
       },
     });
   } catch (error: any) {

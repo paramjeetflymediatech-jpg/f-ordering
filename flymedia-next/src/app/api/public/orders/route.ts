@@ -236,13 +236,44 @@ export async function POST(request: Request) {
           }
         }
 
+        // Check Day of Week restriction
+        const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const currentDayName = DAYS[new Date().getDay()];
+        const validDays: string[] | null = coupon.valid_days as any;
+
+        if (validDays && Array.isArray(validDays) && validDays.length > 0) {
+          const matchDay = validDays.some(d => d.toLowerCase() === currentDayName.toLowerCase());
+          if (!matchDay) {
+            await transaction.rollback();
+            return NextResponse.json({ error: `Coupon code '${coupon.code}' is only valid on ${validDays.join(', ')}.` }, { status: 400 });
+          }
+        }
+
         const minAmount = parseFloat(coupon.min_order_amount as any) || 0;
         if (subtotal >= minAmount) {
-          const discountVal = parseFloat(coupon.discount_value as any) || 0;
-          if (coupon.discount_type === 'percentage') {
-            discountAmount = (subtotal * discountVal) / 100;
+          let discType = coupon.discount_type;
+          let discVal = parseFloat(coupon.discount_value as any) || 0;
+
+          const orderTypeDiscounts: Record<string, number> | null = coupon.order_type_discounts as any;
+          if (orderTypeDiscounts && typeof orderTypeDiscounts === 'object') {
+            const normalizedOrderType = (orderType || 'takeaway').toLowerCase().replace('-', '_');
+            let matchedRate: number | undefined = undefined;
+            for (const [key, val] of Object.entries(orderTypeDiscounts)) {
+              if (key.toLowerCase().replace('-', '_') === normalizedOrderType) {
+                matchedRate = Number(val);
+                break;
+              }
+            }
+            if (matchedRate !== undefined) {
+              discType = 'percentage';
+              discVal = matchedRate;
+            }
+          }
+
+          if (discType === 'percentage') {
+            discountAmount = (subtotal * discVal) / 100;
           } else {
-            discountAmount = discountVal;
+            discountAmount = discVal;
           }
           if (discountAmount > subtotal) {
             discountAmount = subtotal;

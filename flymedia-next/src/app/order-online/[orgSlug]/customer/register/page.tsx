@@ -139,7 +139,7 @@ export default function CustomerRegisterPage() {
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"
                   style={{ color: accentColor }} 
-                  >Full Name *</label>
+                  >Full Name <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                     <input type="text" required placeholder="John Doe" value={name}
@@ -160,7 +160,7 @@ export default function CustomerRegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Email *</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Email <span className="text-red-500">*</span></label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input type="email" required placeholder="john@example.com" value={email}
@@ -172,7 +172,7 @@ export default function CustomerRegisterPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Password *</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Password <span className="text-red-500">*</span></label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input type={showPassword ? 'text' : 'password'} required placeholder="••••••••" value={password}
@@ -189,7 +189,7 @@ export default function CustomerRegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Confirm Password *</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Confirm Password <span className="text-red-500">*</span></label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input type={showConfirmPassword ? 'text' : 'password'} required placeholder="••••••••" value={confirmPassword}

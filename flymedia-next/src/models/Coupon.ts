@@ -15,6 +15,9 @@ export class Coupon extends Model {
   declare buy_qty: number;
   declare get_item_id: string | null;
   declare get_qty: number;
+  declare valid_days: string[] | null;
+  declare order_type_discounts: Record<string, number> | null;
+  declare is_auto_apply: boolean;
 }
 
 Coupon.init(
@@ -78,6 +81,19 @@ Coupon.init(
       type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
+    },
+    valid_days: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    order_type_discounts: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    is_auto_apply: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
   },
   {

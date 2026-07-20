@@ -157,6 +157,8 @@ export async function PUT(request: Request) {
     if (body.themeBgColor !== undefined) storeUpdates.theme_bg_color = body.themeBgColor;
     if (body.themeLayout !== undefined) storeUpdates.theme_layout = body.themeLayout;
     if (body.themeFont !== undefined) storeUpdates.theme_font = body.themeFont;
+    if (body.isDeliveryEnabled !== undefined) storeUpdates.is_delivery_enabled = Boolean(body.isDeliveryEnabled);
+    if (body.is_delivery_enabled !== undefined) storeUpdates.is_delivery_enabled = Boolean(body.is_delivery_enabled);
       // Include business hours if edited
       if (body.businessHours && Object.keys(body.businessHours).length > 0) {
         storeUpdates.business_hours = body.businessHours;

@@ -44,6 +44,9 @@ export async function POST(request: Request) {
       buy_qty = 0,
       get_item_id,
       get_qty = 0,
+      valid_days = null,
+      order_type_discounts = null,
+      is_auto_apply = false,
     } = body;
 
     if (!code) {
@@ -71,6 +74,9 @@ export async function POST(request: Request) {
       buy_qty: type === 'buy_x_get_y' ? parseInt(buy_qty as any, 10) : 0,
       get_item_id: type === 'buy_x_get_y' ? get_item_id : null,
       get_qty: type === 'buy_x_get_y' ? parseInt(get_qty as any, 10) : 0,
+      valid_days: Array.isArray(valid_days) && valid_days.length > 0 ? valid_days : null,
+      order_type_discounts: order_type_discounts && typeof order_type_discounts === 'object' ? order_type_discounts : null,
+      is_auto_apply: Boolean(is_auto_apply),
     });
 
     return NextResponse.json({ success: true, coupon });

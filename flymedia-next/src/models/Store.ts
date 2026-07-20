@@ -38,6 +38,7 @@ export class Store extends Model {
   declare theme_bg_color: string | null;
   declare theme_layout: 'classic' | 'modern_dark' | 'grid_minimal' | null;
   declare theme_font: 'serif' | 'sans' | 'playfair' | null;
+  declare is_delivery_enabled: boolean;
 }
 
 Store.init(
@@ -67,6 +68,11 @@ Store.init(
       type: DataTypes.DECIMAL(5, 2),
       defaultValue: 5.00,
       allowNull: false,
+    },
+    is_delivery_enabled: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
     },
     business_hours: {
       type: DataTypes.JSON,

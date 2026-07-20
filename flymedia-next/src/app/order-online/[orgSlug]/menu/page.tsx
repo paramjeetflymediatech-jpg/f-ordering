@@ -571,6 +571,7 @@ export default function PublicOrderPage() {
           code: codeToApply,
           subtotal,
           customerPhone: customerPhone || undefined,
+          orderType,
         }),
       });
       const data = await res.json();
@@ -591,6 +592,60 @@ export default function PublicOrderPage() {
       setCouponLoading(false);
     }
   };
+
+  // Auto-apply or re-evaluate coupons when orderType or cart changes
+  useEffect(() => {
+    if (!store?.id) return;
+    const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+    if (appliedCoupon) {
+      // Re-validate applied coupon for new orderType or subtotal
+      fetch('/api/public/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storeId: store.id,
+          code: appliedCoupon.code,
+          subtotal,
+          customerPhone: customerPhone || undefined,
+          orderType,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setAppliedCoupon(data.coupon);
+            setCouponError(null);
+          } else {
+            setCouponError(data.error);
+            if (appliedCoupon.is_auto_apply) {
+              setAppliedCoupon(null);
+            }
+          }
+        })
+        .catch((err) => console.error('Error revalidating coupon:', err));
+    } else if (subtotal > 0) {
+      // Check for auto-apply coupon
+      fetch('/api/public/coupons/auto', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          storeId: store.id,
+          subtotal,
+          orderType,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success && data.coupon) {
+            setAppliedCoupon(data.coupon);
+            setCouponCode(data.coupon.code);
+            setCouponError(null);
+          }
+        })
+        .catch((err) => console.error('Error fetching auto coupons:', err));
+    }
+  }, [orderType, cart, store?.id]);
 
   const handleRemoveCoupon = () => {
     setAppliedCoupon(null);
@@ -1856,7 +1911,7 @@ export default function PublicOrderPage() {
               }`}
           >
             <h3 className="text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Select Order Type</h3>
-            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto">
+            <div className={`grid ${store?.is_delivery_enabled !== false ? 'grid-cols-2 max-w-md' : 'grid-cols-1 max-w-xs'} gap-4 mx-auto`}>
               <button
                 type="button"
                 onClick={() => setOrderType('takeaway')}
@@ -1871,20 +1926,22 @@ export default function PublicOrderPage() {
                 <span className="text-sm uppercase tracking-wide">Take Away</span>
                 <span className={`text-[10px] mt-1 ${orderType === 'takeaway' ? 'text-white/80' : 'text-slate-500'}`}>{getBusinessHoursLabel('takeaway')}</span>
               </button>
-              <button
-                type="button"
-                onClick={() => setOrderType('delivery')}
-                className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${orderType === 'delivery'
-                  ? 'border-transparent text-white font-extrabold shadow-md'
-                  : layoutStyle === 'modern_dark'
-                    ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
-                    : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                style={orderType === 'delivery' ? { backgroundColor: primaryColor } : undefined}
-              >
-                <span className="text-sm uppercase tracking-wide">Delivery</span>
-                <span className={`text-[10px] mt-1 ${orderType === 'delivery' ? 'text-white/80' : 'text-slate-500'}`}>{getBusinessHoursLabel('delivery')}</span>
-              </button>
+              {store?.is_delivery_enabled !== false && (
+                <button
+                  type="button"
+                  onClick={() => setOrderType('delivery')}
+                  className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${orderType === 'delivery'
+                    ? 'border-transparent text-white font-extrabold shadow-md'
+                    : layoutStyle === 'modern_dark'
+                      ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
+                      : 'border-slate-200 hover:border-slate-300'
+                    }`}
+                  style={orderType === 'delivery' ? { backgroundColor: primaryColor } : undefined}
+                >
+                  <span className="text-sm uppercase tracking-wide">Delivery</span>
+                  <span className={`text-[10px] mt-1 ${orderType === 'delivery' ? 'text-white/80' : 'text-slate-500'}`}>{getBusinessHoursLabel('delivery')}</span>
+                </button>
+              )}
             </div>
 
             <div className="relative mt-6 max-w-md mx-auto">
@@ -2420,7 +2477,7 @@ export default function PublicOrderPage() {
               {/* Name + Phone row */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Name *</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Name <span className="text-red-500">*</span></label>
                   <input
                     type="text" required placeholder="John Doe"
                     value={customerName} onChange={(e) => setCustomerName(e.target.value)}
@@ -2447,7 +2504,7 @@ export default function PublicOrderPage() {
               {!customer && (
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Email * <span className="text-amber-500 normal-case font-normal">— to receive your order confirmation</span>
+                    Email <span className="text-red-500">*</span> <span className="text-amber-500 normal-case font-normal">— to receive your order confirmation</span>
                   </label>
                   <input
                     type="email" required placeholder="john@example.com"
@@ -2502,11 +2559,14 @@ export default function PublicOrderPage() {
 
               {/* Order Type */}
               <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order Mode *</label>
-                <div className={`grid ${orderType === 'dine_in' ? 'grid-cols-3' : 'grid-cols-2'} gap-2 mt-1.5`}>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order Mode <span className="text-red-500">*</span></label>
+                <div className={`grid ${
+                  (orderType === 'dine_in' ? 3 : 2) - (store?.is_delivery_enabled === false ? 1 : 0) === 1 ? 'grid-cols-1' :
+                  (orderType === 'dine_in' ? 3 : 2) - (store?.is_delivery_enabled === false ? 1 : 0) === 2 ? 'grid-cols-2' : 'grid-cols-3'
+                } gap-2 mt-1.5`}>
                   {(orderType === 'dine_in'
-                    ? (['dine_in', 'takeaway', 'delivery'] as const)
-                    : (['takeaway', 'delivery'] as const)
+                    ? (store?.is_delivery_enabled !== false ? (['dine_in', 'takeaway', 'delivery'] as const) : (['dine_in', 'takeaway'] as const))
+                    : (store?.is_delivery_enabled !== false ? (['takeaway', 'delivery'] as const) : (['takeaway'] as const))
                   ).map((mode) => (
                     <button
                       key={mode} type="button"
@@ -2525,7 +2585,7 @@ export default function PublicOrderPage() {
               {/* Table select (dine in) */}
               {orderType === 'dine_in' && (
                 <div>
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Table *</label>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Table <span className="text-red-500">*</span></label>
                   <select
                     required value={selectedTableId} onChange={(e) => setSelectedTableId(e.target.value)}
                     className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-800 outline-none focus:border-slate-400 focus:bg-white transition"
@@ -2544,7 +2604,7 @@ export default function PublicOrderPage() {
               {orderType === 'delivery' && (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Delivery Address *</label>
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Delivery Address <span className="text-red-500">*</span></label>
                     <button
                       type="button"
                       disabled={geocodingCheckout}
