@@ -1910,41 +1910,43 @@ export default function PublicOrderPage() {
               : 'bg-white border-slate-200 text-slate-800'
               }`}
           >
-            <h3 className="text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Select Order Type</h3>
-            <div className={`grid ${store?.is_delivery_enabled !== false ? 'grid-cols-2 max-w-md' : 'grid-cols-1 max-w-xs'} gap-4 mx-auto`}>
-              <button
-                type="button"
-                onClick={() => setOrderType('takeaway')}
-                className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${orderType === 'takeaway'
-                  ? 'border-transparent text-white font-extrabold shadow-md'
-                  : layoutStyle === 'modern_dark'
-                    ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
-                    : 'border-slate-200 hover:border-slate-300'
-                  }`}
-                style={orderType === 'takeaway' ? { backgroundColor: primaryColor } : undefined}
-              >
-                <span className="text-sm uppercase tracking-wide">Take Away</span>
-                <span className={`text-[10px] mt-1 ${orderType === 'takeaway' ? 'text-white/80' : 'text-slate-500'}`}>{getBusinessHoursLabel('takeaway')}</span>
-              </button>
-              {store?.is_delivery_enabled !== false && (
-                <button
-                  type="button"
-                  onClick={() => setOrderType('delivery')}
-                  className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${orderType === 'delivery'
-                    ? 'border-transparent text-white font-extrabold shadow-md'
-                    : layoutStyle === 'modern_dark'
-                      ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
-                      : 'border-slate-200 hover:border-slate-300'
-                    }`}
-                  style={orderType === 'delivery' ? { backgroundColor: primaryColor } : undefined}
-                >
-                  <span className="text-sm uppercase tracking-wide">Delivery</span>
-                  <span className={`text-[10px] mt-1 ${orderType === 'delivery' ? 'text-white/80' : 'text-slate-500'}`}>{getBusinessHoursLabel('delivery')}</span>
-                </button>
-              )}
-            </div>
+            {store?.is_delivery_enabled !== false && (
+              <>
+                <h3 className="text-center text-xs font-bold text-slate-400 uppercase tracking-wider mb-4">Select Order Type</h3>
+                <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-6">
+                  <button
+                    type="button"
+                    onClick={() => setOrderType('takeaway')}
+                    className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${orderType === 'takeaway'
+                      ? 'border-transparent text-white font-extrabold shadow-md'
+                      : layoutStyle === 'modern_dark'
+                        ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
+                        : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    style={orderType === 'takeaway' ? { backgroundColor: primaryColor } : undefined}
+                  >
+                    <span className="text-sm uppercase tracking-wide">Take Away</span>
+                    <span className={`text-[10px] mt-1 ${orderType === 'takeaway' ? 'text-white/80' : 'text-slate-500'}`}>{getBusinessHoursLabel('takeaway')}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrderType('delivery')}
+                    className={`p-4 rounded-xl border text-center transition flex flex-col items-center justify-center ${orderType === 'delivery'
+                      ? 'border-transparent text-white font-extrabold shadow-md'
+                      : layoutStyle === 'modern_dark'
+                        ? 'border-[#1e293b] text-slate-405 hover:border-slate-700 bg-slate-950/40'
+                        : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                    style={orderType === 'delivery' ? { backgroundColor: primaryColor } : undefined}
+                  >
+                    <span className="text-sm uppercase tracking-wide">Delivery</span>
+                    <span className={`text-[10px] mt-1 ${orderType === 'delivery' ? 'text-white/80' : 'text-slate-500'}`}>{getBusinessHoursLabel('delivery')}</span>
+                  </button>
+                </div>
+              </>
+            )}
 
-            <div className="relative mt-6 max-w-md mx-auto">
+            <div className="relative max-w-md mx-auto">
               <Search className="absolute left-3 top-3.5 h-4 w-4 text-slate-450" />
               <input
                 type="text"
@@ -2558,29 +2560,28 @@ export default function PublicOrderPage() {
               </div>
 
               {/* Order Type */}
-              <div>
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order Mode <span className="text-red-500">*</span></label>
-                <div className={`grid ${
-                  (orderType === 'dine_in' ? 3 : 2) - (store?.is_delivery_enabled === false ? 1 : 0) === 1 ? 'grid-cols-1' :
-                  (orderType === 'dine_in' ? 3 : 2) - (store?.is_delivery_enabled === false ? 1 : 0) === 2 ? 'grid-cols-2' : 'grid-cols-3'
-                } gap-2 mt-1.5`}>
-                  {(orderType === 'dine_in'
-                    ? (store?.is_delivery_enabled !== false ? (['dine_in', 'takeaway', 'delivery'] as const) : (['dine_in', 'takeaway'] as const))
-                    : (store?.is_delivery_enabled !== false ? (['takeaway', 'delivery'] as const) : (['takeaway'] as const))
-                  ).map((mode) => (
-                    <button
-                      key={mode} type="button"
-                      onClick={() => setOrderType(mode)}
-                      className={`py-2 rounded-lg border text-[10px] font-bold uppercase tracking-wide transition ${orderType === mode
-                        ? 'border-slate-800 bg-slate-800 text-white'
-                        : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
-                        }`}
-                    >
-                      {mode === 'dine_in' ? 'Dine In' : mode === 'takeaway' ? 'Takeaway' : 'Delivery'}
-                    </button>
-                  ))}
+              {(store?.is_delivery_enabled !== false || orderType === 'dine_in') && (
+                <div>
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Order Mode <span className="text-red-500">*</span></label>
+                  <div className={`grid ${orderType === 'dine_in' ? (store?.is_delivery_enabled !== false ? 'grid-cols-3' : 'grid-cols-2') : 'grid-cols-2'} gap-2 mt-1.5`}>
+                    {(orderType === 'dine_in'
+                      ? (store?.is_delivery_enabled !== false ? (['dine_in', 'takeaway', 'delivery'] as const) : (['dine_in', 'takeaway'] as const))
+                      : (['takeaway', 'delivery'] as const)
+                    ).map((mode) => (
+                      <button
+                        key={mode} type="button"
+                        onClick={() => setOrderType(mode)}
+                        className={`py-2 rounded-lg border text-[10px] font-bold uppercase tracking-wide transition ${orderType === mode
+                          ? 'border-slate-800 bg-slate-800 text-white'
+                          : 'border-slate-200 bg-slate-50 text-slate-500 hover:bg-slate-100'
+                          }`}
+                      >
+                        {mode === 'dine_in' ? 'Dine In' : mode === 'takeaway' ? 'Takeaway' : 'Delivery'}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Table select (dine in) */}
               {orderType === 'dine_in' && (
