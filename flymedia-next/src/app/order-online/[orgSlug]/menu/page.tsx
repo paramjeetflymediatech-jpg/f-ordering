@@ -2489,7 +2489,7 @@ export default function PublicOrderPage() {
                 <div>
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Phone (optional)</label>
                   <input
-                    type="tel" placeholder="+1 555-0100"
+                    type="tel" placeholder="+61 400 000 00"
                     value={customerPhone}
                     onChange={(e) => setCustomerPhone(e.target.value)}
                     onBlur={() => {
