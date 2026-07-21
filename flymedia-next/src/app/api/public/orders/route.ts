@@ -5,6 +5,7 @@ import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { sendEmailReceipt } from '../../../../lib/email';
+import { getAdminNotificationEmails } from '../../../../lib/storeEmails';
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'supersecretposplatformkeychangeinprod';
 
@@ -383,24 +384,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // Lookup Restaurant Owner email
-    let adminEmail = 'admin@fordering.com';
+    // Lookup all Admin, Owner, and Store emails
+    let adminEmails: string[] = ['admin@fordering.com'];
     try {
-      const ownerUser = await User.findOne({
-        where: { organization_id: store.organization_id },
-        include: [
-          {
-            model: Role,
-            where: { name: 'Restaurant Owner' },
-          },
-        ],
-        transaction,
-      });
-      if (ownerUser) {
-        adminEmail = ownerUser.email;
-      }
+      adminEmails = await getAdminNotificationEmails(storeId, store.organization_id);
     } catch (e) {
-      console.error('Failed to query admin email:', e);
+      console.error('Failed to query admin emails:', e);
     }
 
     await transaction.commit();
@@ -447,7 +436,7 @@ export async function POST(request: Request) {
           status: payment.transaction_status,
           reference: payment.transaction_reference || `ONL-TX-${Date.now()}`,
         },
-        adminEmail,
+        adminEmail: adminEmails,
       });
     } catch (emailErr) {
       console.error('Failed to dispatch simulated email receipt:', emailErr);

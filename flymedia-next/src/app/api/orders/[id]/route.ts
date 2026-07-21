@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth';
 import { Order, OrderItem, Store, Customer, User, Role } from '../../../../models';
 import { sendOrderStatusEmail } from '../../../../lib/email';
+import { getAdminNotificationEmails } from '../../../../lib/storeEmails';
 
 const VALID_STATUSES = ['pending', 'accepted', 'preparing', 'ready', 'completed', 'cancelled', 'on_hold'];
 
@@ -89,16 +90,14 @@ export async function PATCH(
           ? await Customer.findByPk(order.customer_id)
           : null;
 
-        // Get admin email from store owner
-        let adminEmail = 'admin@fordering.com';
+        // Get admin emails for store/organization
+        let adminEmail: string | string[] = 'admin@fordering.com';
         try {
-          const ownerUser = await User.findOne({
-            where: { organization_id: store?.organization_id },
-            include: [{ model: Role, where: { name: 'Restaurant Owner' } }],
-          });
-          if (ownerUser) adminEmail = ownerUser.email;
+          if (store) {
+            adminEmail = await getAdminNotificationEmails(store_id, store.organization_id);
+          }
         } catch (e) {
-          console.error('Failed to find admin email:', e);
+          console.error('Failed to find admin emails:', e);
         }
 
         if (store) {

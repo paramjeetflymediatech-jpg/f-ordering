@@ -30,7 +30,7 @@ interface SimulatedEmailParams {
     status: string;
     reference: string;
   };
-  adminEmail: string;
+  adminEmail: string | string[];
 }
 
 export async function sendEmailReceipt(params: SimulatedEmailParams) {
@@ -214,16 +214,21 @@ Payment Status: ${payment.status.toUpperCase()}
       );
     }
 
-    // 5. Send Email to Admin
-    emailsToSend.push(
-      transporter.sendMail({
-        from: smtpFrom,
-        to: adminEmail,
-        subject: `[New Order] Receipt Invoice ${order.orderNumber} - ${storeName}`,
-        text: textBody,
-        html: htmlBody,
-      })
-    );
+    // 5. Send Email to Admin(s)
+    const adminTargets = Array.isArray(adminEmail) ? adminEmail : [adminEmail];
+    for (const targetEmail of adminTargets) {
+      if (targetEmail && targetEmail.trim()) {
+        emailsToSend.push(
+          transporter.sendMail({
+            from: smtpFrom,
+            to: targetEmail.trim(),
+            subject: `[New Order] Receipt Invoice ${order.orderNumber} - ${storeName}`,
+            text: textBody,
+            html: htmlBody,
+          })
+        );
+      }
+    }
 
     const results = await Promise.all(emailsToSend);
 
@@ -298,7 +303,7 @@ const STATUS_LABELS: Record<string, { label: string; emoji: string; color: strin
 
 export async function sendOrderStatusEmail(params: {
   storeName: string;
-  adminEmail: string;
+  adminEmail: string | string[];
   customer: { name: string; phone: string; email: string | null };
   order: { orderNumber: string; total: number; orderType: string };
   newStatus: string;
@@ -387,14 +392,19 @@ Time: ${timestamp}
       }));
     }
 
-    // Always notify admin
-    sends.push(transporter.sendMail({
-      from: smtpFrom,
-      to: adminEmail,
-      subject: `[Status Update] ${order.orderNumber}: ${oldStatus.toUpperCase()} -> ${newStatus.toUpperCase()} — ${storeName}`,
-      text: textBody,
-      html: htmlBody,
-    }));
+    // Always notify admin(s)
+    const adminTargets = Array.isArray(adminEmail) ? adminEmail : [adminEmail];
+    for (const targetEmail of adminTargets) {
+      if (targetEmail && targetEmail.trim()) {
+        sends.push(transporter.sendMail({
+          from: smtpFrom,
+          to: targetEmail.trim(),
+          subject: `[Status Update] ${order.orderNumber}: ${oldStatus.toUpperCase()} -> ${newStatus.toUpperCase()} — ${storeName}`,
+          text: textBody,
+          html: htmlBody,
+        }));
+      }
+    }
 
     const results = await Promise.all(sends);
 
@@ -527,3 +537,152 @@ ${previewUrl ? `- Ethereal Preview URL: ${previewUrl}` : ''}
     return false;
   }
 }
+
+// ─── Booking Confirmation Email ─────────────────────────────────────────────
+
+export async function sendBookingNotificationEmail(params: {
+  storeName: string;
+  adminEmails: string | string[];
+  customer: {
+    name: string;
+    phone: string;
+    email: string | null;
+  };
+  booking: {
+    reservationTime: string;
+    bookingSlot?: string | null;
+    guestCount: number;
+    notes?: string | null;
+    bookingChargePaid?: number;
+  };
+}) {
+  const { storeName, adminEmails, customer, booking } = params;
+  const timestamp = new Date().toLocaleString();
+  const reservationDateFormatted = new Date(booking.reservationTime).toLocaleString();
+
+  const textBody = `
+========================================================================
+NEW TABLE RESERVATION BOOKING - ${timestamp}
+========================================================================
+Store: ${storeName}
+Reservation Date & Time: ${reservationDateFormatted}
+Booking Slot: ${booking.bookingSlot || 'Default'}
+Guests: ${booking.guestCount}
+${booking.bookingChargePaid ? `Booking Deposit Paid: $${booking.bookingChargePaid.toFixed(2)}\n` : ''}
+${booking.notes ? `Special Notes: ${booking.notes}\n` : ''}
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: ${customer.name}
+Phone: ${customer.phone}
+Email: ${customer.email || 'Not Provided'}
+
+Status: PENDING MANAGER APPROVAL
+========================================================================
+`;
+
+  const htmlBody = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; color: #1e293b;">
+      <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
+        <h2 style="color: #0062ff; margin: 0; font-weight: 900;">${storeName}</h2>
+        <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">Table Reservation Confirmation</p>
+      </div>
+
+      <div style="text-align: center; margin: 24px 0;">
+        <div style="font-size: 40px; margin-bottom: 8px;">🍽️</div>
+        <h1 style="margin: 0; font-size: 20px; color: #0062ff;">Table Reservation Received</h1>
+        <p style="color: #64748b; font-size: 13px; margin-top: 4px;">A new table booking has been submitted</p>
+      </div>
+
+      <div style="margin-top: 20px; padding: 16px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Reservation Details</h3>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Date & Time:</strong> ${reservationDateFormatted}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Time Slot:</strong> ${booking.bookingSlot || 'Standard Slot'}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Guest Count:</strong> ${booking.guestCount} Guests</p>
+        ${booking.bookingChargePaid ? `<p style="margin: 4px 0; font-size: 13px; color: #059669;"><strong>Booking Deposit Paid:</strong> $${booking.bookingChargePaid.toFixed(2)}</p>` : ''}
+        ${booking.notes ? `<p style="margin: 4px 0; font-size: 13px; color: #64748b;"><strong>Notes:</strong> ${booking.notes}</p>` : ''}
+      </div>
+
+      <div style="margin-top: 20px; padding: 16px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Customer Details</h3>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Name:</strong> ${customer.name}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Phone:</strong> ${customer.phone}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Email:</strong> ${customer.email || 'Not Provided'}</p>
+      </div>
+
+      <div style="margin-top: 24px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+        <p>Submitted at ${timestamp} &middot; Automated notification by F-Ordering POS</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+    const smtpFrom = process.env.SMTP_FROM || `"F-Ordering Bookings" <${smtpUser || 'bookings@fordering.com'}>`;
+
+    let transporter: nodemailer.Transporter;
+    if (smtpHost && smtpUser && smtpPass) {
+      transporter = nodemailer.createTransport({
+        host: smtpHost, port: smtpPort, secure: smtpPort === 465,
+        auth: { user: smtpUser, pass: smtpPass },
+      });
+    } else {
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: testAccount.smtp.host, port: testAccount.smtp.port, secure: testAccount.smtp.secure,
+        auth: { user: testAccount.user, pass: testAccount.pass },
+      });
+    }
+
+    const emailsToSend: Promise<any>[] = [];
+
+    // 1. Send to Customer if email provided
+    if (customer.email && customer.email.trim()) {
+      emailsToSend.push(
+        transporter.sendMail({
+          from: smtpFrom,
+          to: customer.email.trim(),
+          subject: `Table Booking Request Received — ${storeName}`,
+          text: textBody,
+          html: htmlBody,
+        })
+      );
+    }
+
+    // 2. Send to Admin/Owner emails
+    const targets = Array.isArray(adminEmails) ? adminEmails : [adminEmails];
+    for (const email of targets) {
+      if (email && email.trim() && email.trim().toLowerCase() !== customer.email?.trim().toLowerCase()) {
+        emailsToSend.push(
+          transporter.sendMail({
+            from: smtpFrom,
+            to: email.trim(),
+            subject: `[New Table Booking] ${customer.name} - ${storeName}`,
+            text: textBody,
+            html: htmlBody,
+          })
+        );
+      }
+    }
+
+    const results = await Promise.all(emailsToSend);
+
+    const logFilePath = path.join(process.cwd(), 'simulated_emails.log');
+    const previewUrl = !smtpHost && results.length > 0 ? nodemailer.getTestMessageUrl(results[0]) : '';
+    fs.appendFileSync(logFilePath, `
+[TABLE BOOKING] New reservation for ${customer.name} at ${storeName} (${timestamp})
+  Recipients: ${targets.join(', ')} ${customer.email ? `& Customer: ${customer.email}` : ''}
+  ${previewUrl ? `Preview: ${previewUrl}` : ''}
+
+`, 'utf8');
+
+    console.log(`[BOOKING EMAIL] Dispatched booking email to customer and admins for ${customer.name}`);
+    return true;
+  } catch (err) {
+    console.error('[BOOKING EMAIL] Failed to send booking notification email:', err);
+    return false;
+  }
+}
+

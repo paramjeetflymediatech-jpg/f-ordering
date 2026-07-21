@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import jwt from 'jsonwebtoken';
 import { sequelize, Store, Customer, Reservation } from '../../../../models';
 import { Op } from 'sequelize';
+import { sendBookingNotificationEmail } from '../../../../lib/email';
+import { getAdminNotificationEmails } from '../../../../lib/storeEmails';
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'supersecretposplatformkeychangeinprod';
 
@@ -195,6 +197,31 @@ export async function POST(request: Request) {
     );
 
     await transaction.commit();
+
+    // Send notification emails asynchronously to customer & all admin/owner emails
+    setImmediate(async () => {
+      try {
+        const adminEmails = await getAdminNotificationEmails(storeId, store.organization_id);
+        await sendBookingNotificationEmail({
+          storeName: store.name,
+          adminEmails,
+          customer: {
+            name: customerName,
+            phone: customerPhone,
+            email: customerEmail || null,
+          },
+          booking: {
+            reservationTime,
+            bookingSlot,
+            guestCount: parseInt(guestCount as any) || 2,
+            notes,
+            bookingChargePaid: bookingChargePaid ? parseFloat(bookingChargePaid) : 0,
+          },
+        });
+      } catch (emailErr) {
+        console.error('[Public Bookings] Failed to dispatch booking email notification:', emailErr);
+      }
+    });
 
     return NextResponse.json({
       success: true,
