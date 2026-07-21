@@ -34,6 +34,11 @@ import {
   Sparkles,
   Loader2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Check,
+  Ticket,
 } from 'lucide-react';
 
 interface CartItem {
@@ -420,6 +425,19 @@ export default function PublicOrderPage() {
   const [tables, setTables] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [offers, setOffers] = useState<any[]>([]);
+  const [activeSlide, setActiveSlide] = useState(0);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+  const [copiedOfferCode, setCopiedOfferCode] = useState<string | null>(null);
+
+  // Auto-play timer for offers carousel
+  const activeOffersList = useMemo(() => offers.filter((o) => o.is_active !== false), [offers]);
+  useEffect(() => {
+    if (activeOffersList.length <= 1 || isCarouselPaused) return;
+    const interval = setInterval(() => {
+      setActiveSlide((prev) => (prev + 1) % activeOffersList.length);
+    }, 4500);
+    return () => clearInterval(interval);
+  }, [activeOffersList.length, isCarouselPaused]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -1877,31 +1895,158 @@ export default function PublicOrderPage() {
         <div className="flex-1 space-y-6">
 
           {/* Promotion Banners Carousel */}
-          {offers.filter(o => o.banner_url).length > 0 && (
-            <div className="w-full rounded-2xl overflow-hidden space-y-3">
-              {/* <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 animate-pulse" style={{ color: accentColor }}>
-                  <Sparkles className="h-4 w-4" /> Special Deals & Offers
-                </span>
-              </div> */}
+          {(() => {
+            const activeOffers = offers.filter((o) => o.is_active !== false);
+            if (activeOffers.length === 0) return null;
 
-              <div className="flex gap-4 overflow-x-auto  custom-scrollbar snap-x">
-                {offers.filter(o => o.banner_url).map(promo => (
-                  <div
-                    key={promo.id}
-                    className="min-w-[300px] md:min-w-[420px] flex-1 max-w-xxl rounded-2xl overflow-hidden border   backdrop-blur-md shadow-xl snap-start flex flex-col group hover:shadow-2xl transition-shadow duration-300"
-                    style={{ backgroundColor: `${primaryColor}10` }}
-                  >
-                    <div className="relative h-36 md:h-48 overflow-hidden rounded-t-2xl">
-                      <img src={promo.banner_url} alt={promo.code} className="w-full h-full object-cover   transition-transform duration-500" />
-                    </div>
+            const promo = activeOffers[activeSlide] || activeOffers[0];
+            const hasImage = Boolean(promo.banner_url);
 
+            let discountLabel = '';
+            if (promo.type === 'buy_x_get_y') {
+              discountLabel = `Buy ${promo.buy_qty || 1} Get ${promo.get_qty || 1} Free`;
+            } else if (promo.order_type_discounts) {
+              discountLabel = 'Special Order-Type Discounts';
+            } else if (promo.discount_type === 'percentage') {
+              discountLabel = `${parseFloat(promo.discount_value || 0).toFixed(0)}% OFF`;
+            } else {
+              discountLabel = `$${parseFloat(promo.discount_value || 0).toFixed(2)} OFF`;
+            }
 
-                  </div>
-                ))}
+            return (
+              <div
+                className="w-full rounded-2xl overflow-hidden shadow-xl border relative group transition-all duration-300"
+                style={{
+                  backgroundColor: layoutStyle === 'modern_dark' ? '#0c101b' : '#ffffff',
+                  borderColor: layoutStyle === 'modern_dark' ? '#1e293b' : '#e2e8f0',
+                }}
+                onMouseEnter={() => setIsCarouselPaused(true)}
+                onMouseLeave={() => setIsCarouselPaused(false)}
+              >
+                <div className="relative w-full overflow-hidden min-h-[180px] md:min-h-[220px]">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={promo.id || activeSlide}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.35 }}
+                      className="w-full relative min-h-[180px] md:min-h-[220px] flex items-center justify-between p-6 md:p-8"
+                      style={{
+                        backgroundImage: hasImage
+                          ? `linear-gradient(to right, rgba(12, 16, 27, 0.94) 30%, rgba(12, 16, 27, 0.45)), url(${promo.banner_url})`
+                          : undefined,
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundColor: !hasImage ? `${primaryColor}20` : undefined,
+                      }}
+                    >
+                      {!hasImage && (
+                        <div
+                          className="absolute inset-0 opacity-25 pointer-events-none"
+                          style={{
+                            backgroundImage: `radial-gradient(circle at 80% 20%, ${accentColor} 0%, transparent 60%)`,
+                          }}
+                        />
+                      )}
+
+                      <div className="relative z-10 space-y-2.5 max-w-lg">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm"
+                            style={{ backgroundColor: accentColor, color: '#000000' }}
+                          >
+                            <Sparkles className="h-3 w-3" /> Special Offer
+                          </span>
+                          {promo.is_auto_apply && (
+                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                              Auto-Applied
+                            </span>
+                          )}
+                        </div>
+
+                        <h3 className="text-xl md:text-3xl font-black text-white tracking-tight leading-tight">
+                          {discountLabel}
+                        </h3>
+
+                        <p className="text-xs text-slate-300 flex items-center gap-2 flex-wrap font-medium">
+                          <span>Min Spend: ${parseFloat(promo.min_order_amount || 0).toFixed(2)}</span>
+                          {promo.valid_days && Array.isArray(promo.valid_days) && promo.valid_days.length > 0 && (
+                            <>
+                              <span>&bull;</span>
+                              <span>Valid: {promo.valid_days.join(', ')}</span>
+                            </>
+                          )}
+                        </p>
+
+                        <div className="flex items-center gap-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCouponCode(promo.code);
+                              handleApplyCoupon(promo.code);
+                            }}
+                            className="px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition shadow-lg flex items-center gap-1.5 hover:scale-105"
+                            style={{ backgroundColor: primaryColor, color: '#ffffff' }}
+                          >
+                            <Ticket className="h-4 w-4" /> Apply Code: {promo.code}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(promo.code);
+                              setCopiedOfferCode(promo.code);
+                              setTimeout(() => setCopiedOfferCode(null), 2000);
+                              showToast(`Promo code ${promo.code} copied to clipboard!`, 'info');
+                            }}
+                            className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-700 transition"
+                            title="Copy Code"
+                          >
+                            {copiedOfferCode === promo.code ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Carousel controls & pagination */}
+                      {activeOffers.length > 1 && (
+                        <div className="absolute right-4 bottom-4 z-20 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setActiveSlide((prev) => (prev - 1 + activeOffers.length) % activeOffers.length)}
+                            className="p-2 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition border border-white/10"
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </button>
+
+                          <div className="flex gap-1.5 px-2">
+                            {activeOffers.map((_, idx) => (
+                              <button
+                                key={idx}
+                                type="button"
+                                onClick={() => setActiveSlide(idx)}
+                                className={`h-2 rounded-full transition-all ${
+                                  idx === activeSlide ? 'w-6 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
+                                }`}
+                              />
+                            ))}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => setActiveSlide((prev) => (prev + 1) % activeOffers.length)}
+                            className="p-2 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition border border-white/10"
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Order Type & Search Bar */}
           <div

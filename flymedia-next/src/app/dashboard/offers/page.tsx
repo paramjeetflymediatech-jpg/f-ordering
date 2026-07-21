@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Tag, Plus, Trash2, Ticket, Percent, DollarSign, AlertCircle, Upload, Image, Sparkles, ShoppingBag } from 'lucide-react';
+import { Tag, Plus, Trash2, Ticket, Percent, DollarSign, AlertCircle, Upload, Image, Sparkles, ShoppingBag, Edit3, XCircle } from 'lucide-react';
 
 export default function OffersPage() {
   const [coupons, setCoupons] = useState<any[]>([]);
@@ -34,6 +34,9 @@ export default function OffersPage() {
   // Banner image states
   const [bannerUrl, setBannerUrl] = useState('');
   const [uploading, setUploading] = useState(false);
+
+  // Edit mode state
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const fetchCoupons = async () => {
     try {
@@ -105,7 +108,52 @@ export default function OffersPage() {
     );
   };
 
-  const handleAddCoupon = async (e: React.FormEvent) => {
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setCode('');
+    setType('discount');
+    setDiscountType('percentage');
+    setDiscountValue('');
+    setMinOrder('');
+    setBuyItemId('');
+    setBuyQty('2');
+    setGetItemId('');
+    setGetQty('2');
+    setBannerUrl('');
+    setSelectedDays([]);
+    setEnableOrderTypeDiscounts(false);
+    setTakeawayRate('20');
+    setDineInRate('10');
+    setDeliveryRate('0');
+    setIsAutoApply(false);
+  };
+
+  const handleStartEdit = (coupon: any) => {
+    setEditingId(coupon.id);
+    setCode(coupon.code || '');
+    setType(coupon.type || 'discount');
+    setDiscountType(coupon.discount_type || 'percentage');
+    setDiscountValue(coupon.discount_value ? String(coupon.discount_value) : '');
+    setMinOrder(coupon.min_order_amount ? String(coupon.min_order_amount) : '');
+    setBannerUrl(coupon.banner_url || '');
+    setBuyItemId(coupon.buy_item_id || '');
+    setBuyQty(coupon.buy_qty ? String(coupon.buy_qty) : '2');
+    setGetItemId(coupon.get_item_id || '');
+    setGetQty(coupon.get_qty ? String(coupon.get_qty) : '2');
+    setSelectedDays(Array.isArray(coupon.valid_days) ? coupon.valid_days : []);
+    setIsAutoApply(Boolean(coupon.is_auto_apply));
+
+    if (coupon.order_type_discounts && typeof coupon.order_type_discounts === 'object') {
+      setEnableOrderTypeDiscounts(true);
+      setTakeawayRate(coupon.order_type_discounts.takeaway !== undefined ? String(coupon.order_type_discounts.takeaway) : '0');
+      setDineInRate(coupon.order_type_discounts.dine_in !== undefined ? String(coupon.order_type_discounts.dine_in) : '0');
+      setDeliveryRate(coupon.order_type_discounts.delivery !== undefined ? String(coupon.order_type_discounts.delivery) : '0');
+    } else {
+      setEnableOrderTypeDiscounts(false);
+    }
+  };
+
+  const handleSaveCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!code) return;
 
@@ -120,7 +168,7 @@ export default function OffersPage() {
     }
 
     try {
-      const payload = {
+      const payload: any = {
         code,
         type,
         discountType,
@@ -140,30 +188,28 @@ export default function OffersPage() {
         is_auto_apply: isAutoApply,
       };
 
+      if (editingId) {
+        payload.id = editingId;
+      }
+
+      const method = editingId ? 'PUT' : 'POST';
+
       const res = await fetch('/api/dashboard/coupons', {
-        method: 'POST',
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       const data = await res.json();
       if (res.ok && data.success) {
-        setCode('');
-        setDiscountValue('');
-        setMinOrder('');
-        setBuyItemId('');
-        setGetItemId('');
-        setBannerUrl('');
-        setSelectedDays([]);
-        setEnableOrderTypeDiscounts(false);
-        setIsAutoApply(false);
+        handleCancelEdit();
         await fetchCoupons();
       } else {
-        alert(data.error || 'Failed to create coupon.');
+        alert(data.error || `Failed to ${editingId ? 'update' : 'create'} coupon.`);
       }
     } catch (err) {
       console.error(err);
-      alert('Network error creating coupon.');
+      alert(`Network error ${editingId ? 'updating' : 'creating'} coupon.`);
     }
   };
 
@@ -208,15 +254,26 @@ export default function OffersPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* LEFT PANEL: CREATE CAMPAIGN */}
+        {/* LEFT PANEL: CREATE / EDIT CAMPAIGN */}
         <div className="lg:col-span-1 space-y-6">
           <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 space-y-6">
-            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-              <Ticket className="h-5 w-5 text-orange-500" />
-              Create Campaign / Offer
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+                <Ticket className="h-5 w-5 text-orange-500" />
+                {editingId ? 'Edit Campaign / Offer' : 'Create Campaign / Offer'}
+              </h2>
+              {editingId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="text-[10px] font-bold text-slate-400 hover:text-white flex items-center gap-1 bg-slate-800 px-2 py-1 rounded-lg"
+                >
+                  <XCircle className="h-3.5 w-3.5" /> Cancel Edit
+                </button>
+              )}
+            </div>
 
-            <form onSubmit={handleAddCoupon} className="space-y-4 text-xs">
+            <form onSubmit={handleSaveCoupon} className="space-y-4 text-xs">
               
               {/* Type Switcher */}
               <div className="space-y-2">
@@ -508,12 +565,23 @@ export default function OffersPage() {
                 )}
               </div>
 
-              <button
-                type="submit"
-                className="w-full mt-6 rounded-xl bg-orange-600 py-3 text-xs font-bold text-white hover:bg-orange-500 transition shadow-lg shadow-orange-600/10"
-              >
-                Create Coupon / Offer
-              </button>
+              <div className="flex gap-2">
+                <button
+                  type="submit"
+                  className="flex-1 mt-4 rounded-xl bg-orange-600 py-3 text-xs font-bold text-white hover:bg-orange-500 transition shadow-lg shadow-orange-600/10"
+                >
+                  {editingId ? 'Save Changes' : 'Create Coupon / Offer'}
+                </button>
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="mt-4 rounded-xl bg-slate-800 px-4 py-3 text-xs font-bold text-slate-300 hover:bg-slate-700 transition"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
             </form>
           </div>
         </div>
@@ -615,7 +683,14 @@ export default function OffersPage() {
                       </div>
                     </div>
 
-                    <div className="flex justify-end p-4 border-t border-slate-900">
+                    <div className="flex justify-between items-center p-4 border-t border-slate-900">
+                      <button
+                        onClick={() => handleStartEdit(coupon)}
+                        className="flex items-center gap-1 text-[10px] font-bold text-orange-400 hover:text-orange-300 bg-orange-950/30 border border-orange-500/20 px-2.5 py-1 rounded-lg transition"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                        Edit Offer
+                      </button>
                       <button
                         onClick={() => handleDeleteCoupon(coupon.id)}
                         className="flex items-center gap-1 text-[10px] font-bold text-red-400 hover:text-red-300"
