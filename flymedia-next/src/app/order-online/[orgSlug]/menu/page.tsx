@@ -430,12 +430,12 @@ export default function PublicOrderPage() {
   const [copiedOfferCode, setCopiedOfferCode] = useState<string | null>(null);
 
   // Auto-play timer for offers carousel
-  const activeOffersList = useMemo(() => offers.filter((o) => o.is_active !== false), [offers]);
+  const activeOffersList = useMemo(() => offers.filter((o) => o.is_active !== false && Boolean(o.banner_url)), [offers]);
   useEffect(() => {
     if (activeOffersList.length <= 1 || isCarouselPaused) return;
     const interval = setInterval(() => {
       setActiveSlide((prev) => (prev + 1) % activeOffersList.length);
-    }, 4500);
+    }, 5000);
     return () => clearInterval(interval);
   }, [activeOffersList.length, isCarouselPaused]);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
@@ -1896,22 +1896,10 @@ export default function PublicOrderPage() {
 
           {/* Promotion Banners Carousel */}
           {(() => {
-            const activeOffers = offers.filter((o) => o.is_active !== false);
+            const activeOffers = offers.filter((o) => o.is_active !== false && Boolean(o.banner_url));
             if (activeOffers.length === 0) return null;
 
             const promo = activeOffers[activeSlide] || activeOffers[0];
-            const hasImage = Boolean(promo.banner_url);
-
-            let discountLabel = '';
-            if (promo.type === 'buy_x_get_y') {
-              discountLabel = `Buy ${promo.buy_qty || 1} Get ${promo.get_qty || 1} Free`;
-            } else if (promo.order_type_discounts) {
-              discountLabel = 'Special Order-Type Discounts';
-            } else if (promo.discount_type === 'percentage') {
-              discountLabel = `${parseFloat(promo.discount_value || 0).toFixed(0)}% OFF`;
-            } else {
-              discountLabel = `$${parseFloat(promo.discount_value || 0).toFixed(2)} OFF`;
-            }
 
             return (
               <div
@@ -1923,7 +1911,7 @@ export default function PublicOrderPage() {
                 onMouseEnter={() => setIsCarouselPaused(true)}
                 onMouseLeave={() => setIsCarouselPaused(false)}
               >
-                <div className="relative w-full overflow-hidden min-h-[180px] md:min-h-[220px]">
+                <div className="relative w-full overflow-hidden min-h-[200px] md:min-h-[200px]">
                   <AnimatePresence mode="wait">
                     <motion.div
                       key={promo.id || activeSlide}
@@ -1931,117 +1919,13 @@ export default function PublicOrderPage() {
                       animate={{ opacity: 1, x: 0 }}
                       exit={{ opacity: 0, x: -20 }}
                       transition={{ duration: 0.35 }}
-                      className="w-full relative min-h-[180px] md:min-h-[220px] flex items-center justify-between p-6 md:p-8"
+                      className="w-full relative min-h-[180px] md:min-h-[200px] flex items-center justify-between"
                       style={{
-                        backgroundImage: hasImage
-                          ? `linear-gradient(to right, rgba(12, 16, 27, 0.94) 30%, rgba(12, 16, 27, 0.45)), url(${promo.banner_url})`
-                          : undefined,
-                        backgroundSize: 'cover',
+                        backgroundImage: `url(${promo.banner_url})`,
+                        backgroundSize: 'contain',
                         backgroundPosition: 'center',
-                        backgroundColor: !hasImage ? `${primaryColor}20` : undefined,
                       }}
-                    >
-                      {!hasImage && (
-                        <div
-                          className="absolute inset-0 opacity-25 pointer-events-none"
-                          style={{
-                            backgroundImage: `radial-gradient(circle at 80% 20%, ${accentColor} 0%, transparent 60%)`,
-                          }}
-                        />
-                      )}
-
-                      <div className="relative z-10 space-y-2.5 max-w-lg">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 shadow-sm"
-                            style={{ backgroundColor: accentColor, color: '#000000' }}
-                          >
-                            <Sparkles className="h-3 w-3" /> Special Offer
-                          </span>
-                          {promo.is_auto_apply && (
-                            <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                              Auto-Applied
-                            </span>
-                          )}
-                        </div>
-
-                        <h3 className="text-xl md:text-3xl font-black text-white tracking-tight leading-tight">
-                          {discountLabel}
-                        </h3>
-
-                        <p className="text-xs text-slate-300 flex items-center gap-2 flex-wrap font-medium">
-                          <span>Min Spend: ${parseFloat(promo.min_order_amount || 0).toFixed(2)}</span>
-                          {promo.valid_days && Array.isArray(promo.valid_days) && promo.valid_days.length > 0 && (
-                            <>
-                              <span>&bull;</span>
-                              <span>Valid: {promo.valid_days.join(', ')}</span>
-                            </>
-                          )}
-                        </p>
-
-                        <div className="flex items-center gap-3 pt-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setCouponCode(promo.code);
-                              handleApplyCoupon(promo.code);
-                            }}
-                            className="px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition shadow-lg flex items-center gap-1.5 hover:scale-105"
-                            style={{ backgroundColor: primaryColor, color: '#ffffff' }}
-                          >
-                            <Ticket className="h-4 w-4" /> Apply Code: {promo.code}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(promo.code);
-                              setCopiedOfferCode(promo.code);
-                              setTimeout(() => setCopiedOfferCode(null), 2000);
-                              showToast(`Promo code ${promo.code} copied to clipboard!`, 'info');
-                            }}
-                            className="p-2.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-700 transition"
-                            title="Copy Code"
-                          >
-                            {copiedOfferCode === promo.code ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Carousel controls & pagination */}
-                      {activeOffers.length > 1 && (
-                        <div className="absolute right-4 bottom-4 z-20 flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setActiveSlide((prev) => (prev - 1 + activeOffers.length) % activeOffers.length)}
-                            className="p-2 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition border border-white/10"
-                          >
-                            <ChevronLeft className="h-4 w-4" />
-                          </button>
-
-                          <div className="flex gap-1.5 px-2">
-                            {activeOffers.map((_, idx) => (
-                              <button
-                                key={idx}
-                                type="button"
-                                onClick={() => setActiveSlide(idx)}
-                                className={`h-2 rounded-full transition-all ${
-                                  idx === activeSlide ? 'w-6 bg-white' : 'w-2 bg-white/40 hover:bg-white/70'
-                                }`}
-                              />
-                            ))}
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => setActiveSlide((prev) => (prev + 1) % activeOffers.length)}
-                            className="p-2 rounded-full bg-black/60 hover:bg-black/80 text-white backdrop-blur-md transition border border-white/10"
-                          >
-                            <ChevronRight className="h-4 w-4" />
-                          </button>
-                        </div>
-                      )}
-                    </motion.div>
+                    />
                   </AnimatePresence>
                 </div>
               </div>
