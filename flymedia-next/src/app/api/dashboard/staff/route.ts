@@ -52,9 +52,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Name, email and password are required.' }, { status: 400 });
     }
 
-    const existing = await User.findOne({ where: { email } });
+    const existing = await User.findOne({ where: { email, store_id, organization_id } });
     if (existing) {
-      return NextResponse.json({ error: 'An account with this email already exists.' }, { status: 409 });
+      return NextResponse.json({ error: 'A staff account with this email already exists in this restaurant.' }, { status: 409 });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -138,11 +138,11 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Super Admin accounts cannot be edited from this panel.' }, { status: 403 });
     }
 
-    // Check new email is not taken by another user
+    // Check new email is not taken by another user in this restaurant
     if (email && email !== user.email) {
-      const emailTaken = await User.findOne({ where: { email } });
+      const emailTaken = await User.findOne({ where: { email, store_id, organization_id } });
       if (emailTaken) {
-        return NextResponse.json({ error: 'This email address is already in use.' }, { status: 409 });
+        return NextResponse.json({ error: 'This email address is already in use by another staff member in this restaurant.' }, { status: 409 });
       }
     }
 

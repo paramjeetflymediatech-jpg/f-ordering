@@ -45,8 +45,8 @@ export async function POST() {
       const emailHandle = s.name.toLowerCase().replace(/\s+/g, '.').replace(/[^a-z.]/g, '');
       const email = `${emailHandle}.${orgSlug}@staff.demo`;
 
-      // Skip if email already exists
-      const existing = await User.findOne({ where: { email } });
+      // Skip if email already exists in this store
+      const existing = await User.findOne({ where: { email, store_id, organization_id } });
       if (existing) { skipped++; continue; }
 
       const user = await User.create({

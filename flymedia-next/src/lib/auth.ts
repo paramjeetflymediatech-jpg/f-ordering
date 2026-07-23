@@ -10,13 +10,15 @@ export const authOptions: NextAuthOptions = {
       credentials: {
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
+        store_id: { label: 'Store ID', type: 'text' },
+        organization_id: { label: 'Organization ID', type: 'text' },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
           throw new Error('Please enter an email and password');
         }
 
-        const user = await User.findOne({
+        const users = await User.findAll({
           where: { email: credentials.email, status: 'active' },
           include: [
             {
@@ -26,16 +28,37 @@ export const authOptions: NextAuthOptions = {
           ],
         });
 
-        if (!user) {
+        if (!users || users.length === 0) {
           throw new Error('No active user found with this email');
         }
 
-        const isPasswordCorrect = await bcrypt.compare(
-          credentials.password,
-          user.password
-        );
+        const requestedStoreId = (credentials as any)?.store_id;
+        const requestedOrgId = (credentials as any)?.organization_id;
 
-        if (!isPasswordCorrect) {
+        let candidateUsers = users;
+        if (requestedStoreId || requestedOrgId) {
+          const filtered = users.filter((u: any) => 
+            (!requestedStoreId || u.store_id === requestedStoreId) &&
+            (!requestedOrgId || u.organization_id === requestedOrgId)
+          );
+          if (filtered.length > 0) {
+            candidateUsers = filtered;
+          }
+        }
+
+        let user: any = null;
+        for (const candidate of candidateUsers) {
+          const isPasswordCorrect = await bcrypt.compare(
+            credentials.password,
+            candidate.password
+          );
+          if (isPasswordCorrect) {
+            user = candidate;
+            break;
+          }
+        }
+
+        if (!user) {
           throw new Error('Invalid credentials');
         }
 

@@ -34,6 +34,16 @@ export async function POST(request: Request) {
     if (force) {
       await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
     }
+    try {
+      await sequelize.query('ALTER TABLE users DROP INDEX email');
+    } catch (e) {
+      /* ignore if not exists */
+    }
+    try {
+      await sequelize.query('ALTER TABLE users DROP INDEX users_email_unique');
+    } catch (e) {
+      /* ignore if not exists */
+    }
     await sequelize.sync({ force, alter: !force });
     if (force) {
       await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');

@@ -26,14 +26,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if user exists
-    const existingUser = await User.findOne({ where: { email } });
-    if (existingUser) {
-      return NextResponse.json(
-        { success: false, message: 'User with this email already exists.' },
-        { status: 400 }
-      );
-    }
+    // Note: User can register and manage multiple organizations/stores with the same email
 
     // Check if Slug is taken, generate unique slug
     const slugBase = organizationName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
