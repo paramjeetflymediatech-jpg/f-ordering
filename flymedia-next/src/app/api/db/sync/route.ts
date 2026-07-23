@@ -30,20 +30,38 @@ export async function POST(request: Request) {
     // 1. Ensure Database Exists
     await ensureDatabaseExists();
 
-    // 2. Synchronize Schema
+    // 2. Synchronize Schema & Cleanup Accumulated Redundant Indexes
     if (force) {
       await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
     }
+
     try {
-      await sequelize.query('ALTER TABLE users DROP INDEX email');
+      const [indexes]: any = await sequelize.query(`
+        SELECT TABLE_NAME, INDEX_NAME 
+        FROM INFORMATION_SCHEMA.STATISTICS 
+        WHERE TABLE_SCHEMA = DATABASE() 
+          AND INDEX_NAME != 'PRIMARY'
+      `);
+
+      for (const row of (indexes || [])) {
+        const tbl = row.TABLE_NAME;
+        const idx = row.INDEX_NAME;
+        if (
+          /_\d+$/.test(idx) || 
+          (tbl === 'organizations' && (idx === 'slug' || idx.startsWith('slug'))) ||
+          (tbl === 'users' && (idx === 'email' || idx === 'users_email_unique' || idx.startsWith('email')))
+        ) {
+          try {
+            await sequelize.query(`ALTER TABLE \`${tbl}\` DROP INDEX \`${idx}\``);
+          } catch (e) {
+            /* ignore index drop error */
+          }
+        }
+      }
     } catch (e) {
-      /* ignore if not exists */
+      /* ignore statistics error */
     }
-    try {
-      await sequelize.query('ALTER TABLE users DROP INDEX users_email_unique');
-    } catch (e) {
-      /* ignore if not exists */
-    }
+
     await sequelize.sync({ force, alter: !force });
     if (force) {
       await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');

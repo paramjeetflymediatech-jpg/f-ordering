@@ -17,7 +17,7 @@ Role.init(
     name: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
+      unique: 'roles_name_unique',
     },
     description: {
       type: DataTypes.TEXT,

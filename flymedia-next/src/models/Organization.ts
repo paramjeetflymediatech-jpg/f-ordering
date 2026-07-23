@@ -24,7 +24,7 @@ Organization.init(
     slug: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
+      unique: 'organizations_slug_unique',
     },
     logo: {
       type: DataTypes.STRING,

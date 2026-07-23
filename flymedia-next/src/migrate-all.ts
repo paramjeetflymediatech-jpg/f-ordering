@@ -13,6 +13,34 @@ const DB_PASS = process.env.DB_PASSWORD || '';
 async function main() {
   console.log('--- 1. Synchronizing Central Database ---');
   await ensureDatabaseExists();
+
+  try {
+    const [indexes]: any = await sequelize.query(`
+      SELECT TABLE_NAME, INDEX_NAME 
+      FROM INFORMATION_SCHEMA.STATISTICS 
+      WHERE TABLE_SCHEMA = DATABASE() 
+        AND INDEX_NAME != 'PRIMARY'
+    `);
+
+    for (const row of (indexes || [])) {
+      const tbl = row.TABLE_NAME;
+      const idx = row.INDEX_NAME;
+      if (
+        /_\d+$/.test(idx) || 
+        (tbl === 'organizations' && (idx === 'slug' || idx.startsWith('slug'))) ||
+        (tbl === 'users' && (idx === 'email' || idx === 'users_email_unique' || idx.startsWith('email')))
+      ) {
+        try {
+          await sequelize.query(`ALTER TABLE \`${tbl}\` DROP INDEX \`${idx}\``);
+        } catch (e) {
+          /* ignore index drop error */
+        }
+      }
+    }
+  } catch (e) {
+    /* ignore statistics error */
+  }
+
   // We use alter: true to make safe schema changes
   await sequelize.sync({ force: false, alter: true });
   console.log('✅ Central database sync complete.\n');

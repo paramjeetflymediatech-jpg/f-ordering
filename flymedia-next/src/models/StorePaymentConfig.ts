@@ -25,7 +25,7 @@ StorePaymentConfig.init(
     organization_id: {
       type: DataTypes.UUID,
       allowNull: false,
-      unique: true,
+      unique: 'store_payment_config_org_unique',
     },
     stripe_publishable_key: {
       type: DataTypes.STRING(500),

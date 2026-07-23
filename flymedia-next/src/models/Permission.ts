@@ -17,7 +17,7 @@ Permission.init(
     name: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: true,
+      unique: 'permissions_name_unique',
     },
     description: {
       type: DataTypes.TEXT,
