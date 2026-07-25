@@ -33,7 +33,7 @@ export default function CustomerLoginPage() {
       .then((data) => {
         if (data.store) setStore(data.store);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [orgSlug]);
 
   const primaryColor = store?.theme_primary_color || '#2A0E07';
@@ -117,16 +117,16 @@ export default function CustomerLoginPage() {
   };
 
   return (
-    <div 
+    <div
       className="relative min-h-screen flex flex-col justify-between font-sans transition-colors duration-350 bg-cover bg-center"
       style={{
         backgroundColor: store?.bg_color_customer_login || bgColor,
-        backgroundImage: store?.bg_customer_login 
-          ? `url(${store.bg_customer_login})` 
-          : store?.bg_color_customer_login 
-            ? 'none' 
-            : store?.banner 
-              ? `url(${store.banner})` 
+        backgroundImage: store?.bg_customer_login
+          ? `url(${store.bg_customer_login})`
+          : store?.bg_color_customer_login
+            ? 'none'
+            : store?.banner
+              ? `url(${store.banner})`
               : "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -141,15 +141,15 @@ export default function CustomerLoginPage() {
         <div className="w-full max-w-sm z-10">
           {/*  hero section */}
           <div className="text-center mb-8  backdrop-blur-xl rounded-2xl p-4">
-            <h1 
+            <h1
               className="text-2xl font-black tracking-tight"
               style={{ color: accentColor }}
             >
               {isForgotMode ? 'Reset Password' : 'Welcome Back'}
             </h1>
-            <p className="text-sm   mt-1"  style={{ color: accentColor }}>
-              {isForgotMode 
-                ? 'Enter your phone or email to recover your account' 
+            <p className="text-sm   mt-1" style={{ color: accentColor }}>
+              {isForgotMode
+                ? 'Enter your phone or email to recover your account'
                 : 'Sign in to view your orders & earn loyalty points'}
             </p>
           </div>
@@ -169,7 +169,7 @@ export default function CustomerLoginPage() {
                       <CheckCircle2 className="h-4 w-4 shrink-0" />
                       <span>{forgotSuccess}</span>
                     </div>
-                    
+
                     <button
                       type="button"
                       onClick={() => {
@@ -227,7 +227,7 @@ export default function CustomerLoginPage() {
                         setForgotError(null);
                       }}
                       className="w-full rounded-xl py-2.5 text-xs font-bold transition"
-                      style={{ color: accentColor,backgroundColor:primaryColor }}
+                      style={{ color: accentColor, backgroundColor: primaryColor }}
                     >
                       Back to Sign In
                     </button>
@@ -262,7 +262,7 @@ export default function CustomerLoginPage() {
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="block text-[10px] font-bold  uppercase tracking-wider" style={{color:accentColor}}>
+                    <label className="block text-[10px] font-bold  uppercase tracking-wider" style={{ color: accentColor }}>
                       Password <span className="text-red-500">*</span>
                     </label>
                     <button
@@ -310,8 +310,8 @@ export default function CustomerLoginPage() {
 
             <div className="mt-5 p-2 border rounded-xl text-center text-sm backdrop-blur" style={{ color: accentColor }}>
               Don&apos;t have an account?{' '}
-              <Link 
-                href={`/order-online/${orgSlug}/customer/register`} 
+              <Link
+                href={`/order-online/${orgSlug}/customer/register`}
                 className="font-bold hover:underline"
                 style={{ color: accentColor }}
               >
@@ -322,18 +322,18 @@ export default function CustomerLoginPage() {
         </div>
       </main>
 
-     <footer 
+      <footer
         className="py-2 border-t text-center text-[14px] text-black flex flex-col justify-center gap-3"
-        style={{ borderColor: `${primaryColor}1a`, backgroundColor:"white"}}
+        style={{ borderColor: `${primaryColor}1a`, backgroundColor: "white" }}
       >
-        <div className=' '> 
-         <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
-        
-        <div className="flex justify-center gap-3 mt-2 text-[14px] font-semibold text-black">
-          <a href="#" className="hover:underline">Privacy Policy</a>
-          <span>•</span>
-          <a href="#" className="hover:underline">Terms & Conditions</a>
-        </div></div>
+        <div className=' '>
+          <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Flymedia Technology.</p>
+
+          <div className="flex justify-center gap-3 mt-2 text-[14px] font-semibold text-black">
+            <a href="#" className="hover:underline">Privacy Policy</a>
+            <span>•</span>
+            <a href="#" className="hover:underline">Terms & Conditions</a>
+          </div></div>
       </footer>
     </div>
   );

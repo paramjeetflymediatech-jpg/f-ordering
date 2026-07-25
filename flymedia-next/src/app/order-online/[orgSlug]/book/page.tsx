@@ -116,7 +116,7 @@ export default function BookTablePage() {
             setCustomerPhone(profileData.customer.phone || '');
             setCustomerEmail(profileData.customer.email || '');
           }
-        } catch (_) {}
+        } catch (_) { }
 
         // Fetch payment configuration for booking charge
         try {
@@ -232,7 +232,7 @@ export default function BookTablePage() {
       const mm = String(date.getMonth() + 1).padStart(2, '0');
       const dd = String(date.getDate()).padStart(2, '0');
       const formattedString = `${yyyy}-${mm}-${dd}`;
-      
+
       days.push({
         dateString: formattedString,
         dayName: date.toLocaleDateString('en-US', options),
@@ -382,12 +382,12 @@ export default function BookTablePage() {
     <div className="relative min-h-screen flex flex-col justify-between font-sans transition-colors duration-350 bg-cover bg-center"
       style={{
         backgroundColor: store?.bg_color_book || bgColor,
-        backgroundImage: store?.bg_book 
-          ? `url(${store.bg_book})` 
-          : store?.bg_color_book 
-            ? 'none' 
-            : store?.banner 
-              ? `url(${store.banner})` 
+        backgroundImage: store?.bg_book
+          ? `url(${store.bg_book})`
+          : store?.bg_color_book
+            ? 'none'
+            : store?.banner
+              ? `url(${store.banner})`
               : "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -505,11 +505,10 @@ export default function BookTablePage() {
                             key={day.dateString}
                             type="button"
                             onClick={() => handleDateChange(day.dateString)}
-                            className={`flex flex-col items-center justify-center min-w-[72px] h-20 rounded-2xl border transition-all duration-200 snap-center shrink-0 ${
-                              isSelected
+                            className={`flex flex-col items-center justify-center min-w-[72px] h-20 rounded-2xl border transition-all duration-200 snap-center shrink-0 ${isSelected
                                 ? 'bg-orange-600 border-orange-600 text-white shadow-lg shadow-orange-950/20 scale-[1.03]'
                                 : 'bg-white/10 border-white/20 text-white hover:bg-white/15'
-                            }`}
+                              }`}
                           >
                             <span className="text-[10px] uppercase font-mono tracking-widest opacity-85">{day.dayName}</span>
                             <span className="text-2xl font-black mt-0.5 leading-none">{day.dayNum}</span>
@@ -543,11 +542,10 @@ export default function BookTablePage() {
                                 setSelectedSlot(null);
                                 setSelectedTableId(null);
                               }}
-                              className={`flex-1 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${
-                                isActive
+                              className={`flex-1 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${isActive
                                   ? 'bg-orange-600 text-white shadow-sm'
                                   : 'text-slate-400 hover:text-white hover:bg-white/5'
-                              }`}
+                                }`}
                             >
                               {cat}
                             </button>
@@ -582,19 +580,17 @@ export default function BookTablePage() {
                                     setSelectedSlot(slot);
                                     setSelectedTableId(null);
                                   }}
-                                  className={`relative px-3 py-3 rounded-2xl text-xs font-bold transition-all border flex flex-col items-center justify-center gap-1 min-h-[64px] ${
-                                    isSlotSelected
+                                  className={`relative px-3 py-3 rounded-2xl text-xs font-bold transition-all border flex flex-col items-center justify-center gap-1 min-h-[64px] ${isSlotSelected
                                       ? 'bg-orange-600 border-orange-600 text-white shadow-lg shadow-orange-950/20'
                                       : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
-                                  }`}
+                                    }`}
                                 >
                                   <span className="font-bold tracking-wide">{slot}</span>
                                   {offer && (
-                                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                                      isSlotSelected 
-                                        ? 'bg-orange-950/50 text-white' 
+                                    <span className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${isSlotSelected
+                                        ? 'bg-orange-950/50 text-white'
                                         : 'bg-orange-600/20 text-orange-400 border border-orange-500/10'
-                                    }`}>
+                                      }`}>
                                       🎁 {offer.text}
                                     </span>
                                   )}
@@ -657,13 +653,12 @@ export default function BookTablePage() {
                               disabled={isReserved || !isSlotSupported}
                               onClick={() => setSelectedTableId(table.id)}
                               className={`relative p-4 rounded-xl border transition-all duration-200 flex flex-col items-center justify-center min-h-[90px] w-full ${statusClass}`}
-                              title={`Table ${table.table_number} (${chairsCount} Seats) - ${
-                                isReserved
+                              title={`Table ${table.table_number} (${chairsCount} Seats) - ${isReserved
                                   ? 'Reserved'
                                   : !isSlotSupported
-                                  ? 'Time Slot Not Offered'
-                                  : 'Available'
-                              }`}
+                                    ? 'Time Slot Not Offered'
+                                    : 'Available'
+                                }`}
                             >
                               <span className="font-black text-sm">{table.table_number}</span>
                               <span className="text-[9px] opacity-70 font-bold">{chairsCount} Seats</span>
@@ -687,15 +682,14 @@ export default function BookTablePage() {
                                   return (
                                     <div
                                       key={i}
-                                      className={`absolute w-1.5 h-1.5 rounded-full border transition-all duration-200 ${
-                                        isSelected
+                                      className={`absolute w-1.5 h-1.5 rounded-full border transition-all duration-200 ${isSelected
                                           ? 'bg-orange-500 border-orange-400'
                                           : isReserved
-                                          ? 'bg-red-500 border-red-400/50'
-                                          : !isSlotSupported
-                                          ? 'bg-white/20 border-white/10'
-                                          : 'bg-emerald-500 border-emerald-400'
-                                      }`}
+                                            ? 'bg-red-500 border-red-400/50'
+                                            : !isSlotSupported
+                                              ? 'bg-white/20 border-white/10'
+                                              : 'bg-emerald-500 border-emerald-400'
+                                        }`}
                                       style={{
                                         ...stylePos,
                                         transform: 'translate(-50%, -50%)',
@@ -751,85 +745,85 @@ export default function BookTablePage() {
                           <span>Reservation Summary</span>
                           <span className="text-[10px] text-white/50 font-normal">Stripe Security Deposit</span>
                         </div>
-                        
+
                         <div className="flex justify-between items-center">
                           <span className="text-white/70">Table Reservation Fee:</span>
                           <span className="font-bold font-mono">$0.00</span>
-                         </div>
-                         
-                         <div className="flex justify-between items-center">
-                           <span className="text-white/70">Required Security Deposit:</span>
-                           <span className="font-bold font-mono text-emerald-400">${bookingChargeValue.toFixed(2)}</span>
-                         </div>
+                        </div>
 
-                         {selectedSlot && (
-                           <div className="flex justify-between items-center text-[10.5px] bg-orange-600/10 border border-orange-500/15 p-2 rounded-lg text-orange-400">
-                             <span className="font-semibold">Applied Slot Offer:</span>
-                             <span className="font-black font-mono">{getSlotOffer(selectedSlot).text}</span>
-                           </div>
-                         )}
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/70">Required Security Deposit:</span>
+                          <span className="font-bold font-mono text-emerald-400">${bookingChargeValue.toFixed(2)}</span>
+                        </div>
 
-                         <div className="border-t border-white/10 pt-2 flex justify-between items-center text-sm font-black">
-                           <span>Total Due Now:</span>
-                           <span className="font-mono text-emerald-400">${bookingChargeValue.toFixed(2)}</span>
-                         </div>
+                        {selectedSlot && (
+                          <div className="flex justify-between items-center text-[10.5px] bg-orange-600/10 border border-orange-500/15 p-2 rounded-lg text-orange-400">
+                            <span className="font-semibold">Applied Slot Offer:</span>
+                            <span className="font-black font-mono">{getSlotOffer(selectedSlot).text}</span>
+                          </div>
+                        )}
 
-                         <div className="text-[10px] text-white/50 leading-relaxed pt-1.5 flex gap-1.5">
-                           <AlertCircle className="h-3.5 w-3.5 text-orange-500 shrink-0 mt-0.5" />
-                           <span>
-                             <strong>Cancellation Policy:</strong> Deposits are strictly <strong>non-refundable</strong> in case of cancellations. The deposit will be credited to your final dine-in bill.
-                           </span>
-                         </div>
-                       </div>
+                        <div className="border-t border-white/10 pt-2 flex justify-between items-center text-sm font-black">
+                          <span>Total Due Now:</span>
+                          <span className="font-mono text-emerald-400">${bookingChargeValue.toFixed(2)}</span>
+                        </div>
 
-                       {/* Card Details form */}
-                       <div className="space-y-3 p-4 rounded-2xl bg-black/25 border border-white/10">
-                         <div className="text-xs font-black text-white flex justify-between items-center">
-                           <span>Secure Credit Card Checkout</span>
-                           <span className="text-[9px] bg-white/15 px-1.5 py-0.5 rounded text-white/75 font-mono">Stripe Secure</span>
-                         </div>
+                        <div className="text-[10px] text-white/50 leading-relaxed pt-1.5 flex gap-1.5">
+                          <AlertCircle className="h-3.5 w-3.5 text-orange-500 shrink-0 mt-0.5" />
+                          <span>
+                            <strong>Cancellation Policy:</strong> Deposits are strictly <strong>non-refundable</strong> in case of cancellations. The deposit will be credited to your final dine-in bill.
+                          </span>
+                        </div>
+                      </div>
 
-                         <div className="space-y-2">
-                           <div>
-                             <label className="text-[10px] font-bold text-white/70 uppercase">Card Number</label>
-                             <input
-                               type="text"
-                               placeholder="4242 4242 4242 4242"
-                               maxLength={19}
-                               value={cardNo}
-                               onChange={(e) => setCardNo(e.target.value.replace(/\s?/g, '').replace(/(\d{4})/g, '$1 ').trim())}
-                               className="w-full mt-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition font-mono"
-                             />
-                           </div>
+                      {/* Card Details form */}
+                      <div className="space-y-3 p-4 rounded-2xl bg-black/25 border border-white/10">
+                        <div className="text-xs font-black text-white flex justify-between items-center">
+                          <span>Secure Credit Card Checkout</span>
+                          <span className="text-[9px] bg-white/15 px-1.5 py-0.5 rounded text-white/75 font-mono">Stripe Secure</span>
+                        </div>
 
-                           <div className="grid grid-cols-2 gap-3">
-                             <div>
-                               <label className="text-[10px] font-bold text-white/70 uppercase">Expiry Date</label>
-                               <input
-                                 type="text"
-                                 placeholder="MM/YY"
-                                 maxLength={5}
-                                 value={cardExpiry}
-                                 onChange={(e) => setCardExpiry(e.target.value)}
-                                 className="w-full mt-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition font-mono"
-                               />
-                             </div>
-                             <div>
-                               <label className="text-[10px] font-bold text-white/70 uppercase">CVC Code</label>
-                               <input
-                                 type="password"
-                                 placeholder="•••"
-                                 maxLength={3}
-                                 value={cardCvc}
-                                 onChange={(e) => setCardCvc(e.target.value)}
-                                 className="w-full mt-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition font-mono"
-                               />
-                             </div>
-                           </div>
-                         </div>
-                       </div>
-                     </div>
-                   )}
+                        <div className="space-y-2">
+                          <div>
+                            <label className="text-[10px] font-bold text-white/70 uppercase">Card Number</label>
+                            <input
+                              type="text"
+                              placeholder="4242 4242 4242 4242"
+                              maxLength={19}
+                              value={cardNo}
+                              onChange={(e) => setCardNo(e.target.value.replace(/\s?/g, '').replace(/(\d{4})/g, '$1 ').trim())}
+                              className="w-full mt-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition font-mono"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-[10px] font-bold text-white/70 uppercase">Expiry Date</label>
+                              <input
+                                type="text"
+                                placeholder="MM/YY"
+                                maxLength={5}
+                                value={cardExpiry}
+                                onChange={(e) => setCardExpiry(e.target.value)}
+                                className="w-full mt-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition font-mono"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-bold text-white/70 uppercase">CVC Code</label>
+                              <input
+                                type="password"
+                                placeholder="•••"
+                                maxLength={3}
+                                value={cardCvc}
+                                onChange={(e) => setCardCvc(e.target.value)}
+                                className="w-full mt-1.5 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs text-white outline-none focus:border-orange-500 transition font-mono"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Submit actions */}
                   <div className="flex gap-3 mt-6">
@@ -967,10 +961,10 @@ export default function BookTablePage() {
 
       <footer
         className="py-2 border-t text-center text-[14px] text-black flex flex-col justify-center gap-3"
-        style={{ borderColor: `${primaryColor}1a`, backgroundColor:"white" }}
+        style={{ borderColor: `${primaryColor}1a`, backgroundColor: "white" }}
       >
         <div className=' '>
-          <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
+          <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Flymedia Technology.</p>
 
           <div className="flex justify-center gap-3 mt-2 text-[14px] font-semibold text-black">
             <a href="#" className="hover:underline">Privacy Policy</a>

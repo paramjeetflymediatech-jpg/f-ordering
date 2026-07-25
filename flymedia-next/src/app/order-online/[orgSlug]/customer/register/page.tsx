@@ -30,7 +30,7 @@ export default function CustomerRegisterPage() {
       .then((data) => {
         if (data.store) setStore(data.store);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [orgSlug]);
 
   const primaryColor = store?.theme_primary_color || '#2A0E07';
@@ -88,16 +88,16 @@ export default function CustomerRegisterPage() {
   };
 
   return (
-    <div 
-  className="relative min-h-screen flex flex-col justify-between font-sans transition-colors duration-350 bg-cover bg-center"
+    <div
+      className="relative min-h-screen flex flex-col justify-between font-sans transition-colors duration-350 bg-cover bg-center"
       style={{
         backgroundColor: store?.bg_color_customer_register || bgColor,
-        backgroundImage: store?.bg_customer_register 
-          ? `url(${store.bg_customer_register})` 
-          : store?.bg_color_customer_register 
-            ? 'none' 
-            : store?.banner 
-              ? `url(${store.banner})` 
+        backgroundImage: store?.bg_customer_register
+          ? `url(${store.bg_customer_register})`
+          : store?.bg_color_customer_register
+            ? 'none'
+            : store?.banner
+              ? `url(${store.banner})`
               : "url('https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1600&q=80')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
@@ -110,10 +110,10 @@ export default function CustomerRegisterPage() {
 
       <main className="flex-1 flex items-center justify-center px-4 py-12 relative z-10">
         <div className="w-full max-w-lg">
-          <div className="text-center mb-8  backdrop-blur-xl rounded-2xl p-4"  style={{ color: accentColor }}>
-            <h1 
+          <div className="text-center mb-8  backdrop-blur-xl rounded-2xl p-4" style={{ color: accentColor }}>
+            <h1
               className="text-2xl font-black "
-             style={{ color: accentColor }}
+              style={{ color: accentColor }}
             >
               Create Account
             </h1>
@@ -138,7 +138,7 @@ export default function CustomerRegisterPage() {
 
                 <div>
                   <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"
-                  style={{ color: accentColor }} 
+                    style={{ color: accentColor }}
                   >Full Name <span className="text-red-500">*</span></label>
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -150,7 +150,7 @@ export default function CustomerRegisterPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Phone (optional)</label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" style={{ color: accentColor }} >Phone (optional)</label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input type="tel" placeholder="+1 555-0100" value={phone}
@@ -160,7 +160,7 @@ export default function CustomerRegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Email <span className="text-red-500">*</span></label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" style={{ color: accentColor }} >Email <span className="text-red-500">*</span></label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input type="email" required placeholder="john@example.com" value={email}
@@ -172,7 +172,7 @@ export default function CustomerRegisterPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Password <span className="text-red-500">*</span></label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" style={{ color: accentColor }} >Password <span className="text-red-500">*</span></label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input type={showPassword ? 'text' : 'password'} required placeholder="••••••••" value={password}
@@ -189,7 +189,7 @@ export default function CustomerRegisterPage() {
                   </div>
 
                   <div>
-                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1"   style={{ color: accentColor }} >Confirm Password <span className="text-red-500">*</span></label>
+                    <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1" style={{ color: accentColor }} >Confirm Password <span className="text-red-500">*</span></label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <input type={showConfirmPassword ? 'text' : 'password'} required placeholder="••••••••" value={confirmPassword}
@@ -219,8 +219,8 @@ export default function CustomerRegisterPage() {
 
             <div className="mt-5 p-4 rounded-xl border border-slate-100 text-center text-sm backdrop-blur-xs" style={{ color: accentColor }}>
               Already have an account?{' '}
-              <Link 
-                href={`/order-online/${orgSlug}/customer/login`} 
+              <Link
+                href={`/order-online/${orgSlug}/customer/login`}
                 className="font-bold hover:underline"
                 style={{ color: accentColor }}
               >
@@ -231,18 +231,18 @@ export default function CustomerRegisterPage() {
         </div>
       </main>
 
-     <footer 
+      <footer
         className="py-2 border-t text-center text-[14px] text-black flex flex-col justify-center gap-3"
-        style={{ borderColor: `${primaryColor}1a`,backgroundColor:"white" }}
+        style={{ borderColor: `${primaryColor}1a`, backgroundColor: "white" }}
       >
-        <div className=' '> 
-         <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
-        
-        <div className="flex justify-center gap-3 mt-2 text-[14px] font-semibold text-black">
-          <a href="#" className="hover:underline">Privacy Policy</a>
-          <span>•</span>
-          <a href="#" className="hover:underline">Terms & Conditions</a>
-        </div></div>
+        <div className=' '>
+          <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Flymedia Technology.</p>
+
+          <div className="flex justify-center gap-3 mt-2 text-[14px] font-semibold text-black">
+            <a href="#" className="hover:underline">Privacy Policy</a>
+            <span>•</span>
+            <a href="#" className="hover:underline">Terms & Conditions</a>
+          </div></div>
       </footer>
     </div>
   );

@@ -336,8 +336,8 @@ function StripeCardCheckout({
                 key={card.id}
                 onClick={() => setSelectedCardId(card.id)}
                 className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${selectedCardId === card.id
-                    ? 'border-[#635BFF] bg-[#635bff0a] shadow-sm'
-                    : 'border-slate-200 bg-white hover:bg-slate-50'
+                  ? 'border-[#635BFF] bg-[#635bff0a] shadow-sm'
+                  : 'border-slate-200 bg-white hover:bg-slate-50'
                   }`}
               >
                 <div className="flex items-center gap-3">
@@ -821,14 +821,14 @@ export default function PublicOrderPage() {
         try {
           const cfgRes = await fetch(`/api/public/stripe/config?storeId=${storeData.store.id}`, { cache: 'no-store' });
           const cfgData = await cfgRes.json();
-          
+
           let isStripe = false;
           if (cfgData.stripeEnabled && cfgData.publishableKey) {
             setStripeEnabled(true);
             setStripePromise(loadStripe(cfgData.publishableKey));
             isStripe = true;
           }
-          
+
           let isUpi = false;
           if (cfgData.upiEnabled && (cfgData.upiVpa || cfgData.upiQrImage)) {
             setUpiEnabled(true);
@@ -1406,17 +1406,17 @@ export default function PublicOrderPage() {
   const totals = getCartTotal();
 
   const categoriesWithFilteredItems = categories.map((cat) => {
-    const isCategorySelected = 
-      selectedCategoryId === 'all' || 
-      cat.id === selectedCategoryId || 
+    const isCategorySelected =
+      selectedCategoryId === 'all' ||
+      cat.id === selectedCategoryId ||
       cat.parent_id === selectedCategoryId;
 
     const matched = isCategorySelected
       ? (cat.MenuItems || []).filter((item: any) => {
-          const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.description?.toLowerCase().includes(searchQuery.toLowerCase());
-          return matchesSearch;
-        })
+        const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.description?.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesSearch;
+      })
       : [];
 
     return { ...cat, filteredItems: matched };
@@ -1550,17 +1550,16 @@ export default function PublicOrderPage() {
                         className="fixed inset-0 z-40"
                         onClick={() => setProfileDropdownOpen(false)}
                       />
-                      
+
                       <motion.div
                         initial={{ opacity: 0, y: 10, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 10, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className={`absolute right-0 mt-2 w-56 rounded-2xl border p-4 shadow-xl z-50 space-y-3.5 ${
-                          layoutStyle === 'modern_dark'
+                        className={`absolute right-0 mt-2 w-56 rounded-2xl border p-4 shadow-xl z-50 space-y-3.5 ${layoutStyle === 'modern_dark'
                             ? 'bg-[#0f1422] border-[#1e293b]/60 text-white shadow-slate-950/40'
                             : 'bg-white border-slate-100 text-slate-800 shadow-slate-200/50'
-                        }`}
+                          }`}
                       >
                         {/* Profile Info Summary */}
                         <div className="border-b pb-3 border-slate-100/10 dark:border-slate-800/60">
@@ -1590,26 +1589,24 @@ export default function PublicOrderPage() {
                           <Link
                             href={`/order-online/${orgSlug}/customer/profile`}
                             onClick={() => setProfileDropdownOpen(false)}
-                            className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-bold transition text-left ${
-                              layoutStyle === 'modern_dark'
+                            className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-bold transition text-left ${layoutStyle === 'modern_dark'
                                 ? 'text-slate-300 hover:bg-slate-900/60 hover:text-white'
                                 : 'text-slate-600 hover:bg-slate-50'
-                            }`}
+                              }`}
                           >
                             <User className="h-3.5 w-3.5" />
                             My Profile
                           </Link>
-                          
+
                           <button
                             onClick={() => {
                               setProfileDropdownOpen(false);
                               handleLogout();
                             }}
-                            className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-bold transition text-red-500 text-left ${
-                              layoutStyle === 'modern_dark'
+                            className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-xs font-bold transition text-red-500 text-left ${layoutStyle === 'modern_dark'
                                 ? 'hover:bg-red-950/20'
                                 : 'hover:bg-red-50'
-                            }`}
+                              }`}
                           >
                             <LogOut className="h-3.5 w-3.5" />
                             Log Out
@@ -1708,8 +1705,8 @@ export default function PublicOrderPage() {
                     href={`/order-online/${orgSlug}/customer/profile`}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`w-full text-center block rounded-xl border py-2.5 text-xs font-bold transition ${layoutStyle === 'modern_dark'
-                        ? 'border-slate-800 text-slate-200 hover:bg-slate-900'
-                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                      ? 'border-slate-800 text-slate-200 hover:bg-slate-900'
+                      : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                       }`}
                   >
                     My Account
@@ -1838,16 +1835,14 @@ export default function PublicOrderPage() {
                     <span>{cat.name}</span>
                     {subs.length > 0 && (
                       <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                          selectedCategoryId === cat.id
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${selectedCategoryId === cat.id
                             ? 'bg-white/20 text-white'
                             : 'bg-slate-800 text-slate-400'
-                        }`}>
+                          }`}>
                           {subs.length}
                         </span>
-                        <ChevronDown className={`h-3.5 w-3.5 opacity-55 transition-transform duration-200 ${
-                          isExpanded ? 'rotate-180' : ''
-                        }`} />
+                        <ChevronDown className={`h-3.5 w-3.5 opacity-55 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''
+                          }`} />
                       </div>
                     )}
                   </button>
@@ -1865,16 +1860,15 @@ export default function PublicOrderPage() {
                           <button
                             key={sub.id}
                             onClick={() => setSelectedCategoryId(sub.id)}
-                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition flex items-center gap-1.5 ${
-                              selectedCategoryId === sub.id
+                            className={`w-full text-left px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition flex items-center gap-1.5 ${selectedCategoryId === sub.id
                                 ? 'text-white font-extrabold'
                                 : layoutStyle === 'modern_dark'
                                   ? 'text-slate-500 hover:text-slate-300'
                                   : 'text-slate-500 hover:text-slate-850 hover:bg-slate-50/50'
-                            }`}
+                              }`}
                             style={
                               selectedCategoryId === sub.id
-                                ? {  backgroundColor:primaryColor}
+                                ? { backgroundColor: primaryColor }
                                 : undefined
                             }
                           >
@@ -2714,9 +2708,8 @@ export default function PublicOrderPage() {
                 return (
                   <div>
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Payment Method</label>
-                    <div className={`grid gap-2 mt-1.5 ${
-                      availableMethods.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
-                    }`}>
+                    <div className={`grid gap-2 mt-1.5 ${availableMethods.length === 3 ? 'grid-cols-3' : 'grid-cols-2'
+                      }`}>
                       {availableMethods.map((method) => (
                         <button
                           key={method.id} type="button"
@@ -2794,8 +2787,8 @@ export default function PublicOrderPage() {
                   {submitting
                     ? 'Placing Order...'
                     : paymentMethod === 'upi'
-                    ? '⚡ Proceed to UPI Payment'
-                    : 'Place Order & Pay at Counter'}
+                      ? '⚡ Proceed to UPI Payment'
+                      : 'Place Order & Pay at Counter'}
                 </button>
               )}
             </div>
@@ -2886,7 +2879,7 @@ export default function PublicOrderPage() {
       {showUpiPayModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <form onSubmit={handleUpiCheckoutSubmit} className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            
+
             {/* Header */}
             <div className="bg-amber-50 px-6 py-5 text-center border-b border-amber-100 relative">
               <button
@@ -3005,7 +2998,7 @@ export default function PublicOrderPage() {
         style={{ borderColor: `${primaryColor}1a`, backgroundColor: "white" }}
       >
         <div className=' '>
-          <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Ordering System.</p>
+          <p>© {new Date().getFullYear()} {store?.Organization?.name || store?.name || 'Restaurant'}. Powered by Flymedia Technology.</p>
 
           <div className="flex justify-center gap-3 mt-2 text-[9px] font-semibold text-slate-405">
             <a href="#" className="hover:underline">Privacy Policy</a>
