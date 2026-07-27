@@ -58,7 +58,40 @@ export async function sendEmailReceipt(params: SimulatedEmailParams) {
     })
     .join('\n');
 
-  const textBody = `
+  // Base customer text body (without Order Origin)
+  const textBodyCustomer = `
+========================================================================
+NEW TRANSACTION RECEIPT - ${timestamp}
+========================================================================
+Store: ${storeName}
+Order Number: ${order.orderNumber}
+Order Type: ${order.orderType.toUpperCase()}
+Timestamp: ${timestamp}
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: ${customer.name}
+Phone: ${customer.phone}
+Email: ${customer.email || 'Not Provided (Guest)'}
+${order.deliveryAddress ? `Delivery Address: ${order.deliveryAddress}\n` : ''}
+
+-------------------------- ORDER SUMMARY -------------------------------
+${formattedItemsText}
+
+Subtotal: $${Number(order.subtotal).toFixed(2)}
+Tax: $${Number(order.taxAmount).toFixed(2)}
+Total Amount: $${Number(order.totalAmount).toFixed(2)}
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: ${payment.method.toUpperCase()}
+Amount Paid: $${Number(payment.amount).toFixed(2)}
+Transaction Reference: ${payment.reference}
+Payment Status: ${payment.status.toUpperCase()}
+
+========================================================================
+`;
+
+  // Admin text body (with Order Origin)
+  const textBodyAdmin = `
 ========================================================================
 NEW TRANSACTION RECEIPT - ${timestamp}
 ========================================================================
@@ -116,7 +149,76 @@ Payment Status: ${payment.status.toUpperCase()}
     })
     .join('');
 
-  const htmlBody = `
+  // Base Customer HTML Receipt (without Order Origin)
+  const htmlBodyCustomer = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; color: #1e293b;">
+      <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
+        <h2 style="color: #0062ff; margin: 0; font-weight: 900;">${storeName}</h2>
+        <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">Transaction Receipt</p>
+      </div>
+
+      <div style="margin-top: 16px; padding: 12px 16px; background-color: #eff6ff; border-radius: 10px; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 20px;">🍽️</span>
+        <span style="font-size: 14px; font-weight: 700; color: #1d4ed8;">Restaurant: ${storeName}</span>
+      </div>
+
+      <div style="margin-top: 16px; padding: 16px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Customer Details</h3>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Name:</strong> ${customer.name}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Phone:</strong> ${customer.phone}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Email:</strong> ${customer.email || 'Not Provided (Guest)'}</p>
+        ${order.deliveryAddress ? `<p style="margin: 4px 0; font-size: 13px; color: #b45309;"><strong>Delivery Address:</strong> ${order.deliveryAddress}</p>` : ''}
+      </div>
+
+      <div style="margin-top: 20px;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Order Details</h3>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Restaurant:</strong> <span style="color: #0062ff; font-weight: bold;">${storeName}</span></p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Order Number:</strong> ${order.orderNumber}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Order Type:</strong> ${order.orderType.toUpperCase()}</p>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 12px;">
+          <thead>
+            <tr style="border-bottom: 2px solid #cbd5e1; text-align: left; font-size: 12px; text-transform: uppercase; color: #64748b;">
+              <th style="padding-bottom: 8px;">Item</th>
+              <th style="padding-bottom: 8px; text-align: center;">Qty</th>
+              <th style="padding-bottom: 8px; text-align: right;">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${formattedItemsHtml}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top: 20px; border-top: 2px solid #e2e8f0; padding-top: 12px; font-size: 13px;">
+        <div style="display: flex; justify-content: space-between; margin: 4px 0;">
+          <span style="color: #64748b;">Subtotal</span>
+          <span style="font-weight: bold;">$${Number(order.subtotal).toFixed(2)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin: 4px 0;">
+          <span style="color: #64748b;">Tax</span>
+          <span style="font-weight: bold;">$${Number(order.taxAmount).toFixed(2)}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin: 8px 0 0 0; font-size: 16px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+          <strong style="color: #0062ff;">Grand Total</strong>
+          <strong style="color: #0062ff;">$${Number(order.totalAmount).toFixed(2)}</strong>
+        </div>
+      </div>
+
+      <div style="margin-top: 20px; padding: 16px; background-color: #f1f5f9; border-radius: 12px; font-size: 13px; color: #475569;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Payment Details</h3>
+        <p style="margin: 4px 0;"><strong>Method:</strong> ${payment.method.toUpperCase()}</p>
+        <p style="margin: 4px 0;"><strong>Status:</strong> <span style="color: #059669; font-weight: bold;">${payment.status.toUpperCase()}</span></p>
+        <p style="margin: 4px 0;"><strong>Transaction Ref:</strong> ${payment.reference}</p>
+      </div>
+
+      <div style="margin-top: 30px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+        <p>This is an automated receipt generated by F-Ordering POS platform.</p>
+      </div>
+    </div>
+  `;
+
+  // Admin HTML Receipt (with Order Origin)
+  const htmlBodyAdmin = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; color: #1e293b;">
       <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
         <h2 style="color: #0062ff; margin: 0; font-weight: 900;">${storeName}</h2>
@@ -228,7 +330,7 @@ Payment Status: ${payment.status.toUpperCase()}
       console.log(`[EMAIL DISPATCH] No SMTP credentials. Configured mock Ethereal SMTP transporter.`);
     }
 
-    // 4. Send Email to Customer (if valid email provided)
+    // 4. Send Email to Customer (if valid email provided) - RECEIVES htmlBodyCustomer (NO origin details)
     const emailsToSend = [];
     
     if (customer.email) {
@@ -237,13 +339,13 @@ Payment Status: ${payment.status.toUpperCase()}
           from: smtpFrom,
           to: customer.email,
           subject: `Your ${storeName} Order Confirmation - ${order.orderNumber}`,
-          text: textBody,
-          html: htmlBody,
+          text: textBodyCustomer,
+          html: htmlBodyCustomer,
         })
       );
     }
 
-    // 5. Send Email to Admin(s)
+    // 5. Send Email to Admin(s) - RECEIVES htmlBodyAdmin (WITH origin details)
     const adminTargets = Array.isArray(adminEmail) ? adminEmail : [adminEmail];
     for (const targetEmail of adminTargets) {
       if (targetEmail && targetEmail.trim()) {
@@ -252,8 +354,8 @@ Payment Status: ${payment.status.toUpperCase()}
             from: smtpFrom,
             to: targetEmail.trim(),
             subject: `[New Order] Receipt Invoice ${order.orderNumber} - ${storeName}`,
-            text: textBody,
-            html: htmlBody,
+            text: textBodyAdmin,
+            html: htmlBodyAdmin,
           })
         );
       }
@@ -313,7 +415,7 @@ ${etherealUrl ? `- Ethereal Preview URL: ${etherealUrl}` : ''}
   } catch (error) {
     console.error('[EMAIL DISPATCH] Failed to send email receipts using Nodemailer:', error);
     const logFilePath = path.join(process.cwd(), 'simulated_emails.log');
-    fs.appendFileSync(logFilePath, textBody + `\nDISPATCH FAILURE ERROR: ${error}\n\n`, 'utf8');
+    fs.appendFileSync(logFilePath, textBodyAdmin + `\nDISPATCH FAILURE ERROR: ${error}\n\n`, 'utf8');
     return false;
   }
 }
@@ -597,7 +699,29 @@ export async function sendBookingNotificationEmail(params: {
   const timestamp = new Date().toLocaleString();
   const reservationDateFormatted = new Date(booking.reservationTime).toLocaleString();
 
-  const textBody = `
+  // Customer Booking Text Body (without Booking Origin)
+  const textBodyCustomer = `
+========================================================================
+NEW TABLE RESERVATION BOOKING - ${timestamp}
+========================================================================
+Store: ${storeName}
+Reservation Date & Time: ${reservationDateFormatted}
+Booking Slot: ${booking.bookingSlot || 'Default'}
+Guests: ${booking.guestCount}
+${booking.bookingChargePaid ? `Booking Deposit Paid: $${booking.bookingChargePaid.toFixed(2)}\n` : ''}
+${booking.notes ? `Special Notes: ${booking.notes}\n` : ''}
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: ${customer.name}
+Phone: ${customer.phone}
+Email: ${customer.email || 'Not Provided'}
+
+Status: PENDING MANAGER APPROVAL
+========================================================================
+`;
+
+  // Admin Booking Text Body (with Booking Origin)
+  const textBodyAdmin = `
 ========================================================================
 NEW TABLE RESERVATION BOOKING - ${timestamp}
 ========================================================================
@@ -623,7 +747,49 @@ Status: PENDING MANAGER APPROVAL
 ========================================================================
 `;
 
-  const htmlBody = `
+  // Customer Booking HTML (without Booking Origin)
+  const htmlBodyCustomer = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; color: #1e293b;">
+      <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
+        <h2 style="color: #0062ff; margin: 0; font-weight: 900;">${storeName}</h2>
+        <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">Table Reservation Confirmation</p>
+      </div>
+
+      <div style="margin-top: 16px; padding: 12px 16px; background-color: #eff6ff; border-radius: 10px; border: 1px solid #bfdbfe;">
+        <span style="font-size: 20px;">🍽️</span>
+        <span style="font-size: 14px; font-weight: 700; color: #1d4ed8;"> Restaurant: ${storeName}</span>
+      </div>
+
+      <div style="text-align: center; margin: 20px 0;">
+        <h1 style="margin: 0; font-size: 20px; color: #0062ff;">Table Reservation Received</h1>
+        <p style="color: #64748b; font-size: 13px; margin-top: 4px;">A new table booking has been submitted</p>
+      </div>
+
+      <div style="margin-top: 20px; padding: 16px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Reservation Details</h3>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Restaurant:</strong> <span style="color: #0062ff; font-weight: bold;">${storeName}</span></p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Date & Time:</strong> ${reservationDateFormatted}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Time Slot:</strong> ${booking.bookingSlot || 'Standard Slot'}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Guest Count:</strong> ${booking.guestCount} Guests</p>
+        ${booking.bookingChargePaid ? `<p style="margin: 4px 0; font-size: 13px; color: #059669;"><strong>Booking Deposit Paid:</strong> $${booking.bookingChargePaid.toFixed(2)}</p>` : ''}
+        ${booking.notes ? `<p style="margin: 4px 0; font-size: 13px; color: #64748b;"><strong>Notes:</strong> ${booking.notes}</p>` : ''}
+      </div>
+
+      <div style="margin-top: 20px; padding: 16px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
+        <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Customer Details</h3>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Name:</strong> ${customer.name}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Phone:</strong> ${customer.phone}</p>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Email:</strong> ${customer.email || 'Not Provided'}</p>
+      </div>
+
+      <div style="margin-top: 24px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+        <p>Submitted at ${timestamp} &middot; Automated notification by F-Ordering POS</p>
+      </div>
+    </div>
+  `;
+
+  // Admin Booking HTML (with Booking Origin)
+  const htmlBodyAdmin = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; color: #1e293b;">
       <div style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #e2e8f0;">
         <h2 style="color: #0062ff; margin: 0; font-weight: 900;">${storeName}</h2>
@@ -695,20 +861,20 @@ Status: PENDING MANAGER APPROVAL
 
     const emailsToSend: Promise<any>[] = [];
 
-    // 1. Send to Customer if email provided
+    // 1. Send to Customer if email provided (excludes Booking Origin)
     if (customer.email && customer.email.trim()) {
       emailsToSend.push(
         transporter.sendMail({
           from: smtpFrom,
           to: customer.email.trim(),
           subject: `Table Booking Request Received — ${storeName}`,
-          text: textBody,
-          html: htmlBody,
+          text: textBodyCustomer,
+          html: htmlBodyCustomer,
         })
       );
     }
 
-    // 2. Send to Admin/Owner emails
+    // 2. Send to Admin/Owner emails (includes Booking Origin)
     const targets = Array.isArray(adminEmails) ? adminEmails : [adminEmails];
     for (const email of targets) {
       if (email && email.trim() && email.trim().toLowerCase() !== customer.email?.trim().toLowerCase()) {
@@ -717,8 +883,8 @@ Status: PENDING MANAGER APPROVAL
             from: smtpFrom,
             to: email.trim(),
             subject: `[New Table Booking] ${customer.name} - ${storeName}`,
-            text: textBody,
-            html: htmlBody,
+            text: textBodyAdmin,
+            html: htmlBodyAdmin,
           })
         );
       }
