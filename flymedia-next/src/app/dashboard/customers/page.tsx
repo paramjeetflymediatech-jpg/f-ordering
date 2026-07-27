@@ -114,17 +114,28 @@ export default function CustomersPage() {
     fetchCustomers();
   }, []);
 
+  // Helper to clean literal strings like "undefined", "null", "false", or "-"
+  const cleanValue = (val: any, fallback: string = '') => {
+    if (val === undefined || val === null) return fallback;
+    const s = String(val).trim();
+    const lower = s.toLowerCase();
+    if (lower === 'undefined' || lower === 'null' || lower === 'false' || s === '-') {
+      return fallback;
+    }
+    return s;
+  };
+
   // Sync edit forms when customer selection changes
   useEffect(() => {
     if (selectedCustomer) {
       setBasicForm({
         name: selectedCustomer.name || '',
-        first_name: selectedCustomer.first_name || selectedCustomer.name || '',
-        last_name: selectedCustomer.last_name || '-',
+        first_name: cleanValue(selectedCustomer.first_name, selectedCustomer.name || ''),
+        last_name: cleanValue(selectedCustomer.last_name, ''),
         email: selectedCustomer.email || '',
         phone: selectedCustomer.phone || '',
-        company_name: selectedCustomer.company_name || '-',
-        date_of_birth: selectedCustomer.date_of_birth || '-',
+        company_name: cleanValue(selectedCustomer.company_name, ''),
+        date_of_birth: cleanValue(selectedCustomer.date_of_birth, ''),
       });
       setBillingForm({
         address: selectedCustomer.address || '-',
@@ -744,12 +755,12 @@ export default function CustomersPage() {
                             onClick={() => {
                               setBasicForm({
                                 name: selectedCustomer.name || '',
-                                first_name: selectedCustomer.first_name || selectedCustomer.name || '',
-                                last_name: selectedCustomer.last_name || '-',
+                                first_name: cleanValue(selectedCustomer.first_name, selectedCustomer.name || ''),
+                                last_name: cleanValue(selectedCustomer.last_name, ''),
                                 email: selectedCustomer.email || '',
                                 phone: selectedCustomer.phone || '',
-                                company_name: selectedCustomer.company_name || '-',
-                                date_of_birth: selectedCustomer.date_of_birth || '-',
+                                company_name: cleanValue(selectedCustomer.company_name, ''),
+                                date_of_birth: cleanValue(selectedCustomer.date_of_birth, ''),
                               });
                               setEditBasicMode(false);
                             }}
@@ -844,11 +855,11 @@ export default function CustomersPage() {
                           </div>
                           <div className="flex justify-between border-b border-[#1e293b]/40 pb-2">
                             <span className="text-slate-400 font-bold">First Name</span>
-                            <span className="text-white">{selectedCustomer.first_name || selectedCustomer.name || '-'}</span>
+                            <span className="text-white">{cleanValue(selectedCustomer.first_name, selectedCustomer.name || '-')}</span>
                           </div>
                           <div className="flex justify-between border-b border-[#1e293b]/40 pb-2">
                             <span className="text-slate-400 font-bold">Last Name</span>
-                            <span className="text-white">{selectedCustomer.last_name || '-'}</span>
+                            <span className="text-white">{cleanValue(selectedCustomer.last_name, '-')}</span>
                           </div>
                           <div className="flex justify-between border-b border-[#1e293b]/40 pb-2">
                             <span className="text-slate-400 font-bold">Email Id</span>
@@ -860,11 +871,11 @@ export default function CustomersPage() {
                           </div>
                           <div className="flex justify-between border-b border-[#1e293b]/40 pb-2">
                             <span className="text-slate-400 font-bold">Company Name</span>
-                            <span className="text-white">{selectedCustomer.company_name || '-'}</span>
+                            <span className="text-white">{cleanValue(selectedCustomer.company_name, '-')}</span>
                           </div>
                           <div className="flex justify-between border-b border-[#1e293b]/40 pb-2">
                             <span className="text-slate-400 font-bold">Date of Birth</span>
-                            <span className="text-white">{selectedCustomer.date_of_birth || '-'}</span>
+                            <span className="text-white">{cleanValue(selectedCustomer.date_of_birth, '-')}</span>
                           </div>
                         </div>
                       )}
