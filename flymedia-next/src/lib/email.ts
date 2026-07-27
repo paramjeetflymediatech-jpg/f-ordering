@@ -109,7 +109,12 @@ Payment Status: ${payment.status.toUpperCase()}
         <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">Transaction Receipt</p>
       </div>
 
-      <div style="margin-top: 20px; padding: 16px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
+      <div style="margin-top: 16px; padding: 12px 16px; background-color: #eff6ff; border-radius: 10px; border: 1px solid #bfdbfe; display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 20px;">🍽️</span>
+        <span style="font-size: 14px; font-weight: 700; color: #1d4ed8;">Restaurant: ${storeName}</span>
+      </div>
+
+      <div style="margin-top: 16px; padding: 16px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
         <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Customer Details</h3>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Name:</strong> ${customer.name}</p>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Phone:</strong> ${customer.phone}</p>
@@ -119,6 +124,7 @@ Payment Status: ${payment.status.toUpperCase()}
 
       <div style="margin-top: 20px;">
         <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Order Details</h3>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Restaurant:</strong> <span style="color: #0062ff; font-weight: bold;">${storeName}</span></p>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Order Number:</strong> ${order.orderNumber}</p>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Order Type:</strong> ${order.orderType.toUpperCase()}</p>
         <table style="width: 100%; border-collapse: collapse; margin-top: 12px;">
@@ -320,7 +326,12 @@ export async function sendOrderStatusEmail(params: {
         <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">Order Status Update</p>
       </div>
 
-      <div style="text-align: center; margin: 30px 0;">
+      <div style="margin-top: 16px; padding: 12px 16px; background-color: #eff6ff; border-radius: 10px; border: 1px solid #bfdbfe;">
+        <span style="font-size: 20px;">🍽️</span>
+        <span style="font-size: 14px; font-weight: 700; color: #1d4ed8;"> Restaurant: ${storeName}</span>
+      </div>
+
+      <div style="text-align: center; margin: 24px 0;">
         <div style="font-size: 48px; margin-bottom: 12px;">${statusInfo.emoji}</div>
         <h1 style="margin: 0; font-size: 22px; color: ${statusInfo.color};">${statusInfo.label.toUpperCase()}</h1>
         <p style="color: #64748b; font-size: 13px; margin-top: 6px;">Your order status has been updated</p>
@@ -329,6 +340,7 @@ export async function sendOrderStatusEmail(params: {
       <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
         <h3 style="margin: 0 0 12px 0; font-size: 13px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Order Summary</h3>
         <table style="width: 100%; font-size: 13px; border-collapse: collapse;">
+          <tr><td style="padding: 6px 0; color: #64748b;">Restaurant</td><td style="text-align: right; font-weight: bold; color: #0062ff;">${storeName}</td></tr>
           <tr><td style="padding: 6px 0; color: #64748b;">Order Number</td><td style="text-align: right; font-weight: bold; color: #1e293b;">${order.orderNumber}</td></tr>
           <tr><td style="padding: 6px 0; color: #64748b;">Order Type</td><td style="text-align: right; font-weight: bold; color: #1e293b;">${order.orderType.replace('_', ' ').toUpperCase()}</td></tr>
           <tr><td style="padding: 6px 0; color: #64748b;">Total Amount</td><td style="text-align: right; font-weight: bold; color: #0062ff;">$${order.total.toFixed(2)}</td></tr>
@@ -350,7 +362,8 @@ export async function sendOrderStatusEmail(params: {
   `;
 
   const textBody = `
-Order Status Update - ${storeName}
+Order Status Update
+Restaurant: ${storeName}
 Order: ${order.orderNumber}
 Status changed: ${oldStatus.toUpperCase()} -> ${newStatus.toUpperCase()}
 Total: $${order.total.toFixed(2)}
@@ -587,14 +600,19 @@ Status: PENDING MANAGER APPROVAL
         <p style="font-size: 12px; color: #64748b; margin: 4px 0 0 0;">Table Reservation Confirmation</p>
       </div>
 
-      <div style="text-align: center; margin: 24px 0;">
-        <div style="font-size: 40px; margin-bottom: 8px;">🍽️</div>
+      <div style="margin-top: 16px; padding: 12px 16px; background-color: #eff6ff; border-radius: 10px; border: 1px solid #bfdbfe;">
+        <span style="font-size: 20px;">🍽️</span>
+        <span style="font-size: 14px; font-weight: 700; color: #1d4ed8;"> Restaurant: ${storeName}</span>
+      </div>
+
+      <div style="text-align: center; margin: 20px 0;">
         <h1 style="margin: 0; font-size: 20px; color: #0062ff;">Table Reservation Received</h1>
         <p style="color: #64748b; font-size: 13px; margin-top: 4px;">A new table booking has been submitted</p>
       </div>
 
       <div style="margin-top: 20px; padding: 16px; background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0;">
         <h3 style="margin: 0 0 12px 0; font-size: 14px; text-transform: uppercase; color: #64748b; letter-spacing: 0.05em;">Reservation Details</h3>
+        <p style="margin: 4px 0; font-size: 13px;"><strong>Restaurant:</strong> <span style="color: #0062ff; font-weight: bold;">${storeName}</span></p>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Date & Time:</strong> ${reservationDateFormatted}</p>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Time Slot:</strong> ${booking.bookingSlot || 'Standard Slot'}</p>
         <p style="margin: 4px 0; font-size: 13px;"><strong>Guest Count:</strong> ${booking.guestCount} Guests</p>
