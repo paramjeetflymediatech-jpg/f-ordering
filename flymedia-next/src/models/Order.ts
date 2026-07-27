@@ -19,6 +19,10 @@ export class Order extends Model {
   declare coupon_code: string | null;
   declare rating: number | null;
   declare rating_comment: string | null;
+  declare customer_ip: string | null;
+  declare customer_device: string | null;
+  declare customer_geo: Record<string, any> | null;
+  declare customer_address: string | null;
 }
 
 Order.init(
@@ -96,6 +100,22 @@ Order.init(
       allowNull: true,
     },
     rating_comment: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    customer_ip: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+    },
+    customer_device: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    customer_geo: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    customer_address: {
       type: DataTypes.TEXT,
       allowNull: true,
     },

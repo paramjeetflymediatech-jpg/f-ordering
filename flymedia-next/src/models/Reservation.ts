@@ -14,6 +14,10 @@ export class Reservation extends Model {
   declare notes: string | null;
   declare status: 'pending' | 'confirmed' | 'cancelled' | 'seated' | 'completed';
   declare deposit_credited: boolean;
+  declare customer_ip: string | null;
+  declare customer_device: string | null;
+  declare customer_geo: Record<string, any> | null;
+  declare customer_address: string | null;
 }
 
 Reservation.init(
@@ -70,6 +74,22 @@ Reservation.init(
       type: DataTypes.BOOLEAN,
       defaultValue: false,
       allowNull: false,
+    },
+    customer_ip: {
+      type: DataTypes.STRING(64),
+      allowNull: true,
+    },
+    customer_device: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    customer_geo: {
+      type: DataTypes.JSON,
+      allowNull: true,
+    },
+    customer_address: {
+      type: DataTypes.TEXT,
+      allowNull: true,
     },
   },
   {

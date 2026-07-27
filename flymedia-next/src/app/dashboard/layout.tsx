@@ -33,6 +33,7 @@ import {
   ChevronDown,
   ChevronRight,
   Printer,
+  Activity,
 } from 'lucide-react';
 
 function NavigationItems({
@@ -79,6 +80,7 @@ function NavigationItems({
       { name: 'Reservations', href: '/dashboard/reservations', icon: Calendar },
       { name: 'Offers & Coupons', href: '/dashboard/offers', icon: Tag },
       { name: 'Customer Database', href: '/dashboard/customers', icon: Users },
+      { name: 'Traffic Logs', href: '/dashboard/traffic-logs', icon: Activity },
       { name: 'Loyalty Rewards', href: '/dashboard/loyalty', icon: Gift },
       { name: 'Advance Setup', href: '/dashboard/operations', icon: MonitorPlay },
       { name: 'Billing', href: '/dashboard/billing', icon: CreditCard },

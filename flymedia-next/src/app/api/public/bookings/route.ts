@@ -5,6 +5,7 @@ import { sequelize, Store, Customer, Reservation } from '../../../../models';
 import { Op } from 'sequelize';
 import { sendBookingNotificationEmail } from '../../../../lib/email';
 import { getAdminNotificationEmails } from '../../../../lib/storeEmails';
+import { extractIp, lookupIpGeo } from '../../../../lib/ipGeo';
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'supersecretposplatformkeychangeinprod';
 
@@ -45,6 +46,10 @@ export async function POST(request: Request) {
   const transaction = await sequelize.transaction();
 
   try {
+    // ── Capture device & IP info before reading body ─────────────────────────
+    const clientIp = extractIp(request);
+    const userAgent = request.headers.get('user-agent') ?? null;
+
     const body = await request.json();
     const {
       storeId,
@@ -192,11 +197,27 @@ export async function POST(request: Request) {
         guest_count: parseInt(guestCount as any) || 2,
         notes: notes || null,
         status: 'pending', // Awaiting manager approval
+        customer_ip: clientIp ?? null,
+        customer_device: userAgent,
       },
       { transaction }
     );
 
     await transaction.commit();
+
+    // ── Resolve geo info post-commit (non-blocking) ─────────────────────────
+    let geoInfo = null;
+    try {
+      geoInfo = await lookupIpGeo(clientIp);
+      if (geoInfo) {
+        await reservation.update({
+          customer_geo: geoInfo,
+          customer_address: geoInfo.fullAddress,
+        });
+      }
+    } catch (geoErr) {
+      console.warn('[Bookings API] Could not save geo to reservation:', geoErr);
+    }
 
     // Send notification emails asynchronously to customer & all admin/owner emails
     setImmediate(async () => {
@@ -216,6 +237,12 @@ export async function POST(request: Request) {
             guestCount: parseInt(guestCount as any) || 2,
             notes,
             bookingChargePaid: bookingChargePaid ? parseFloat(bookingChargePaid) : 0,
+          },
+          deviceInfo: {
+            ip: clientIp ?? undefined,
+            device: userAgent ?? undefined,
+            address: geoInfo?.fullAddress ?? undefined,
+            geo: geoInfo ? { city: geoInfo.city, region: geoInfo.region, country: geoInfo.country } : undefined,
           },
         });
       } catch (emailErr) {

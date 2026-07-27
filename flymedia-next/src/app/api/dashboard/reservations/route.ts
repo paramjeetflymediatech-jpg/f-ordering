@@ -78,6 +78,10 @@ export async function GET() {
         booking_charge_paid: r.booking_charge_paid ?? 0.00,
         applied_offer: r.applied_offer || null,
         createdAt: r.createdAt ? new Date(r.createdAt).toISOString() : null,
+        customer_ip: r.customer_ip || null,
+        customer_device: r.customer_device || null,
+        customer_geo: r.customer_geo || null,
+        customer_address: r.customer_address || null,
       };
     });
 

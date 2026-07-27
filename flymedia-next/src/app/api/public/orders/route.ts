@@ -6,6 +6,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { sendEmailReceipt } from '../../../../lib/email';
 import { getAdminNotificationEmails } from '../../../../lib/storeEmails';
+import { extractIp, lookupIpGeo } from '../../../../lib/ipGeo';
 
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || 'supersecretposplatformkeychangeinprod';
 
@@ -17,6 +18,10 @@ function generateTempPassword(): string {
 export async function POST(request: Request) {
   let transaction: any = null;
   try {
+    // ── Capture device & IP info before reading body ─────────────────────────
+    const clientIp = extractIp(request);
+    const userAgent = request.headers.get('user-agent') ?? null;
+
     const body = await request.json();
     const {
       storeId,
@@ -394,6 +399,24 @@ export async function POST(request: Request) {
 
     await transaction.commit();
 
+    // ── Resolve geo info for the customer IP (non-blocking, post-commit) ──────
+    let geoInfo = null;
+    try {
+      geoInfo = await lookupIpGeo(clientIp);
+    } catch (_) {}
+
+    // Save IP / device / geo / address to the order record
+    try {
+      await order.update({
+        customer_ip: clientIp ?? null,
+        customer_device: userAgent,
+        customer_geo: geoInfo ?? null,
+        customer_address: geoInfo?.fullAddress ?? null,
+      });
+    } catch (geoErr) {
+      console.warn('[Order API] Could not save IP/geo to order:', geoErr);
+    }
+
     try {
       const io = (request as any).io || (global as any).__socketIo;
       if (io && tableId) {
@@ -437,6 +460,12 @@ export async function POST(request: Request) {
           reference: payment.transaction_reference || `ONL-TX-${Date.now()}`,
         },
         adminEmail: adminEmails,
+        deviceInfo: {
+          ip: clientIp ?? undefined,
+          device: userAgent ?? undefined,
+          address: geoInfo?.fullAddress ?? undefined,
+          geo: geoInfo ? { city: geoInfo.city, region: geoInfo.region, country: geoInfo.country } : undefined,
+        },
       });
     } catch (emailErr) {
       console.error('Failed to dispatch simulated email receipt:', emailErr);

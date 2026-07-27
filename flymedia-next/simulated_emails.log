@@ -641,3 +641,75 @@ SIMULATED DISPATCH DETAIL:
   Admin notified: owner@fordering.com
   
 
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/27/2026, 10:34:27 AM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00006
+Order Type: TAKEAWAY
+Timestamp: 7/27/2026, 10:34:27 AM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221102
+Email: paramjeet.flymediatech@gmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Chicken 65 Biryani [Variant: Family] @ $29.99 each = $29.99
+
+Subtotal: $29.99
+Tax: $2.47
+Total Amount: $32.46
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $32.46
+Transaction Reference: ONL-TX-1785128667925
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: paramjeet.flymediatech@gmail.com
+- Sent to Restaurant Admin Email: contact@tgwbh.com.au,admin@fordering.com,owner@fordering.com,cashier@yopmail.com
+
+========================================================================
+
+
+
+========================================================================
+NEW TRANSACTION RECEIPT - 7/27/2026, 10:44:37 AM
+========================================================================
+Store: The Grand Pavillion Warner Bay
+Order Number: ORD-ONL-00007
+Order Type: TAKEAWAY
+Timestamp: 7/27/2026, 10:44:37 AM
+
+-------------------------- CUSTOMER DETAILS ----------------------------
+Name: Paramjit Singh
+Phone: +449876221103
+Email: param@yopmail.com
+
+
+-------------------------- ORDER SUMMARY -------------------------------
+- 1x Nellore Prawns Biryani @ $18.99 each = $18.99
+
+Subtotal: $18.99
+Tax: $1.57
+Total Amount: $20.56
+
+------------------------- PAYMENT INFORMATION --------------------------
+Method: CASH
+Amount Paid: $20.56
+Transaction Reference: ONL-TX-1785129276881
+Payment Status: PENDING
+
+========================================================================
+SIMULATED DISPATCH DETAIL:
+- Sent to Customer Email: param@yopmail.com
+- Sent to Restaurant Admin Email: contact@tgwbh.com.au,admin@fordering.com,owner@fordering.com,cashier@yopmail.com
+
+========================================================================
+
+
