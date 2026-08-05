@@ -5,7 +5,7 @@ export class PrintJob extends Model {
   declare id: string;
   declare store_id: string;
   declare printer_id: string;
-  declare order_id: string;
+  declare order_id: string | null;
   declare status: 'pending' | 'printing' | 'completed' | 'failed';
   declare attempts: number;
   declare error_message: string | null;
@@ -29,7 +29,7 @@ PrintJob.init(
     },
     order_id: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
     status: {
       type: DataTypes.ENUM('pending', 'printing', 'completed', 'failed'),

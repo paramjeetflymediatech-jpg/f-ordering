@@ -163,12 +163,36 @@ const printWorker = new Worker(
         const printJob = await PrintJob.create({
           store_id: targetStoreId,
           printer_id: printer.id,
-          order_id: targetOrderId || '00000000-0000-0000-0000-000000000000',
+          order_id: targetOrderId || null,
           status: 'pending',
           attempts: 1,
         });
 
-        // Notify the agent
+        // If Network printer, send direct raw ESC/POS via TCP socket
+        if (printer.type === 'network') {
+          let ip = (printer.connection_value || '').trim();
+          let port = 9100;
+          if (ip.includes(':')) {
+            const parts = ip.split(':');
+            ip = parts[0];
+            port = parseInt(parts[1], 10) || 9100;
+          }
+
+          if (ip) {
+            const compiledReceipt = compileEscPosReceipt(orderRecord || {}, printerItems || []);
+            try {
+              await sendTcpPrintJob(ip, port, compiledReceipt);
+              await printJob.update({ status: 'completed', printed_at: new Date() });
+              await printer.update({ status: 'online', last_seen_at: new Date(), last_printed_at: new Date() });
+              console.log(`[BullMQ Worker] Job ${printJob.id} printed directly to network printer ${ip}:${port}`);
+              continue;
+            } catch (err: any) {
+              console.warn(`[BullMQ Worker] Direct TCP to network printer ${ip}:${port} failed (${err.message}). Falling back to Socket.IO agent if connected...`);
+            }
+          }
+        }
+
+        // Notify the desktop agent for USB/Socket agent printers
         const io = (global as any).__socketIo;
         if (io) {
           console.log(`[BullMQ Worker] Emitting print:new-order to printer room: printer:${printer.id}`);

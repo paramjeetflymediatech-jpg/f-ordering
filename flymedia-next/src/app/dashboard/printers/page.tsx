@@ -280,7 +280,7 @@ export default function PrintersPage() {
                     <div className="flex justify-between items-center pt-2 border-t border-slate-900 gap-2">
                       <button
                         onClick={() => handleTestPrint(printer.id)}
-                        disabled={printer.status !== 'online'}
+                        disabled={printer.type !== 'network' && printer.status !== 'online'}
                         className="flex-1 py-1.5 px-2 rounded-lg bg-orange-600/10 border border-orange-500/20 text-orange-500 hover:bg-orange-500/20 transition text-[10px] font-bold flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Play className="h-3 w-3" /> Test Print
