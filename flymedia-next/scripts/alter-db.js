@@ -100,6 +100,16 @@ async function run() {
       console.log("Rating columns already exist on 'orders' table.");
     }
 
+    // 8. Make order_id column in print_jobs table nullable to support test prints without an order
+    const [printJobOrderCol] = await sequelize.query("SHOW COLUMNS FROM `print_jobs` LIKE 'order_id'");
+    if (printJobOrderCol.length > 0 && printJobOrderCol[0].Null === 'NO') {
+      console.log("Altering 'order_id' column in 'print_jobs' table to be nullable...");
+      await sequelize.query("ALTER TABLE `print_jobs` MODIFY COLUMN `order_id` CHAR(36) BINARY NULL DEFAULT NULL");
+      console.log("Column 'order_id' in 'print_jobs' updated to ALLOW NULL successfully.");
+    } else {
+      console.log("'order_id' column in 'print_jobs' is already nullable.");
+    }
+
     console.log("Table alterations complete.");
   } catch (err) {
     console.error("Migration error:", err);
