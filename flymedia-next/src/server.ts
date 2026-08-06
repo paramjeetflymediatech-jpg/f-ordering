@@ -68,6 +68,109 @@ function compileEscPosReceipt(order: any, items: any[]): string {
   return slip;
 }
 
+// Helper to compile Epson ePOS-Print XML receipt layout matching exact design
+function compileEposXmlReceipt(order: any = {}, items: any[] = []): string {
+  const storeName = order.store_name || order.Store?.name || 'THE GRAND PAVILION-WARNERBAY';
+  const address = order.store_address || order.Store?.address || '456 The Esplanade, Warners Bay';
+  const phone = order.store_phone || order.Store?.phone || '+61 249480092';
+
+  const orderRef = order.orderNumber || order.order_number || 'ORD-ONL-00002';
+  const timestamp = order.createdAt ? new Date(order.createdAt).toLocaleString() : '09/07/2026, 18:02:33';
+  const staffAgent = order.staff_agent || order.staffAgent || 'Self-Ordering';
+  const orderType = (order.orderType || order.order_type || 'TAKEAWAY').toUpperCase();
+  const status = (order.status || 'COMPLETED').toUpperCase();
+  const customerName = order.customer_name || order.customer?.name || order.Customer?.name || 'ajay';
+  const customerPhone = order.customer_phone || order.customer?.phone || order.Customer?.phone || '+155578962';
+  const customerEmail = order.customer_email || order.customer?.email || order.Customer?.email || 'ajay@yopmail.com';
+
+  const subtotal = '$' + parseFloat(order.subtotal || 12.49).toFixed(2);
+  const tax = '$' + parseFloat(order.tax_amount || order.tax || 1.03).toFixed(2);
+  const grandTotal = '$' + parseFloat(order.total_amount || order.total || 13.52).toFixed(2);
+
+  const paymentMethod = (order.payment_method || order.paymentMethod || 'CARD').toUpperCase();
+  const txRef = order.payment_intent_id || order.tx_ref || 'pi_3TrH7z2NxSGni9xK0dlKXr7M';
+  const txStatus = (order.payment_status || 'SUCCESS').toUpperCase();
+
+  const WIDTH = 42;
+  const dashedLine = '-'.repeat(WIDTH);
+
+  function pad(left: string, right: string, width = WIDTH): string {
+    const spaces = Math.max(1, width - left.length - right.length);
+    return left + ' '.repeat(spaces) + right + '&#10;';
+  }
+
+  function itemRow(name: string, qty: number | string, totalStr: string): string {
+    const qtyStr = String(qty);
+    // Name width 28, Qty width 4, Price width 10 -> Total 42
+    const pName = name.length > 28 ? name.substring(0, 25) + '...' : name.padEnd(28);
+    const pQty = qtyStr.padStart(4);
+    const pPrice = totalStr.padStart(10);
+    return pName + pQty + pPrice + '&#10;';
+  }
+
+  let xml = '<?xml version="1.0" encoding="utf-8"?>\n';
+  xml += '<epos-print xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print">\n';
+  xml += '  <text lang="en"/>\n';
+  xml += '  <text align="center"/>\n';
+  xml += `  <text em="true" width="1" height="1">${storeName}&#10;</text>\n`;
+  xml += `  <text>${address}&#10;</text>\n`;
+  xml += `  <text>Ph: ${phone}&#10;</text>\n`;
+  xml += '  <feed line="1"/>\n';
+
+  xml += '  <text align="left"/>\n';
+  xml += `  <text>Order Reference: ${orderRef}&#10;</text>\n`;
+  xml += `  <text>Timestamp: ${timestamp}&#10;</text>\n`;
+  xml += `  <text>Staff Agent: ${staffAgent}&#10;</text>\n`;
+  xml += `  <text>Order Type: ${orderType}&#10;</text>\n`;
+  xml += `  <text>Status: ${status}&#10;</text>\n`;
+  xml += `  <text>Customer: ${customerName}&#10;</text>\n`;
+  xml += `  <text>Phone: ${customerPhone}&#10;</text>\n`;
+  xml += `  <text>Email: ${customerEmail}&#10;</text>\n`;
+  xml += `  <text>${dashedLine}&#10;</text>\n`;
+
+  // Item Table Header
+  xml += `  <text em="true">${itemRow('Item', 'Qty', 'Total')}</text>\n`;
+  xml += `  <text>${dashedLine}&#10;</text>\n`;
+
+  // Items
+  if (items && items.length > 0) {
+    items.forEach((item: any) => {
+      const name = item.name || item.MenuItem?.name || 'Item';
+      const qty = item.quantity || 1;
+      const price = '$' + parseFloat(item.price || item.unit_price || 0).toFixed(2);
+      xml += `  <text>${itemRow(name, qty, price)}</text>\n`;
+      if (item.addons && item.addons.length > 0) {
+        const addonsStr = item.addons.map((a: any) => a.name).join(', ');
+        xml += `  <text>   + ${addonsStr}&#10;</text>\n`;
+      }
+    });
+  } else {
+    xml += `  <text>${itemRow('Baby Corn Crispy', 1, '$12.49')}</text>\n`;
+  }
+
+  xml += `  <text>${dashedLine}&#10;</text>\n`;
+  xml += `  <text>${pad('Subtotal:', subtotal)}</text>\n`;
+  xml += `  <text>${pad('Tax:', tax)}</text>\n`;
+  xml += '  <hline x1="0" x2="575" style="thin"/>\n';
+  xml += `  <text em="true">${pad('Grand Total:', grandTotal)}</text>\n`;
+  xml += '  <hline x1="0" x2="575" style="thin"/>\n';
+  xml += '  <feed line="1"/>\n';
+
+  xml += `  <text>Payment Method: ${paymentMethod}&#10;</text>\n`;
+  xml += `  <text>TX Reference: ${txRef}&#10;</text>\n`;
+  xml += `  <text>TX Status: ${txStatus}&#10;</text>\n`;
+  xml += '  <feed line="1"/>\n';
+  xml += `  <text>${dashedLine}&#10;</text>\n`;
+
+  xml += '  <text align="center"/>\n';
+  xml += '  <text>Powered by Fly-POS&#10;</text>\n';
+  xml += '  <feed line="2"/>\n';
+  xml += '  <cut type="feed"/>\n';
+  xml += '</epos-print>';
+
+  return xml;
+}
+
 // Helper to send ticket directly to a network printer IP via raw TCP Socket
 function sendTcpPrintJob(ip: string, port: number, data: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -409,6 +512,30 @@ app.prepare().then(() => {
 
   // Serve public assets and dynamic uploads directly via express
   expressApp.use(express.static(path.join(process.cwd(), 'public')));
+
+  // Enable CORS & Mock ePOS Printer endpoint for testing ePOS-Print API sample/editor
+  expressApp.options('/cgi-bin/epos/service.cgi', (req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, SOAPAction, If-Modified-Since');
+    res.status(200).end();
+  });
+
+  expressApp.post('/cgi-bin/epos/service.cgi', express.text({ type: '*/*' }), (req, res) => {
+    console.log('\n[ePOS Mock Endpoint] Received ePOS Print Job XML:');
+    console.log(req.body);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Content-Type', 'text/xml; charset=utf-8');
+    res.status(200).send(`<?xml version="1.0" encoding="utf-8"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/"><s:Body><response xmlns="http://www.epson-pos.com/schemas/2011/03/epos-print" success="true" code="" status="0" battery="0"/></s:Body></s:Envelope>`);
+  });
+
+  // GET route to retrieve sample ePOS-Print XML receipt
+  expressApp.get('/api/test-epos-xml', (req, res) => {
+    const sampleXml = compileEposXmlReceipt();
+    res.setHeader('Content-Type', 'application/xml');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.send(sampleXml);
+  });
 
   // Next.js Route handlers
   expressApp.all(/.*/, (req, res) => {
